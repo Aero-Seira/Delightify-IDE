@@ -1,0 +1,67 @@
+# Windows 环境测试工作流
+# 确保项目在 Windows 上能够正确构建
+
+name: Windows Build Test
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-windows:
+    name: Test on Windows
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Get pnpm store directory
+        shell: pwsh
+        run: |
+          $storePath = pnpm store path
+          Write-Output "STORE_PATH=$storePath" >> $env:GITHUB_OUTPUT
+        id: pnpm-cache
+
+      - name: Cache pnpm modules
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared package
+        run: pnpm --filter @delightify/shared build
+
+      - name: Build main package
+        run: pnpm --filter @delightify/main build
+
+      - name: Build renderer package
+        run: pnpm --filter @delightify/renderer build
+
+      - name: Run clean scripts (Windows compatibility test)
+        run: |
+          pnpm --filter @delightify/shared clean
+          pnpm --filter @delightify/renderer clean
+          pnpm --filter @delightify/main clean
+
+      - name: Rebuild for verification
+        run: pnpm build
+
+      - name: Type Check
+        run: pnpm typecheck

@@ -1,0 +1,98 @@
+{
+  "id": "forge_1.16_plus",
+  "name": "Forge 1.16+ DeferredRegister",
+  "description": "Forge and NeoForge 1.16+ using DeferredRegister and RegistryObject",
+  "appliesTo": {
+    "loaders": ["forge", "neoforge"],
+    "minecraftVersions": ["1.16", "1.17", "1.18", "1.19", "1.20", "1.21"]
+  },
+  "priority": 100,
+  "enabled": true,
+  "bytecodeSignatures": {
+    "fieldTypes": [
+      {
+        "type": "DeferredRegister",
+        "genericTypeRegex": "Lnet/minecraft/world/item/Item;",
+        "registryType": "item",
+        "score": 10
+      },
+      {
+        "type": "DeferredRegister",
+        "genericTypeRegex": "Lnet/minecraft/world/level/block/Block;",
+        "registryType": "block",
+        "score": 10
+      },
+      {
+        "type": "RegistryObject",
+        "score": 5
+      }
+    ],
+    "methodCalls": [
+      {
+        "owner": "net/minecraftforge/registries/DeferredRegister",
+        "name": "register",
+        "descriptor": "(Ljava/lang/String;Ljava/util/function/Supplier;)",
+        "score": 20
+      },
+      {
+        "owner": "net/neoforged/neoforge/registries/DeferredRegister",
+        "name": "register",
+        "descriptor": "(Ljava/lang/String;Ljava/util/function/Supplier;)",
+        "score": 20
+      }
+    ],
+    "stringConstants": [
+      "DeferredRegister",
+      "RegistryObject"
+    ]
+  },
+  "extractionRules": {
+    "registryFields": {
+      "pattern": "DEFERRED_REGISTER_FIELD",
+      "typeField": {
+        "classContains": "DeferredRegister",
+        "extractGenericFromSignature": true
+      }
+    },
+    "registerCalls": {
+      "pattern": "METHOD_INVOKE",
+      "method": {
+        "name": "register",
+        "params": [
+          {
+            "index": 0,
+            "type": "STRING",
+            "extractAs": "itemId"
+          },
+          {
+            "index": 1,
+            "type": "SUPPLIER_LAMBDA",
+            "extractAs": "factory",
+            "followLambda": true
+          }
+        ]
+      }
+    },
+    "helperMethods": [
+      {
+        "name": "registerWithTab",
+        "paramTypes": ["String", "Supplier"],
+        "extractAs": "registerCall"
+      },
+      {
+        "name": "basicItem",
+        "paramTypes": ["String"],
+        "extractAs": "simpleItem"
+      },
+      {
+        "name": "foodItem",
+        "paramTypes": ["String", "FoodProperties"],
+        "extractAs": "foodItem"
+      }
+    ]
+  },
+  "examples": [
+    "public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ForgeRegistries.ITEMS, MOD_ID);",
+    "public static final RegistryObject<Item> EXAMPLE = ITEMS.register(\"example\", () -> new Item(new Item.Properties()));"
+  ]
+}

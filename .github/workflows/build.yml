@@ -1,0 +1,193 @@
+# Electron 应用自动打包工作流
+# 触发条件：推送 v 开头的标签，如 v0.1.0
+
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # 匹配 v0.1.0, v1.0.0 等
+  workflow_dispatch:  # 也支持手动触发
+
+jobs:
+  # 类型检查（所有平台）
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Type Check
+        run: pnpm typecheck
+
+  # 打包 Windows 版本
+  build-windows:
+    needs: typecheck
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build
+        run: pnpm build
+
+      - name: Build Electron App
+        run: |
+          cd packages/main
+          pnpm dist
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Windows Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: |
+            release/*.exe
+            release/*.yml
+
+  # 打包 macOS 版本
+  build-macos:
+    needs: typecheck
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build
+        run: pnpm build
+
+      - name: Build Electron App
+        run: |
+          cd packages/main
+          pnpm dist
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload macOS Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-build
+          path: |
+            release/*.dmg
+            release/*.zip
+            release/*.yml
+
+  # 打包 Linux 版本
+  build-linux:
+    needs: typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build
+        run: pnpm build
+
+      - name: Build Electron App
+        run: |
+          cd packages/main
+          pnpm dist
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Linux Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-build
+          path: |
+            release/*.AppImage
+            release/*.deb
+            release/*.snap
+            release/*.yml
+
+  # 创建 Release（可选）
+  release:
+    needs: [build-windows, build-macos, build-linux]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          draft: true  # 先创建草稿，手动确认后再发布
+          files: |
+            artifacts/windows-build/**
+            artifacts/macos-build/**
+            artifacts/linux-build/**
+          body: |
+            ## Delightify ${{ github.ref_name }}
+            
+            ### 安装包
+            - **Windows**: `.exe` 安装程序
+            - **macOS**: `.dmg` 磁盘映像
+            - **Linux**: `.AppImage` 可执行文件 或 `.deb` 安装包
+            
+            ### 快速开始
+            1. 下载对应平台的安装包
+            2. 安装并运行
+            3. 导入 Minecraft JAR 文件开始魔改
+            
+            ### 系统要求
+            - Windows 10/11
+            - macOS 11+ (Intel/Apple Silicon)
+            - Ubuntu 20.04+ / Fedora 35+
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

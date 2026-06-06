@@ -1,0 +1,116 @@
+/**
+ * ItemIcon 样式
+ * 
+ * 设计原则：
+ * 1. 像素完美渲染
+ * 2. 平滑的加载动画
+ * 3. 清晰的 fallback 显示
+ */
+
+.container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm, 4px);
+  overflow: hidden;
+  background: transparent;
+  flex-shrink: 0;
+}
+
+/* 纹理图片 */
+.texture {
+  display: block;
+  object-fit: contain;
+  /* 像素完美渲染 */
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  /* 禁用选中 */
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* 加载骨架屏 */
+.loading {
+  background: var(--bg-tertiary, #f3f4f6);
+}
+
+.skeleton {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    var(--bg-tertiary, #f3f4f6) 25%,
+    var(--bg-hover, #e5e7eb) 50%,
+    var(--bg-tertiary, #f3f4f6) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Fallback 容器 */
+.fallback {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 紫黑格子背景 */
+.missingTexture {
+  position: absolute;
+  inset: 0;
+  object-fit: cover;
+  image-rendering: pixelated;
+}
+
+/* 首字母显示 */
+.initial {
+  position: relative;
+  z-index: 1;
+  font-weight: 700;
+  color: white;
+  font-family: var(--font-sans, system-ui);
+  line-height: 1;
+  /* 文字阴影增强可读性 */
+  text-shadow:
+    0 0 2px rgba(0, 0, 0, 0.9),
+    0 0 4px rgba(0, 0, 0, 0.7),
+    0 1px 2px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+}
+
+/* 深色模式适配 */
+[data-theme="dark"] .loading {
+  background: var(--bg-tertiary, #262626);
+}
+
+[data-theme="dark"] .skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-tertiary, #262626) 25%,
+    var(--bg-hover, #333333) 50%,
+    var(--bg-tertiary, #262626) 75%
+  );
+  background-size: 200% 100%;
+}
+
+/* 悬停效果 */
+.container:hover .texture {
+  transform: scale(1.05);
+  transition: transform 0.15s ease;
+}
+
+/* 选中效果 */
+.container:active .texture {
+  transform: scale(0.95);
+}

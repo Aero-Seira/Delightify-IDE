@@ -1,0 +1,63 @@
+/* App Layout - AstrBot Style */
+
+.appContainer {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--bg-secondary);
+}
+
+/* Main Wrapper - adjusts margin based on sidebar state */
+.mainWrapper {
+  flex: 1;
+  margin-left: var(--sidebar-width);
+  display: flex;
+  flex-direction: column;
+  transition: margin-left var(--transition-base);
+  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.mainWrapperCollapsed {
+  margin-left: var(--sidebar-collapsed);
+}
+
+/* Main Content Area */
+.mainContent {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background-color: var(--bg-secondary);
+}
+
+/* Page Container */
+.pageContainer {
+  padding: var(--space-6);
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Page Header */
+.pageHeader {
+  margin-bottom: var(--space-6);
+}
+
+.pageTitle {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  margin-bottom: var(--space-2);
+}
+
+.pageDescription {
+  font-size: var(--font-size-base);
+  color: var(--text-secondary);
+}
+
+/* Content Card */
+.contentCard {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-6);
+}

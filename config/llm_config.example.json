@@ -1,0 +1,128 @@
+{
+  "llm_config": {
+    "providers": [
+      {
+        "name": "ollama_primary",
+        "type": "ollama",
+        "enabled": true,
+        "priority": 1,
+        "description": "本地 Ollama 模型（推荐用于隐私和离线使用） / Local Ollama model (recommended for privacy and offline use)",
+        "config": {
+          "base_url": "http://localhost:11434",
+          "model": "qwen2.5:7b",
+          "temperature": 0.3,
+          "max_tokens": 2048,
+          "timeout": 30,
+          "retry": {
+            "max_attempts": 3,
+            "backoff_factor": 2,
+            "initial_delay": 1
+          }
+        }
+      },
+      {
+        "name": "openai_fallback",
+        "type": "openai",
+        "enabled": false,
+        "priority": 2,
+        "description": "OpenAI GPT 模型（需要 API key） / OpenAI GPT models (requires API key)",
+        "config": {
+          "api_key": "${OPENAI_API_KEY}",
+          "model": "gpt-4",
+          "temperature": 0.2,
+          "max_tokens": 2048,
+          "timeout": 60,
+          "organization": null
+        }
+      },
+      {
+        "name": "anthropic_fallback",
+        "type": "anthropic",
+        "enabled": false,
+        "priority": 3,
+        "description": "Anthropic Claude 模型（需要 API key） / Anthropic Claude models (requires API key)",
+        "config": {
+          "api_key": "${ANTHROPIC_API_KEY}",
+          "model": "claude-3-sonnet-20240229",
+          "temperature": 0.2,
+          "max_tokens": 2048,
+          "timeout": 60
+        }
+      },
+      {
+        "name": "custom_endpoint",
+        "type": "custom",
+        "enabled": false,
+        "priority": 4,
+        "description": "自定义 LLM 端点（OpenAI 兼容 API） / Custom LLM endpoint (OpenAI-compatible API)",
+        "config": {
+          "endpoint": "http://your-llm-server:8080/v1/chat/completions",
+          "headers": {
+            "Authorization": "Bearer ${CUSTOM_API_KEY}",
+            "Content-Type": "application/json"
+          },
+          "model": "custom-model-name",
+          "temperature": 0.3,
+          "max_tokens": 2048,
+          "timeout": 45
+        }
+      }
+    ],
+    "fallback_chain": {
+      "enabled": true,
+      "description": "当高优先级提供商失败时自动切换到下一个 / Automatically switch to next provider when higher priority fails",
+      "max_chain_attempts": 3,
+      "stop_on_success": true
+    },
+    "batch_processing": {
+      "mode": "adaptive",
+      "description": "批量处理模式 / Batch processing mode: sequential (顺序), parallel (并行), adaptive (自适应)",
+      "max_parallel": 5,
+      "batch_size": 10,
+      "adaptive_config": {
+        "initial_parallel": 2,
+        "increase_threshold": 0.9,
+        "decrease_threshold": 0.5,
+        "max_increase_step": 2,
+        "min_parallel": 1
+      }
+    },
+    "cache": {
+      "enabled": true,
+      "description": "缓存 LLM 响应以提高性能和降低成本 / Cache LLM responses to improve performance and reduce costs",
+      "ttl_seconds": 86400,
+      "max_size_mb": 100,
+      "cache_key_fields": [
+        "recipe_type",
+        "inputs",
+        "outputs"
+      ],
+      "storage": "file",
+      "path": "cache/llm_responses"
+    },
+    "cost_tracking": {
+      "enabled": true,
+      "description": "跟踪 API 使用成本 / Track API usage costs",
+      "pricing": {
+        "openai": {
+          "gpt-4": {
+            "input_per_1k_tokens": 0.03,
+            "output_per_1k_tokens": 0.06
+          },
+          "gpt-3.5-turbo": {
+            "input_per_1k_tokens": 0.0015,
+            "output_per_1k_tokens": 0.002
+          }
+        },
+        "anthropic": {
+          "claude-3-sonnet": {
+            "input_per_1k_tokens": 0.015,
+            "output_per_1k_tokens": 0.075
+          }
+        }
+      },
+      "alert_threshold_usd": 10.0,
+      "log_path": "logs/cost_tracking.json"
+    }
+  }
+}

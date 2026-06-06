@@ -1,0 +1,662 @@
+{
+  "mod_info": {
+    "mod_id": "minecraft",
+    "mod_name": "Minecraft",
+    "version": "1.0.0",
+    "description": "Minecraft 原版配方类型定义 / Minecraft vanilla recipe type definitions"
+  },
+  "recipe_types": [
+    {
+      "recipe_type_id": "minecraft:crafting_shaped",
+      "display_name": "有序合成 / Shaped Crafting",
+      "description": "工作台有序合成 / Crafting table with specific pattern",
+      "icon": "minecraft:crafting_table",
+      "template": {
+        "type": "minecraft:crafting_shaped",
+        "pattern": [],
+        "key": {},
+        "result": {}
+      },
+      "field_specs": {
+        "type": {
+          "required": true,
+          "type": "string",
+          "constant": "minecraft:crafting_shaped"
+        },
+        "pattern": {
+          "required": true,
+          "type": "array",
+          "min_items": 1,
+          "max_items": 3,
+          "description": "合成模式（1-3行） / Crafting pattern (1-3 rows)"
+        },
+        "key": {
+          "required": true,
+          "type": "object",
+          "description": "模式键值映射 / Pattern key mapping"
+        },
+        "result": {
+          "required": true,
+          "type": "item_stack",
+          "description": "输出物品 / Output item"
+        },
+        "group": {
+          "required": false,
+          "type": "string",
+          "description": "配方组 / Recipe group"
+        }
+      },
+      "suitable_for": {
+        "item_categories": [
+          "tool",
+          "weapon",
+          "armor",
+          "block",
+          "decoration",
+          "mechanism"
+        ],
+        "keywords": [
+          "craft",
+          "shape",
+          "pattern",
+          "position",
+          "合成",
+          "工作台",
+          "摆放",
+          "位置"
+        ],
+        "input_count": {
+          "min": 1,
+          "max": 9
+        },
+        "output_count": {
+          "min": 1,
+          "max": 1
+        },
+        "typical_patterns": [
+          "需要特定摆放位置的合成",
+          "工具、武器、装备制作",
+          "建筑方块制作",
+          "3x3 或更小的模式合成"
+        ]
+      },
+      "incompatible_with": {
+        "output_categories": [],
+        "reasons": []
+      },
+      "prompt_template": {
+        "description": "LLM提示词模板，用于帮助模型理解此配方类型 / LLM prompt template to help the model understand this recipe type",
+        "template": "这是 Minecraft 原版的有序合成配方类型。需要在工作台上按照特定的模式摆放材料。\n\n关键特征：\n- 需要使用pattern（模式）和key（键值对）定义摆放方式\n- pattern是1-3行的字符串数组，每个字符代表一个位置\n- key定义每个字符对应的物品或标签\n- 适合需要特定形状或位置的合成（如工具、装备、方块）\n\n判断标准：\n1. 如果配方有明确的形状或图案，必须使用此类型\n2. 如果是工具、武器、装备的制作，通常使用此类型\n3. 如果原配方已经是有序合成，保持使用此类型\n\n典型应用场景：\n- 木棍：2个木板竖直摆放\n- 箱子：8个木板围成空心方块\n- 剑：2个材料+1个木棍，竖直排列\n- 镐：3个材料横排+2个木棍竖直\n\npattern格式说明：\n- 每行最多3个字符，最多3行\n- 空格表示空位置\n- 相同字符表示相同物品\n- 示例：[\"##\", \"##\"] 表示2x2的方块\n\n注意事项：\n- 如果配方不需要特定位置，应该使用shapeless（无序合成）\n- pattern应该尽可能简洁（移除不必要的空行和空列）\n- key中的物品可以使用tag（标签）来支持多种相似物品\n\nThis is Minecraft vanilla shaped crafting recipe type. Requires materials to be placed in a specific pattern on the crafting table.\n\nKey characteristics:\n- Uses pattern and key to define placement\n- pattern is 1-3 rows of strings, each character represents a position\n- key defines what item or tag each character represents\n- Suitable for crafting requiring specific shape or position (tools, equipment, blocks)\n\nJudgment criteria:\n1. If recipe has clear shape or pattern, must use this type\n2. If crafting tools, weapons, equipment, usually use this type\n3. If original recipe is already shaped crafting, keep using this type\n\nTypical use cases:\n- Stick: 2 planks placed vertically\n- Chest: 8 planks forming hollow square\n- Sword: 2 materials + 1 stick, vertical arrangement\n- Pickaxe: 3 materials horizontal + 2 sticks vertical\n\nPattern format:\n- Max 3 characters per row, max 3 rows\n- Space represents empty position\n- Same character represents same item\n- Example: [\"##\", \"##\"] represents 2x2 square\n\nNotes:\n- If recipe doesn't require specific position, should use shapeless\n- Pattern should be as concise as possible (remove unnecessary empty rows/columns)\n- Items in key can use tags to support multiple similar items"
+      },
+      "examples": [
+        {
+          "name": "木棍 / Stick",
+          "recipe": {
+            "type": "minecraft:crafting_shaped",
+            "pattern": [
+              "#",
+              "#"
+            ],
+            "key": {
+              "#": {
+                "tag": "minecraft:planks"
+              }
+            },
+            "result": {
+              "item": "minecraft:stick",
+              "count": 4
+            }
+          }
+        },
+        {
+          "name": "箱子 / Chest",
+          "recipe": {
+            "type": "minecraft:crafting_shaped",
+            "pattern": [
+              "###",
+              "# #",
+              "###"
+            ],
+            "key": {
+              "#": {
+                "tag": "minecraft:planks"
+              }
+            },
+            "result": {
+              "item": "minecraft:chest"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "recipe_type_id": "minecraft:crafting_shapeless",
+      "display_name": "无序合成 / Shapeless Crafting",
+      "description": "工作台无序合成 / Crafting table without pattern",
+      "icon": "minecraft:crafting_table",
+      "template": {
+        "type": "minecraft:crafting_shapeless",
+        "ingredients": [],
+        "result": {}
+      },
+      "field_specs": {
+        "type": {
+          "required": true,
+          "type": "string",
+          "constant": "minecraft:crafting_shapeless"
+        },
+        "ingredients": {
+          "required": true,
+          "type": "array",
+          "min_items": 1,
+          "max_items": 9,
+          "description": "合成材料 / Crafting ingredients"
+        },
+        "result": {
+          "required": true,
+          "type": "item_stack",
+          "description": "输出物品 / Output item"
+        },
+        "group": {
+          "required": false,
+          "type": "string",
+          "description": "配方组 / Recipe group"
+        }
+      },
+      "suitable_for": {
+        "item_categories": [
+          "dye",
+          "simple_item",
+          "food",
+          "material"
+        ],
+        "keywords": [
+          "combine",
+          "mix",
+          "shapeless",
+          "组合",
+          "混合",
+          "无序"
+        ],
+        "input_count": {
+          "min": 1,
+          "max": 9
+        },
+        "output_count": {
+          "min": 1,
+          "max": 1
+        },
+        "typical_patterns": [
+          "不需要特定摆放的简单组合",
+          "染料制作",
+          "简单物品转换",
+          "材料合并"
+        ]
+      },
+      "prompt_template": {
+        "description": "LLM提示词模板，用于帮助模型理解此配方类型 / LLM prompt template to help the model understand this recipe type",
+        "template": "这是 Minecraft 原版的无序合成配方类型。材料可以在工作台上任意摆放，不需要特定位置。\n\n关键特征：\n- 使用ingredients数组列出所有材料\n- 材料摆放顺序和位置无关紧要\n- 适合简单的组合、混合类配方\n- 最多支持9种材料（3x3工作台）\n\n判断标准：\n1. 如果配方只是简单地把材料组合在一起，使用此类型\n2. 如果材料的摆放位置不影响结果，必须使用此类型\n3. 如果是染料、简单食物、材料转换，通常使用此类型\n\n典型应用场景：\n- 面包：3个小麦（位置任意）\n- 染料混合：2种染料组合（位置任意）\n- 糖：1个甘蔗（简单转换）\n- 火药：硝石+煤炭+沙子（位置任意）\n\ningredients格式说明：\n- 是一个数组，每个元素代表一种材料\n- 可以使用item指定具体物品\n- 可以使用tag指定标签（支持多种相似物品）\n- 数量通过重复元素来表示（如3个小麦就写3次）\n\n与shaped（有序合成）的区别：\n- shapeless: 材料位置无关，适合简单组合\n- shaped: 材料必须按特定模式摆放，适合有形状的物品\n\n注意事项：\n- 不要对需要特定形状的配方（如工具、装备）使用无序合成\n- 对于复杂食物的制作，考虑使用farmersdelight:cooking而非shapeless\n- 对于合金制作，考虑使用create:mixing而非shapeless\n\nThis is Minecraft vanilla shapeless crafting recipe type. Materials can be placed anywhere on the crafting table, no specific position required.\n\nKey characteristics:\n- Uses ingredients array to list all materials\n- Material placement order and position don't matter\n- Suitable for simple combination/mixing recipes\n- Supports up to 9 materials (3x3 crafting table)\n\nJudgment criteria:\n1. If recipe simply combines materials together, use this type\n2. If material placement position doesn't affect result, must use this type\n3. If for dyes, simple food, material conversion, usually use this type\n\nTypical use cases:\n- Bread: 3 wheat (any position)\n- Dye mixing: 2 dyes combined (any position)\n- Sugar: 1 sugar cane (simple conversion)\n- Gunpowder: saltpeter + coal + sand (any position)\n\ningredients format:\n- Is an array, each element represents one material\n- Can use item to specify specific item\n- Can use tag to specify tag (support multiple similar items)\n- Quantity represented by repeating elements (e.g., 3 wheat = write 3 times)\n\nDifference from shaped:\n- shapeless: material position irrelevant, for simple combinations\n- shaped: materials must follow specific pattern, for shaped items\n\nNotes:\n- Don't use shapeless for recipes requiring specific shape (tools, equipment)\n- For complex food making, consider farmersdelight:cooking instead of shapeless\n- For alloy making, consider create:mixing instead of shapeless"
+      },
+      "examples": [
+        {
+          "name": "面包 / Bread",
+          "recipe": {
+            "type": "minecraft:crafting_shapeless",
+            "ingredients": [
+              {
+                "item": "minecraft:wheat"
+              },
+              {
+                "item": "minecraft:wheat"
+              },
+              {
+                "item": "minecraft:wheat"
+              }
+            ],
+            "result": {
+              "item": "minecraft:bread"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "recipe_type_id": "minecraft:smelting",
+      "display_name": "熔炼 / Smelting",
+      "description": "熔炉熔炼 / Furnace smelting",
+      "icon": "minecraft:furnace",
+      "template": {
+        "type": "minecraft:smelting",
+        "ingredient": {},
+        "result": "",
+        "experience": 0.0,
+        "cookingtime": 200
+      },
+      "field_specs": {
+        "type": {
+          "required": true,
+          "type": "string",
+          "constant": "minecraft:smelting"
+        },
+        "ingredient": {
+          "required": true,
+          "type": "ingredient",
+          "description": "输入材料 / Input ingredient"
+        },
+        "result": {
+          "required": true,
+          "type": "string",
+          "description": "输出物品ID / Output item ID"
+        },
+        "experience": {
+          "required": false,
+          "type": "float",
+          "default": 0.0,
+          "range": [
+            0.0,
+            10.0
+          ],
+          "description": "获得经验值 / Experience gained"
+        },
+        "cookingtime": {
+          "required": false,
+          "type": "integer",
+          "default": 200,
+          "range": [
+            1,
+            72000
+          ],
+          "unit": "ticks",
+          "description": "烹饪时间 / Cooking time"
+        }
+      },
+      "suitable_for": {
+        "item_categories": [
+          "ore",
+          "raw_food",
+          "raw_material",
+          "mineral"
+        ],
+        "keywords": [
+          "smelt",
+          "cook",
+          "burn",
+          "熔炼",
+          "烧制",
+          "熔炉"
+        ],
+        "input_count": {
+          "min": 1,
+          "max": 1
+        },
+        "output_count": {
+          "min": 1,
+          "max": 1
+        },
+        "typical_patterns": [
+          "矿石熔炼成锭",
+          "生食烹饪成熟食",
+          "材料加工处理"
+        ]
+      },
+      "examples": [
+        {
+          "name": "铁锭 / Iron Ingot",
+          "recipe": {
+            "type": "minecraft:smelting",
+            "ingredient": {
+              "item": "minecraft:iron_ore"
+            },
+            "result": "minecraft:iron_ingot",
+            "experience": 0.7,
+            "cookingtime": 200
+          }
+        }
+      ]
+    },
+    {
+      "recipe_type_id": "minecraft:blasting",
+      "display_name": "高炉 / Blasting",
+      "description": "高炉熔炼（速度更快） / Blast furnace (faster)",
+      "icon": "minecraft:blast_furnace",
+      "template": {
+        "type": "minecraft:blasting",
+        "ingredient": {},
+        "result": "",
+        "experience": 0.0,
+        "cookingtime": 100
+      },
+      "field_specs": {
+        "type": {
+          "required": true,
+          "type": "string",
+          "constant": "minecraft:blasting"
+        },
+        "ingredient": {
+          "required": true,
+          "type": "ingredient"
+        },
+        "result": {
+          "required": true,
+          "type": "string"
+        },
+        "experience": {
+          "required": false,
+          "type": "float",
+          "default": 0.0
+        },
+        "cookingtime": {
+          "required": false,
+          "type": "integer",
+          "default": 100
+        }
+      },
+      "suitable_for": {
+        "item_categories": [
+          "ore",
+          "raw_metal"
+        ],
+        "keywords": [
+          "ore",
+          "metal",
+          "blast",
+          "矿石",
+          "金属",
+          "高炉"
+        ],
+        "typical_patterns": [
+          "矿石快速熔炼",
+          "金属材料加工"
+        ]
+      },
+      "examples": [
+        {
+          "name": "铁锭（高炉） / Iron Ingot (Blasting)",
+          "recipe": {
+            "type": "minecraft:blasting",
+            "ingredient": {
+              "item": "minecraft:iron_ore"
+            },
+            "result": "minecraft:iron_ingot",
+            "experience": 0.7,
+            "cookingtime": 100
+          }
+        }
+      ]
+    },
+    {
+      "recipe_type_id": "minecraft:smoking",
+      "display_name": "烟熏 / Smoking",
+      "description": "烟熏炉（烹饪食物） / Smoker (cooking food)",
+      "icon": "minecraft:smoker",
+      "template": {
+        "type": "minecraft:smoking",
+        "ingredient": {},
+        "result": "",
+        "experience": 0.0,
+        "cookingtime": 100
+      },
+      "field_specs": {
+        "type": {
+          "required": true,
+          "type": "string",
+          "constant": "minecraft:smoking"
+        },
+        "ingredient": {
+          "required": true,
+          "type": "ingredient"
+        },
+        "result": {
+          "required": true,
+          "type": "string"
+        },
+        "experience": {
+          "required": false,
+          "type": "float",
+          "default": 0.0
+        },
+        "cookingtime": {
+          "required": false,
+          "type": "integer",
+          "default": 100
+        }
+      },
+      "suitable_for": {
+        "item_categories": [
+          "raw_food",
+          "meat",
+          "fish"
+        ],
+        "keywords": [
+          "food",
+          "meat",
+          "fish",
+          "smoke",
+          "食物",
+          "肉",
+          "鱼",
+          "烟熏"
+        ],
+        "typical_patterns": [
+          "快速烹饪食物",
+          "肉类和鱼类加工"
+        ]
+      },
+      "examples": [
+        {
+          "name": "熟牛肉 / Cooked Beef",
+          "recipe": {
+            "type": "minecraft:smoking",
+            "ingredient": {
+              "item": "minecraft:beef"
+            },
+            "result": "minecraft:cooked_beef",
+            "experience": 0.35,
+            "cookingtime": 100
+          }
+        }
+      ]
+    },
+    {
+      "recipe_type_id": "minecraft:campfire_cooking",
+      "display_name": "篝火烹饪 / Campfire Cooking",
+      "description": "篝火烹饪食物 / Cooking on campfire",
+      "icon": "minecraft:campfire",
+      "template": {
+        "type": "minecraft:campfire_cooking",
+        "ingredient": {},
+        "result": "",
+        "experience": 0.0,
+        "cookingtime": 600
+      },
+      "field_specs": {
+        "type": {
+          "required": true,
+          "type": "string",
+          "constant": "minecraft:campfire_cooking"
+        },
+        "ingredient": {
+          "required": true,
+          "type": "ingredient"
+        },
+        "result": {
+          "required": true,
+          "type": "string"
+        },
+        "experience": {
+          "required": false,
+          "type": "float",
+          "default": 0.0
+        },
+        "cookingtime": {
+          "required": false,
+          "type": "integer",
+          "default": 600
+        }
+      },
+      "suitable_for": {
+        "item_categories": [
+          "raw_food"
+        ],
+        "keywords": [
+          "campfire",
+          "outdoor",
+          "篝火",
+          "户外"
+        ],
+        "typical_patterns": [
+          "户外烹饪",
+          "慢速烹饪食物"
+        ]
+      },
+      "examples": [
+        {
+          "name": "熟鸡肉 / Cooked Chicken",
+          "recipe": {
+            "type": "minecraft:campfire_cooking",
+            "ingredient": {
+              "item": "minecraft:chicken"
+            },
+            "result": "minecraft:cooked_chicken",
+            "experience": 0.35,
+            "cookingtime": 600
+          }
+        }
+      ]
+    },
+    {
+      "recipe_type_id": "minecraft:stonecutting",
+      "display_name": "切石 / Stonecutting",
+      "description": "切石机切割方块 / Cutting blocks with stonecutter",
+      "icon": "minecraft:stonecutter",
+      "template": {
+        "type": "minecraft:stonecutting",
+        "ingredient": {},
+        "result": "",
+        "count": 1
+      },
+      "field_specs": {
+        "type": {
+          "required": true,
+          "type": "string",
+          "constant": "minecraft:stonecutting"
+        },
+        "ingredient": {
+          "required": true,
+          "type": "ingredient"
+        },
+        "result": {
+          "required": true,
+          "type": "string"
+        },
+        "count": {
+          "required": false,
+          "type": "integer",
+          "default": 1
+        }
+      },
+      "suitable_for": {
+        "item_categories": [
+          "stone",
+          "block",
+          "building_material"
+        ],
+        "keywords": [
+          "stone",
+          "block",
+          "cut",
+          "石头",
+          "方块",
+          "切割"
+        ],
+        "typical_patterns": [
+          "石头类方块切割",
+          "建筑材料加工"
+        ]
+      },
+      "examples": [
+        {
+          "name": "石砖 / Stone Bricks",
+          "recipe": {
+            "type": "minecraft:stonecutting",
+            "ingredient": {
+              "item": "minecraft:stone"
+            },
+            "result": "minecraft:stone_bricks",
+            "count": 1
+          }
+        }
+      ]
+    },
+    {
+      "recipe_type_id": "minecraft:smithing",
+      "display_name": "锻造 / Smithing",
+      "description": "锻造台升级装备 / Upgrading equipment at smithing table",
+      "icon": "minecraft:smithing_table",
+      "template": {
+        "type": "minecraft:smithing",
+        "base": {},
+        "addition": {},
+        "result": {}
+      },
+      "field_specs": {
+        "type": {
+          "required": true,
+          "type": "string",
+          "constant": "minecraft:smithing"
+        },
+        "base": {
+          "required": true,
+          "type": "ingredient",
+          "description": "基础物品 / Base item"
+        },
+        "addition": {
+          "required": true,
+          "type": "ingredient",
+          "description": "添加材料 / Addition material"
+        },
+        "result": {
+          "required": true,
+          "type": "item_stack",
+          "description": "结果物品 / Result item"
+        }
+      },
+      "suitable_for": {
+        "item_categories": [
+          "tool",
+          "weapon",
+          "armor"
+        ],
+        "keywords": [
+          "upgrade",
+          "smithing",
+          "netherite",
+          "升级",
+          "锻造",
+          "下界合金"
+        ],
+        "typical_patterns": [
+          "装备升级",
+          "材料强化"
+        ]
+      },
+      "examples": [
+        {
+          "name": "下界合金剑 / Netherite Sword",
+          "recipe": {
+            "type": "minecraft:smithing",
+            "base": {
+              "item": "minecraft:diamond_sword"
+            },
+            "addition": {
+              "item": "minecraft:netherite_ingot"
+            },
+            "result": {
+              "item": "minecraft:netherite_sword"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

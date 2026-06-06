@@ -1,0 +1,627 @@
+/**
+ * RecipeCard 样式 - 配方卡片组件 v2.0
+ * 
+ * 支持显示完整的配方物品，包括 3x3 有序合成网格
+ */
+
+/* ========== 卡片视图 ========== */
+
+.card {
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  padding: 12px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 200px;
+}
+
+.card:hover {
+  border-color: #4dabf7;
+  box-shadow: 0 2px 8px rgba(77, 171, 247, 0.15);
+}
+
+.card.selected {
+  border-color: #4dabf7;
+  box-shadow: 0 0 0 2px rgba(77, 171, 247, 0.3);
+}
+
+/* 配方类型标签 */
+.typeBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  width: fit-content;
+}
+
+/* 配方主体 */
+.body {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  justify-content: center;
+}
+
+.inputs {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.outputs {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.arrow {
+  color: #adb5bd;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+/* 3x3 合成网格 */
+.craftingGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+.gridRow {
+  display: flex;
+  gap: 2px;
+}
+
+/* 无序合成物品网格 */
+.shapelessGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-width: 120px;
+  justify-content: center;
+  padding: 4px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+/* 熔炼输入 */
+.smeltingInput {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+/* 槽位 */
+.slot {
+  position: relative;
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.outputSlot {
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+}
+
+.emptySlot {
+  background: #f1f3f5;
+  border: 1px dashed #dee2e6;
+  border-radius: 4px;
+}
+
+.slotCount {
+  position: absolute;
+  bottom: 1px;
+  right: 2px;
+  font-size: 10px;
+  font-weight: 600;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  line-height: 1;
+}
+
+.emptyOutput {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8f9fa;
+  border: 1px dashed #dee2e6;
+  border-radius: 6px;
+  color: #adb5bd;
+  font-size: 18px;
+}
+
+.inputFallback {
+  color: var(--error);
+  font-size: 11px;
+}
+
+.inputMore {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-secondary);
+  font-size: 10px;
+}
+
+/* 底部信息 */
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 8px;
+  border-top: 1px solid #f1f3f5;
+  gap: 8px;
+}
+
+.modName {
+  font-size: 11px;
+  color: #868e96;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recipeId {
+  font-size: 11px;
+  color: #adb5bd;
+  font-family: 'SF Mono', Monaco, monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 150px;
+}
+
+.debugButton {
+  background: none;
+  border: none;
+  color: var(--primary);
+  cursor: pointer;
+  font-size: 10px;
+  padding: 2px 6px;
+}
+
+.debugButton:hover {
+  color: var(--primary-hover);
+}
+
+.debugPanel {
+  margin-top: 8px;
+  padding: 8px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  max-height: 150px;
+  overflow: auto;
+}
+
+.debugTitle {
+  margin-bottom: 4px;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.debugError {
+  color: var(--error);
+}
+
+/* ========== 列表视图 ========== */
+
+.listRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.listRow:hover {
+  border-color: #4dabf7;
+  background: #f8f9fa;
+}
+
+.listRow.selected {
+  border-color: #4dabf7;
+  background: #e7f5ff;
+}
+
+.listTypeBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  min-width: 80px;
+  justify-content: center;
+}
+
+.listInputs {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.listGridIcon {
+  transform: scale(0.8);
+  transform-origin: left center;
+}
+
+.listArrow {
+  color: #adb5bd;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.listOutputs {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.listMore {
+  font-size: 11px;
+  color: #868e96;
+  padding: 0 4px;
+}
+
+.listInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-left: 8px;
+}
+
+.listRecipeId {
+  font-size: 13px;
+  color: #495057;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.listMod {
+  font-size: 11px;
+  color: #868e96;
+}
+
+.listItemSlot {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.listOutputSlot {
+  width: 28px;
+  height: 28px;
+  position: relative;
+}
+
+/* ========== 详情卡片 ========== */
+
+.detailCard {
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  padding: 16px;
+  margin: 8px 0;
+}
+
+.detailHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f1f3f5;
+}
+
+.detailTypeBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.detailMod {
+  font-size: 13px;
+  color: #868e96;
+}
+
+.detailBody {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+  margin-bottom: 16px;
+}
+
+.detailSection {
+  flex: 1;
+  min-width: 0;
+}
+
+.detailSection h4 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #495057;
+}
+
+.detailInputs {
+  display: flex;
+  justify-content: center;
+}
+
+.detailOutputs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: center;
+}
+
+.detailOutputItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.detailItemsGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.detailItem {
+  text-align: center;
+}
+
+.detailItemIcon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.detailOutputIcon {
+  width: 56px;
+  height: 56px;
+  position: relative;
+}
+
+.detailSlotName {
+  font-size: 12px;
+  color: #868e96;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detailEmpty {
+  color: #adb5bd;
+  font-size: 13px;
+  font-style: italic;
+  margin: 0;
+}
+
+.detailArrow {
+  font-size: 24px;
+  color: #adb5bd;
+  padding-top: 24px;
+}
+
+.detailFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 12px;
+  border-top: 1px solid #f1f3f5;
+}
+
+.detailRecipeId {
+  font-size: 12px;
+  color: #868e96;
+  font-family: 'SF Mono', Monaco, monospace;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 60%;
+}
+
+.toggleJsonBtn {
+  padding: 6px 12px;
+  border: 1px solid #dee2e6;
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  color: #495057;
+  transition: all 0.15s ease;
+}
+
+.toggleJsonBtn:hover {
+  border-color: #4dabf7;
+  color: #1971c2;
+}
+
+.jsonViewer {
+  margin-top: 12px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  font-size: 12px;
+  font-family: 'SF Mono', Monaco, monospace;
+  color: #495057;
+  overflow-x: auto;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+/* ========== 暗色主题适配 ========== */
+[data-theme='dark'] .card {
+  background: #2d2d2d;
+  border-color: #3d3d3d;
+}
+
+[data-theme='dark'] .card:hover {
+  border-color: #4dabf7;
+  box-shadow: 0 2px 8px rgba(77, 171, 247, 0.2);
+}
+
+[data-theme='dark'] .card.selected {
+  border-color: #4dabf7;
+  box-shadow: 0 0 0 2px rgba(77, 171, 247, 0.4);
+}
+
+[data-theme='dark'] .craftingGrid,
+[data-theme='dark'] .shapelessGrid {
+  background: #3d3d3d;
+  border-color: #4d4d4d;
+}
+
+[data-theme='dark'] .slot {
+  background: #2d2d2d;
+  border-color: #4d4d4d;
+}
+
+[data-theme='dark'] .emptySlot {
+  background: #3d3d3d;
+  border-color: #4d4d4d;
+}
+
+[data-theme='dark'] .emptyOutput {
+  background: #3d3d3d;
+  border-color: #4d4d4d;
+  color: #868e96;
+}
+
+[data-theme='dark'] .smeltingInput {
+  background: #3d3d3d;
+  border-color: #4d4d4d;
+}
+
+[data-theme='dark'] .footer {
+  border-color: #3d3d3d;
+}
+
+[data-theme='dark'] .modName {
+  color: #adb5bd;
+}
+
+[data-theme='dark'] .recipeId {
+  color: #868e96;
+}
+
+[data-theme='dark'] .listRow {
+  background: #2d2d2d;
+  border-color: #3d3d3d;
+}
+
+[data-theme='dark'] .listRow:hover {
+  background: #3d3d3d;
+  border-color: #4dabf7;
+}
+
+[data-theme='dark'] .listRow.selected {
+  background: rgba(77, 171, 247, 0.15);
+}
+
+[data-theme='dark'] .listRecipeId {
+  color: #ced4da;
+}
+
+[data-theme='dark'] .listMod {
+  color: #868e96;
+}
+
+[data-theme='dark'] .detailCard {
+  background: #2d2d2d;
+  border-color: #3d3d3d;
+}
+
+[data-theme='dark'] .detailHeader {
+  border-color: #3d3d3d;
+}
+
+[data-theme='dark'] .detailSection h4 {
+  color: #ced4da;
+}
+
+[data-theme='dark'] .detailSlotName {
+  color: #adb5bd;
+}
+
+[data-theme='dark'] .detailEmpty {
+  color: #868e96;
+}
+
+[data-theme='dark'] .detailArrow {
+  color: #868e96;
+}
+
+[data-theme='dark'] .detailFooter {
+  border-color: #3d3d3d;
+}
+
+[data-theme='dark'] .detailRecipeId {
+  color: #adb5bd;
+}
+
+[data-theme='dark'] .toggleJsonBtn {
+  background: #3d3d3d;
+  border-color: #4d4d4d;
+  color: #adb5bd;
+}
+
+[data-theme='dark'] .toggleJsonBtn:hover {
+  border-color: #4dabf7;
+  color: #74c0fc;
+}
+
+[data-theme='dark'] .jsonViewer {
+  background: #1a1a1a;
+  color: #ced4da;
+}

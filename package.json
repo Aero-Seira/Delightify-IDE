@@ -1,0 +1,42 @@
+{
+  "name": "delightify",
+  "private": true,
+  "version": "0.3.0",
+  "scripts": {
+    "dev": "pnpm run build && cd packages/main && pnpm electron",
+    "dev:watch": "concurrently \"pnpm:dev:main\" \"pnpm:dev:electron:direct\"",
+    "dev:safe": "pnpm run build && cd packages/main && pnpm electron:safe",
+    "dev:web": "cd packages/renderer && pnpm dev",
+    "dev:full": "pnpm run build && concurrently \"pnpm:dev:web\" \"pnpm:dev:main\" \"pnpm:dev:electron\"",
+    "dev:full:safe": "pnpm run build && concurrently \"pnpm:dev:web\" \"pnpm:dev:main\" \"pnpm:dev:electron:safe\"",
+    "dev:main": "cd packages/main && pnpm dev",
+    "dev:electron": "wait-on http://localhost:5173 && cd packages/main && pnpm electron",
+    "dev:electron:safe": "wait-on http://localhost:5173 && cd packages/main && pnpm electron:safe",
+    "dev:electron:direct": "cd packages/main && pnpm electron",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "clean": "turbo run clean",
+    "dist:win": "cd packages/main && pnpm dist:win",
+    "dist:win:dir": "cd packages/main && pnpm dist:win:dir",
+    "dist:mac": "cd packages/main && pnpm dist:mac",
+    "dist:mac:zip": "cd packages/main && pnpm dist:mac:zip",
+    "dist:linux": "cd packages/main && pnpm dist:linux",
+    "pack": "cd packages/main && pnpm pack"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "cross-env": "^7.0.3",
+    "rimraf": "^6.0.1",
+    "turbo": "^2.0.0",
+    "typescript": "^5.4.0",
+    "wait-on": "^9.0.4"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.0.0",
+  "dependencies": {
+    "dotenv": "^17.3.1"
+  }
+}

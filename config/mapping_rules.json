@@ -1,0 +1,299 @@
+{
+  "description": "映射规则用于自动匹配和转换配方类型 / Mapping rules for automatic recipe type matching and conversion",
+  "version": "1.0.0",
+  "rules": [
+    {
+      "rule_id": "cooking_pot_to_farmersdelight",
+      "description": "将各种烹饪锅配方转换为 Farmer's Delight 烹饪 / Convert various cooking pot recipes to Farmer's Delight cooking",
+      "enabled": true,
+      "priority": 10,
+      "conditions": {
+        "original_types": [
+          "*:cooking_pot",
+          "*:cooking",
+          "*:pot"
+        ],
+        "output_categories": [
+          "soup",
+          "stew",
+          "meal",
+          "cooked_food"
+        ],
+        "input_count_range": {
+          "min": 1,
+          "max": 6
+        }
+      },
+      "target": {
+        "type": "farmersdelight:cooking",
+        "field_mapping": {
+          "cooking_time": "cookingtime",
+          "exp": "experience",
+          "time": "cookingtime"
+        },
+        "default_values": {
+          "cookingtime": 200,
+          "experience": 0.35,
+          "container": {
+            "item": "minecraft:bowl"
+          }
+        }
+      },
+      "confidence_adjustment": 0.9
+    },
+    {
+      "rule_id": "cutting_board_conversion",
+      "description": "将切割相关配方转换为 Farmer's Delight 切割 / Convert cutting recipes to Farmer's Delight cutting",
+      "enabled": true,
+      "priority": 10,
+      "conditions": {
+        "original_types": [
+          "*:cutting",
+          "*:slicing",
+          "*:chopping"
+        ],
+        "keywords": [
+          "cut",
+          "slice",
+          "chop",
+          "切",
+          "切片"
+        ],
+        "input_count_range": {
+          "min": 1,
+          "max": 1
+        },
+        "output_count_range": {
+          "min": 1,
+          "max": 4
+        }
+      },
+      "target": {
+        "type": "farmersdelight:cutting",
+        "default_values": {
+          "tool": {
+            "tag": "forge:tools/knives"
+          }
+        }
+      },
+      "confidence_adjustment": 0.85
+    },
+    {
+      "rule_id": "crushing_to_create",
+      "description": "将粉碎配方转换为 Create 粉碎 / Convert crushing recipes to Create crushing",
+      "enabled": true,
+      "priority": 10,
+      "conditions": {
+        "original_types": [
+          "*:crushing",
+          "*:grind",
+          "*:breaking"
+        ],
+        "keywords": [
+          "crush",
+          "grind",
+          "break",
+          "粉碎",
+          "研磨"
+        ],
+        "output_categories": [
+          "powder",
+          "dust",
+          "crushed"
+        ]
+      },
+      "target": {
+        "type": "create:crushing",
+        "field_mapping": {
+          "processing_time": "processingTime",
+          "time": "processingTime"
+        },
+        "default_values": {
+          "processingTime": 100
+        }
+      },
+      "confidence_adjustment": 0.88
+    },
+    {
+      "rule_id": "milling_to_create",
+      "description": "将研磨配方转换为 Create 研磨 / Convert milling recipes to Create milling",
+      "enabled": true,
+      "priority": 10,
+      "conditions": {
+        "original_types": [
+          "*:milling",
+          "*:grinding"
+        ],
+        "input_categories": [
+          "grain",
+          "seed"
+        ],
+        "output_categories": [
+          "powder",
+          "flour"
+        ]
+      },
+      "target": {
+        "type": "create:milling",
+        "default_values": {
+          "processingTime": 100
+        }
+      },
+      "confidence_adjustment": 0.9
+    },
+    {
+      "rule_id": "mixing_to_create",
+      "description": "将混合配方转换为 Create 搅拌 / Convert mixing recipes to Create mixing",
+      "enabled": true,
+      "priority": 10,
+      "conditions": {
+        "original_types": [
+          "*:mixing",
+          "*:blending"
+        ],
+        "keywords": [
+          "mix",
+          "blend",
+          "combine",
+          "混合",
+          "搅拌"
+        ],
+        "input_count_range": {
+          "min": 2,
+          "max": 9
+        }
+      },
+      "target": {
+        "type": "create:mixing",
+        "default_values": {
+          "heatRequirement": "none"
+        }
+      },
+      "confidence_adjustment": 0.85
+    },
+    {
+      "rule_id": "ore_smelting",
+      "description": "将矿石熔炼保持为 Minecraft 熔炼 / Keep ore smelting as Minecraft smelting",
+      "enabled": true,
+      "priority": 15,
+      "conditions": {
+        "original_types": [
+          "minecraft:smelting",
+          "*:smelting"
+        ],
+        "input_categories": [
+          "ore",
+          "raw_material"
+        ],
+        "output_categories": [
+          "metal",
+          "ingot"
+        ]
+      },
+      "target": {
+        "type": "minecraft:smelting",
+        "default_values": {
+          "cookingtime": 200,
+          "experience": 0.7
+        }
+      },
+      "confidence_adjustment": 0.95
+    },
+    {
+      "rule_id": "food_smoking",
+      "description": "将生食烹饪转换为烟熏炉 / Convert raw food cooking to smoking",
+      "enabled": true,
+      "priority": 12,
+      "conditions": {
+        "original_types": [
+          "minecraft:smelting",
+          "*:cooking"
+        ],
+        "input_categories": [
+          "raw_food",
+          "meat",
+          "fish"
+        ],
+        "output_categories": [
+          "cooked_food"
+        ]
+      },
+      "target": {
+        "type": "minecraft:smoking",
+        "default_values": {
+          "cookingtime": 100,
+          "experience": 0.35
+        }
+      },
+      "confidence_adjustment": 0.8
+    },
+    {
+      "rule_id": "shapeless_simple_combine",
+      "description": "简单组合保持为无序合成 / Keep simple combinations as shapeless crafting",
+      "enabled": true,
+      "priority": 5,
+      "conditions": {
+        "original_types": [
+          "minecraft:crafting_shapeless",
+          "*:shapeless"
+        ],
+        "input_count_range": {
+          "min": 1,
+          "max": 9
+        },
+        "not_categories": [
+          "soup",
+          "stew",
+          "meal"
+        ]
+      },
+      "target": {
+        "type": "minecraft:crafting_shapeless"
+      },
+      "confidence_adjustment": 0.7
+    },
+    {
+      "rule_id": "shaped_preserve",
+      "description": "保持有序合成 / Preserve shaped crafting",
+      "enabled": true,
+      "priority": 20,
+      "conditions": {
+        "original_types": [
+          "minecraft:crafting_shaped"
+        ],
+        "has_pattern": true
+      },
+      "target": {
+        "type": "minecraft:crafting_shaped"
+      },
+      "confidence_adjustment": 0.95
+    }
+  ],
+  "fallback_rules": {
+    "default_crafting": {
+      "description": "默认回退到无序合成 / Default fallback to shapeless crafting",
+      "target": "minecraft:crafting_shapeless",
+      "confidence": 0.3
+    },
+    "unknown_cooking": {
+      "description": "未知烹饪类配方回退 / Unknown cooking recipe fallback",
+      "conditions": {
+        "output_categories": [
+          "food"
+        ]
+      },
+      "target": "farmersdelight:cooking",
+      "confidence": 0.4
+    }
+  },
+  "pattern_matching": {
+    "wildcard_support": true,
+    "case_sensitive": false,
+    "description": "模式匹配支持 / Pattern matching support",
+    "examples": {
+      "*:cooking_pot": "匹配任何 mod 的 cooking_pot 类型 / Match cooking_pot type from any mod",
+      "mod*:type": "匹配以 mod 开头的任何 mod ID / Match any mod ID starting with 'mod'",
+      "*": "匹配所有 / Match all"
+    }
+  }
+}

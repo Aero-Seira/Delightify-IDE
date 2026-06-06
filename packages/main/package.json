@@ -1,0 +1,165 @@
+{
+  "name": "@delightify/main",
+  "version": "0.3.0",
+  "private": true,
+  "main": "./dist/main.js",
+  "author": "Aero Seira",
+  "description": "Delightify - Minecraft 配方魔改工具",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "electron": "cross-env NODE_ENV=development electron . --no-sandbox --disable-setuid-sandbox --disable-features=AudioServiceOutOfProcess,AudioService,Sandbox",
+    "electron:safe": "cross-env NODE_ENV=development electron . --no-sandbox --disable-setuid-sandbox --disable-gpu --disable-software-rasterizer --disable-features=AudioServiceOutOfProcess,AudioService,Sandbox,GpuProcess",
+    "electron:wait": "wait-on http://localhost:5173 && pnpm electron",
+    "electron:wait:safe": "wait-on http://localhost:5173 && pnpm electron:safe",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist",
+    "postbuild": "node scripts/copy-shared.js",
+    "prepack": "node scripts/prepack.js",
+    "pack": "cross-env NODE_ENV=production pnpm run prepack && electron-builder --dir",
+    "dist": "cross-env NODE_ENV=production pnpm run prepack && electron-builder",
+    "dist:mac": "cross-env NODE_ENV=production pnpm run prepack && electron-builder --mac",
+    "dist:mac:zip": "cross-env NODE_ENV=production pnpm run prepack && electron-builder --mac --zip",
+    "dist:win": "cross-env NODE_ENV=production pnpm run prepack && electron-builder --win",
+    "dist:win:dir": "cross-env NODE_ENV=production pnpm run prepack && electron-builder --win --dir",
+    "dist:linux": "cross-env NODE_ENV=production pnpm run prepack && electron-builder --linux"
+  },
+  "build": {
+    "appId": "com.delightify.app",
+    "productName": "Delightify",
+    "copyright": "Copyright © 2026 Aero Seira",
+    "directories": {
+      "output": "../../release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "node_modules/@delightify/shared/**/*",
+      "node_modules/adm-zip/**/*",
+      "node_modules/better-sqlite3/**/*",
+      "node_modules/drizzle-orm/**/*",
+      "node_modules/buffer/**/*",
+      "node_modules/ieee754/**/*",
+      "node_modules/base64-js/**/*",
+      "node_modules/inherits/**/*",
+      "node_modules/safe-buffer/**/*",
+      "node_modules/string_decoder/**/*",
+      "node_modules/util-deprecate/**/*",
+      "node_modules/process-nextick-args/**/*",
+      "node_modules/isarray/**/*",
+      "node_modules/readable-stream/**/*",
+      "node_modules/core-util-is/**/*",
+      "node_modules/ms/**/*",
+      "node_modules/debug/**/*",
+      "node_modules/graceful-fs/**/*",
+      "node_modules/mkdirp/**/*",
+      "node_modules/rimraf/**/*",
+      "node_modules/glob/**/*",
+      "node_modules/minimatch/**/*",
+      "node_modules/brace-expansion/**/*",
+      "node_modules/concat-map/**/*",
+      "node_modules/balanced-match/**/*",
+      "node_modules/inflight/**/*",
+      "node_modules/path-is-absolute/**/*",
+      "node_modules/fs.realpath/**/*",
+      "node_modules/once/**/*",
+      "node_modules/wrappy/**/*",
+      "node_modules/fs-constants/**/*",
+      "node_modules/tar-stream/**/*",
+      "node_modules/bl/**/*",
+      "node_modules/end-of-stream/**/*",
+      "node_modules/pump/**/*",
+      "node_modules/decompress-response/**/*",
+      "node_modules/mimic-response/**/*",
+      "node_modules/simple-get/**/*",
+      "node_modules/prebuild-install/**/*",
+      "node_modules/rc/**/*",
+      "node_modules/strip-json-comments/**/*",
+      "node_modules/ini/**/*",
+      "node_modules/deep-extend/**/*",
+      "node_modules/napi-build-utils/**/*",
+      "node_modules/node-abi/**/*",
+      "node_modules/semver/**/*",
+      "node_modules/lru-cache/**/*",
+      "node_modules/yallist/**/*",
+      "node_modules/tar-fs/**/*",
+      "node_modules/chownr/**/*",
+      "node_modules/minimist/**/*",
+      "node_modules/detect-libc/**/*",
+      "node_modules/expand-template/**/*",
+      "node_modules/github-from-package/**/*",
+      "node_modules/npm-run-path/**/*",
+      "node_modules/path-key/**/*",
+      "node_modules/strip-final-newline/**/*",
+      "node_modules/tunnel-agent/**/*",
+      "node_modules/which/**/*",
+      "node_modules/isexe/**/*",
+      "node_modules/uuid/**/*",
+      "node_modules/delegates/**/*",
+      "node_modules/osenv/**/*",
+      "node_modules/os-homedir/**/*",
+      "node_modules/os-tmpdir/**/*",
+      "../../config/**/*",
+      "!node_modules/.bin/**/*",
+      "!node_modules/**/*.map",
+      "!node_modules/**/*.md",
+      "!node_modules/**/*.ts",
+      "!node_modules/**/test/**/*",
+      "!node_modules/**/tests/**/*",
+      "!node_modules/**/docs/**/*",
+      "!node_modules/**/examples/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "node_modules/@delightify/shared",
+        "to": "app/node_modules/@delightify/shared"
+      }
+    ],
+    "asar": true,
+    "asarUnpack": [
+      "dist/renderer/**/*"
+    ],
+    "mac": {
+      "target": [
+        {
+          "target": "zip",
+          "arch": [
+            "arm64"
+          ]
+        }
+      ],
+      "icon": "build/icon.icns",
+      "category": "public.app-category.games"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "verifyUpdateCodeSignature": false
+    }
+  },
+  "dependencies": {
+    "@delightify/shared": "workspace:*",
+    "@libsql/client": "^0.17.0",
+    "adm-zip": "^0.5.16",
+    "drizzle-orm": "^0.30.0"
+  },
+  "devDependencies": {
+    "@types/adm-zip": "^0.5.8",
+    "concurrently": "^9.2.1",
+    "cross-env": "^7.0.3",
+    "drizzle-kit": "^0.31.10",
+    "electron": "^29.4.0",
+    "electron-builder": "^26.8.1",
+    "rimraf": "^6.0.1",
+    "tsx": "^4.21.0",
+    "typescript": "^5.4.0",
+    "wait-on": "^9.0.4"
+  }
+}

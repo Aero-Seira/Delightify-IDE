@@ -1,0 +1,507 @@
+{
+  "categories": {
+    "food": {
+      "display_name": "食物 / Food",
+      "description": "可食用物品 / Edible items",
+      "subcategories": [
+        "raw_food",
+        "cooked_food",
+        "meal",
+        "soup",
+        "stew",
+        "beverage",
+        "ingredient"
+      ],
+      "keywords": [
+        "food",
+        "eat",
+        "edible",
+        "consumable",
+        "食物",
+        "食用",
+        "可吃"
+      ]
+    },
+    "raw_food": {
+      "display_name": "生食 / Raw Food",
+      "description": "未烹饪的食物 / Uncooked food",
+      "parent": "food",
+      "keywords": [
+        "raw",
+        "uncooked",
+        "生",
+        "未烹饪"
+      ]
+    },
+    "cooked_food": {
+      "display_name": "熟食 / Cooked Food",
+      "description": "烹饪后的食物 / Cooked food",
+      "parent": "food",
+      "keywords": [
+        "cooked",
+        "baked",
+        "roasted",
+        "熟",
+        "烹饪",
+        "烤"
+      ]
+    },
+    "meal": {
+      "display_name": "料理 / Meal",
+      "description": "复杂的料理 / Complex dishes",
+      "parent": "food",
+      "keywords": [
+        "meal",
+        "dish",
+        "cuisine",
+        "料理",
+        "菜肴"
+      ]
+    },
+    "soup": {
+      "display_name": "汤 / Soup",
+      "description": "汤类食物 / Soup dishes",
+      "parent": "meal",
+      "keywords": [
+        "soup",
+        "broth",
+        "汤",
+        "羹"
+      ]
+    },
+    "stew": {
+      "display_name": "炖菜 / Stew",
+      "description": "炖煮类食物 / Stewed dishes",
+      "parent": "meal",
+      "keywords": [
+        "stew",
+        "casserole",
+        "炖",
+        "煲"
+      ]
+    },
+    "beverage": {
+      "display_name": "饮料 / Beverage",
+      "description": "饮品 / Drinks",
+      "parent": "food",
+      "keywords": [
+        "drink",
+        "beverage",
+        "juice",
+        "tea",
+        "饮料",
+        "饮品",
+        "汁",
+        "茶"
+      ]
+    },
+    "ingredient": {
+      "display_name": "食材 / Ingredient",
+      "description": "烹饪原料 / Cooking ingredients",
+      "parent": "food",
+      "keywords": [
+        "ingredient",
+        "material",
+        "食材",
+        "原料"
+      ]
+    },
+    "tool": {
+      "display_name": "工具 / Tool",
+      "description": "工具类物品 / Tool items",
+      "keywords": [
+        "tool",
+        "pickaxe",
+        "axe",
+        "shovel",
+        "hoe",
+        "工具",
+        "镐",
+        "斧",
+        "铲",
+        "锄"
+      ]
+    },
+    "weapon": {
+      "display_name": "武器 / Weapon",
+      "description": "武器类物品 / Weapon items",
+      "keywords": [
+        "weapon",
+        "sword",
+        "bow",
+        "武器",
+        "剑",
+        "弓"
+      ]
+    },
+    "armor": {
+      "display_name": "装备 / Armor",
+      "description": "防具类物品 / Armor items",
+      "keywords": [
+        "armor",
+        "helmet",
+        "chestplate",
+        "leggings",
+        "boots",
+        "装备",
+        "头盔",
+        "胸甲",
+        "护腿",
+        "靴子"
+      ]
+    },
+    "block": {
+      "display_name": "方块 / Block",
+      "description": "建筑方块 / Building blocks",
+      "keywords": [
+        "block",
+        "building",
+        "方块",
+        "建筑"
+      ]
+    },
+    "ore": {
+      "display_name": "矿石 / Ore",
+      "description": "矿石类物品 / Ore items",
+      "keywords": [
+        "ore",
+        "mineral",
+        "矿石",
+        "矿物"
+      ]
+    },
+    "raw_material": {
+      "display_name": "原材料 / Raw Material",
+      "description": "基础原材料 / Basic raw materials",
+      "keywords": [
+        "raw",
+        "material",
+        "resource",
+        "原料",
+        "材料",
+        "资源"
+      ]
+    },
+    "metal": {
+      "display_name": "金属 / Metal",
+      "description": "金属类物品 / Metal items",
+      "keywords": [
+        "metal",
+        "ingot",
+        "nugget",
+        "金属",
+        "锭",
+        "粒"
+      ]
+    },
+    "alloy": {
+      "display_name": "合金 / Alloy",
+      "description": "合金类物品 / Alloy items",
+      "parent": "metal",
+      "keywords": [
+        "alloy",
+        "brass",
+        "bronze",
+        "合金",
+        "黄铜",
+        "青铜"
+      ]
+    },
+    "powder": {
+      "display_name": "粉末 / Powder",
+      "description": "粉末类物品 / Powder items",
+      "keywords": [
+        "powder",
+        "dust",
+        "flour",
+        "粉末",
+        "粉",
+        "尘",
+        "面粉"
+      ]
+    },
+    "grain": {
+      "display_name": "谷物 / Grain",
+      "description": "谷物类物品 / Grain items",
+      "parent": "ingredient",
+      "keywords": [
+        "grain",
+        "wheat",
+        "rice",
+        "seed",
+        "谷物",
+        "小麦",
+        "稻米",
+        "种子"
+      ]
+    },
+    "vegetable": {
+      "display_name": "蔬菜 / Vegetable",
+      "description": "蔬菜类物品 / Vegetable items",
+      "parent": "ingredient",
+      "keywords": [
+        "vegetable",
+        "carrot",
+        "potato",
+        "beetroot",
+        "蔬菜",
+        "胡萝卜",
+        "土豆",
+        "甜菜根"
+      ]
+    },
+    "meat": {
+      "display_name": "肉类 / Meat",
+      "description": "肉类物品 / Meat items",
+      "parent": "ingredient",
+      "keywords": [
+        "meat",
+        "beef",
+        "pork",
+        "chicken",
+        "肉",
+        "牛肉",
+        "猪肉",
+        "鸡肉"
+      ]
+    },
+    "fish": {
+      "display_name": "鱼类 / Fish",
+      "description": "鱼类物品 / Fish items",
+      "parent": "ingredient",
+      "keywords": [
+        "fish",
+        "salmon",
+        "cod",
+        "鱼",
+        "三文鱼",
+        "鳕鱼"
+      ]
+    },
+    "stone": {
+      "display_name": "石头 / Stone",
+      "description": "石头类物品 / Stone items",
+      "parent": "block",
+      "keywords": [
+        "stone",
+        "cobblestone",
+        "rock",
+        "石头",
+        "圆石",
+        "岩石"
+      ]
+    },
+    "container": {
+      "display_name": "容器 / Container",
+      "description": "容器类物品 / Container items",
+      "keywords": [
+        "container",
+        "bottle",
+        "bucket",
+        "bowl",
+        "容器",
+        "瓶子",
+        "桶",
+        "碗"
+      ]
+    },
+    "dye": {
+      "display_name": "染料 / Dye",
+      "description": "染料类物品 / Dye items",
+      "keywords": [
+        "dye",
+        "color",
+        "染料",
+        "颜色"
+      ]
+    },
+    "decoration": {
+      "display_name": "装饰 / Decoration",
+      "description": "装饰性物品 / Decorative items",
+      "keywords": [
+        "decoration",
+        "ornament",
+        "装饰",
+        "饰品"
+      ]
+    },
+    "mechanism": {
+      "display_name": "机械 / Mechanism",
+      "description": "机械类物品 / Mechanical items",
+      "keywords": [
+        "mechanism",
+        "machine",
+        "gear",
+        "机械",
+        "机器",
+        "齿轮"
+      ]
+    },
+    "liquid": {
+      "display_name": "液体 / Liquid",
+      "description": "液体类物品 / Liquid items",
+      "keywords": [
+        "liquid",
+        "fluid",
+        "water",
+        "lava",
+        "液体",
+        "流体",
+        "水",
+        "岩浆"
+      ]
+    }
+  },
+  "item_mapping": {
+    "minecraft:wheat": [
+      "grain",
+      "ingredient"
+    ],
+    "minecraft:carrot": [
+      "vegetable",
+      "ingredient",
+      "raw_food"
+    ],
+    "minecraft:potato": [
+      "vegetable",
+      "ingredient",
+      "raw_food"
+    ],
+    "minecraft:beetroot": [
+      "vegetable",
+      "ingredient",
+      "raw_food"
+    ],
+    "minecraft:beef": [
+      "meat",
+      "raw_food",
+      "ingredient"
+    ],
+    "minecraft:cooked_beef": [
+      "meat",
+      "cooked_food"
+    ],
+    "minecraft:porkchop": [
+      "meat",
+      "raw_food",
+      "ingredient"
+    ],
+    "minecraft:cooked_porkchop": [
+      "meat",
+      "cooked_food"
+    ],
+    "minecraft:chicken": [
+      "meat",
+      "raw_food",
+      "ingredient"
+    ],
+    "minecraft:cooked_chicken": [
+      "meat",
+      "cooked_food"
+    ],
+    "minecraft:cod": [
+      "fish",
+      "raw_food",
+      "ingredient"
+    ],
+    "minecraft:cooked_cod": [
+      "fish",
+      "cooked_food"
+    ],
+    "minecraft:salmon": [
+      "fish",
+      "raw_food",
+      "ingredient"
+    ],
+    "minecraft:cooked_salmon": [
+      "fish",
+      "cooked_food"
+    ],
+    "minecraft:bread": [
+      "food",
+      "cooked_food"
+    ],
+    "minecraft:mushroom_stew": [
+      "soup",
+      "meal"
+    ],
+    "minecraft:rabbit_stew": [
+      "stew",
+      "meal"
+    ],
+    "minecraft:iron_ore": [
+      "ore",
+      "raw_material"
+    ],
+    "minecraft:gold_ore": [
+      "ore",
+      "raw_material"
+    ],
+    "minecraft:diamond_ore": [
+      "ore",
+      "raw_material"
+    ],
+    "minecraft:iron_ingot": [
+      "metal",
+      "raw_material"
+    ],
+    "minecraft:gold_ingot": [
+      "metal",
+      "raw_material"
+    ],
+    "minecraft:diamond": [
+      "raw_material"
+    ],
+    "minecraft:stone": [
+      "stone",
+      "block"
+    ],
+    "minecraft:cobblestone": [
+      "stone",
+      "block"
+    ],
+    "minecraft:gravel": [
+      "stone",
+      "raw_material"
+    ],
+    "minecraft:sand": [
+      "raw_material"
+    ],
+    "minecraft:bowl": [
+      "container"
+    ],
+    "minecraft:glass_bottle": [
+      "container"
+    ],
+    "minecraft:bucket": [
+      "container"
+    ],
+    "minecraft:iron_pickaxe": [
+      "tool"
+    ],
+    "minecraft:iron_axe": [
+      "tool"
+    ],
+    "minecraft:iron_shovel": [
+      "tool"
+    ],
+    "minecraft:iron_hoe": [
+      "tool"
+    ],
+    "minecraft:iron_sword": [
+      "weapon"
+    ],
+    "minecraft:iron_helmet": [
+      "armor"
+    ],
+    "minecraft:iron_chestplate": [
+      "armor"
+    ],
+    "minecraft:iron_leggings": [
+      "armor"
+    ],
+    "minecraft:iron_boots": [
+      "armor"
+    ]
+  }
+}

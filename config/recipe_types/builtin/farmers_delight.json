@@ -1,0 +1,418 @@
+{
+  "mod_info": {
+    "mod_id": "farmersdelight",
+    "mod_name": "Farmer's Delight",
+    "version": "1.0.0",
+    "description": "农夫乐事模组配方类型定义 / Farmer's Delight mod recipe type definitions"
+  },
+  "recipe_types": [
+    {
+      "recipe_type_id": "farmersdelight:cooking",
+      "display_name": "烹饪 / Cooking",
+      "description": "使用烹饪锅制作食物 / Making food with cooking pot",
+      "icon": "farmersdelight:cooking_pot",
+      "template": {
+        "type": "farmersdelight:cooking",
+        "ingredients": [],
+        "result": {},
+        "cookingtime": 200,
+        "experience": 0.0,
+        "container": null
+      },
+      "field_specs": {
+        "type": {
+          "required": true,
+          "type": "string",
+          "constant": "farmersdelight:cooking"
+        },
+        "ingredients": {
+          "required": true,
+          "type": "array",
+          "min_items": 1,
+          "max_items": 6,
+          "item_type": "ingredient",
+          "description": "烹饪材料列表（1-6种） / Cooking ingredients (1-6 items)"
+        },
+        "result": {
+          "required": true,
+          "type": "item_stack",
+          "description": "输出物品 / Output item"
+        },
+        "cookingtime": {
+          "required": false,
+          "type": "integer",
+          "default": 200,
+          "range": [
+            1,
+            72000
+          ],
+          "unit": "ticks",
+          "description": "烹饪时间（游戏刻，20 ticks = 1秒） / Cooking time (game ticks, 20 ticks = 1 second)"
+        },
+        "experience": {
+          "required": false,
+          "type": "float",
+          "default": 0.0,
+          "range": [
+            0.0,
+            10.0
+          ],
+          "description": "获得的经验值 / Experience gained"
+        },
+        "container": {
+          "required": false,
+          "type": "item",
+          "default": null,
+          "description": "容器物品（如碗、瓶子） / Container item (e.g., bowl, bottle)",
+          "common_values": [
+            "minecraft:bowl",
+            "minecraft:glass_bottle"
+          ]
+        }
+      },
+      "suitable_for": {
+        "item_categories": [
+          "food",
+          "consumable",
+          "cooked_food",
+          "meal",
+          "soup",
+          "stew",
+          "beverage"
+        ],
+        "keywords": [
+          "soup",
+          "stew",
+          "meal",
+          "dish",
+          "cooked",
+          "pot",
+          "汤",
+          "炖菜",
+          "料理",
+          "熟食",
+          "煮",
+          "锅"
+        ],
+        "input_count": {
+          "min": 1,
+          "max": 6
+        },
+        "output_count": {
+          "min": 1,
+          "max": 2
+        },
+        "typical_patterns": [
+          "多种食材组合成复杂食物",
+          "需要加热或烹饪的食物",
+          "汤类或炖菜类食物",
+          "使用碗或瓶子作为容器的食物"
+        ]
+      },
+      "incompatible_with": {
+        "output_categories": [
+          "tool",
+          "weapon",
+          "armor",
+          "block",
+          "raw_material"
+        ],
+        "reasons": [
+          "烹饪锅仅用于制作食物 / Cooking pot is only for making food",
+          "不支持非消耗品输出 / Does not support non-consumable outputs",
+          "不适合制作工具、武器或装备 / Not suitable for tools, weapons, or armor"
+        ]
+      },
+      "prompt_template": {
+        "description": "LLM提示词模板，用于帮助模型理解此配方类型 / LLM prompt template to help the model understand this recipe type",
+        "template": "这是 Farmer's Delight 模组的烹饪锅配方类型。烹饪锅是一个多功能烹饪设备，用于制作各种复杂的食物。\n\n关键特征：\n- 可以同时使用1-6种材料\n- 适合制作汤、炖菜、复杂料理等需要烹饪的食物\n- 输出物品通常需要容器（碗或瓶子）\n- 烹饪时间默认200游戏刻（10秒），可根据复杂度调整\n- 可以给予玩家经验值（默认0.35）\n\n判断标准：\n1. 如果输出物品是汤类、炖菜类或复杂料理，优先考虑此类型\n2. 如果需要多种食材混合烹饪，此类型是最佳选择\n3. 如果输出物品名称包含'汤'、'炖'、'煲'等关键词，强烈建议使用此类型\n\n注意事项：\n- 自动添加合适的容器（汤类用碗，饮料用瓶子）\n- 根据材料数量和复杂度调整烹饪时间\n- 简单的食物（1-2种材料）可能更适合其他配方类型\n\nThis is the cooking pot recipe type from Farmer's Delight mod. The cooking pot is a versatile cooking device for making various complex foods.\n\nKey characteristics:\n- Can use 1-6 ingredients simultaneously\n- Suitable for soups, stews, complex dishes that require cooking\n- Output items usually require containers (bowl or bottle)\n- Default cooking time is 200 ticks (10 seconds), adjustable based on complexity\n- Can grant experience to players (default 0.35)\n\nJudgment criteria:\n1. If output is soup, stew, or complex dish, prioritize this type\n2. If multiple ingredients need to be cooked together, this is the best choice\n3. If output name contains 'soup', 'stew', 'pot' keywords, strongly recommend this type\n\nNotes:\n- Automatically add appropriate container (bowl for soups, bottle for beverages)\n- Adjust cooking time based on ingredient count and complexity\n- Simple foods (1-2 ingredients) may be better suited for other recipe types"
+      },
+      "examples": [
+        {
+          "name": "蔬菜汤 / Vegetable Soup",
+          "description": "使用多种蔬菜制作的汤 / Soup made with various vegetables",
+          "recipe": {
+            "type": "farmersdelight:cooking",
+            "ingredients": [
+              {
+                "item": "minecraft:carrot"
+              },
+              {
+                "item": "minecraft:potato"
+              },
+              {
+                "item": "minecraft:beetroot"
+              }
+            ],
+            "result": {
+              "item": "farmersdelight:vegetable_soup"
+            },
+            "container": {
+              "item": "minecraft:bowl"
+            },
+            "cookingtime": 200,
+            "experience": 0.35
+          }
+        },
+        {
+          "name": "南瓜汤 / Pumpkin Soup",
+          "description": "简单的南瓜汤配方 / Simple pumpkin soup recipe",
+          "recipe": {
+            "type": "farmersdelight:cooking",
+            "ingredients": [
+              {
+                "item": "minecraft:pumpkin"
+              },
+              {
+                "item": "minecraft:sugar"
+              }
+            ],
+            "result": {
+              "item": "farmersdelight:pumpkin_soup"
+            },
+            "container": {
+              "item": "minecraft:bowl"
+            },
+            "cookingtime": 200,
+            "experience": 0.35
+          }
+        },
+        {
+          "name": "兔肉煲 / Rabbit Stew",
+          "description": "复杂的兔肉炖菜 / Complex rabbit stew",
+          "recipe": {
+            "type": "farmersdelight:cooking",
+            "ingredients": [
+              {
+                "item": "minecraft:cooked_rabbit"
+              },
+              {
+                "item": "minecraft:carrot"
+              },
+              {
+                "item": "minecraft:baked_potato"
+              },
+              {
+                "item": "minecraft:brown_mushroom"
+              }
+            ],
+            "result": {
+              "item": "minecraft:rabbit_stew"
+            },
+            "container": {
+              "item": "minecraft:bowl"
+            },
+            "cookingtime": 250,
+            "experience": 0.5
+          }
+        }
+      ],
+      "conversion_hints": {
+        "from_crafting": {
+          "description": "从工作台合成转换时的建议 / Suggestions when converting from crafting",
+          "conditions": [
+            "输出物品是食物 / Output item is food",
+            "材料数量在 1-6 之间 / Ingredient count between 1-6",
+            "食物名称包含汤、炖菜等关键词 / Food name contains keywords like soup, stew"
+          ],
+          "default_values": {
+            "cookingtime": 200,
+            "experience": 0.35,
+            "container": "minecraft:bowl"
+          }
+        },
+        "from_smelting": {
+          "description": "从熔炉转换时的建议 / Suggestions when converting from smelting",
+          "conditions": [
+            "输出是复杂食物而非简单烹饪 / Output is complex food, not simple cooking"
+          ],
+          "default_values": {
+            "cookingtime": 200,
+            "experience": 0.35
+          }
+        }
+      }
+    },
+    {
+      "recipe_type_id": "farmersdelight:cutting",
+      "display_name": "切割 / Cutting",
+      "description": "使用切菜板切割物品 / Cutting items with cutting board",
+      "icon": "farmersdelight:cutting_board",
+      "template": {
+        "type": "farmersdelight:cutting",
+        "ingredients": [],
+        "tool": {
+          "tag": "forge:tools/knives"
+        },
+        "result": []
+      },
+      "field_specs": {
+        "type": {
+          "required": true,
+          "type": "string",
+          "constant": "farmersdelight:cutting"
+        },
+        "ingredients": {
+          "required": true,
+          "type": "array",
+          "min_items": 1,
+          "max_items": 1,
+          "description": "要切割的物品 / Item to cut"
+        },
+        "tool": {
+          "required": true,
+          "type": "ingredient",
+          "description": "使用的工具（通常是刀） / Tool used (usually knife)",
+          "default": {
+            "tag": "forge:tools/knives"
+          }
+        },
+        "result": {
+          "required": true,
+          "type": "array",
+          "min_items": 1,
+          "description": "切割结果（可以有多个输出） / Cutting results (can have multiple outputs)"
+        },
+        "sound": {
+          "required": false,
+          "type": "string",
+          "description": "切割时的声音 / Sound when cutting"
+        }
+      },
+      "suitable_for": {
+        "item_categories": [
+          "food",
+          "ingredient",
+          "raw_food",
+          "vegetable",
+          "meat",
+          "plant"
+        ],
+        "keywords": [
+          "cut",
+          "slice",
+          "chop",
+          "dice",
+          "knife",
+          "切",
+          "切片",
+          "切块",
+          "切碎",
+          "刀"
+        ],
+        "input_count": {
+          "min": 1,
+          "max": 1
+        },
+        "output_count": {
+          "min": 1,
+          "max": 4
+        },
+        "typical_patterns": [
+          "将大块食材切成小块",
+          "处理原料食材",
+          "获得多个输出物品",
+          "需要工具辅助的加工"
+        ]
+      },
+      "incompatible_with": {
+        "output_categories": [
+          "tool",
+          "weapon",
+          "armor"
+        ],
+        "reasons": [
+          "切菜板用于食材加工 / Cutting board is for food processing",
+          "不适合制作工具或装备 / Not suitable for tools or equipment"
+        ]
+      },
+      "prompt_template": {
+        "description": "LLM提示词模板，用于帮助模型理解此配方类型 / LLM prompt template to help the model understand this recipe type",
+        "template": "这是 Farmer's Delight 模组的切菜板配方类型。切菜板用于切割食材，通常需要配合刀具使用。\n\n关键特征：\n- 只接受单个输入物品\n- 需要工具（通常是刀，使用 forge:tools/knives 标签）\n- 可以产生1-4个不同的输出物品\n- 适合将大块食材切成小块或薄片\n\n判断标准：\n1. 如果配方是将一个大的食材切成多个小块，优先考虑此类型\n2. 如果输出物品名称包含'切片'、'薄片'等关键词，强烈建议使用此类型\n3. 如果原配方涉及食材的物理分割，此类型是最佳选择\n\n典型应用场景：\n- 胡萝卜切成胡萝卜片（1个→3个）\n- 西瓜切成西瓜片（1个→9个）\n- 南瓜切成南瓜片并获得种子（1个→4片+2种子）\n\n注意事项：\n- 工具字段必须包含，默认使用 {\"tag\": \"forge:tools/knives\"}\n- 输出数量应该合理反映切割过程（通常是倍增）\n- 不适合完全改变物品性质的转换（那应该用烹饪或其他类型）\n\nThis is the cutting board recipe type from Farmer's Delight mod. The cutting board is used to cut ingredients, usually requiring a knife.\n\nKey characteristics:\n- Accepts only a single input item\n- Requires a tool (usually knife, using forge:tools/knives tag)\n- Can produce 1-4 different output items\n- Suitable for cutting large ingredients into smaller pieces or slices\n\nJudgment criteria:\n1. If recipe cuts one large ingredient into multiple small pieces, prioritize this type\n2. If output name contains 'slice', 'piece' keywords, strongly recommend this type\n3. If original recipe involves physical division of ingredients, this is the best choice\n\nTypical use cases:\n- Carrot into carrot slices (1→3)\n- Melon into melon slices (1→9)\n- Pumpkin into pumpkin slices + seeds (1→4 slices + 2 seeds)\n\nNotes:\n- Tool field is required, defaults to {\"tag\": \"forge:tools/knives\"}\n- Output count should reasonably reflect the cutting process (usually multiplication)\n- Not suitable for transformations that completely change item nature (use cooking or other types)"
+      },
+      "examples": [
+        {
+          "name": "切割胡萝卜 / Carrot Slices",
+          "description": "将胡萝卜切成薄片 / Slice carrot into thin pieces",
+          "recipe": {
+            "type": "farmersdelight:cutting",
+            "ingredients": [
+              {
+                "item": "minecraft:carrot"
+              }
+            ],
+            "tool": {
+              "tag": "forge:tools/knives"
+            },
+            "result": [
+              {
+                "item": "farmersdelight:carrot_slices",
+                "count": 3
+              }
+            ]
+          }
+        },
+        {
+          "name": "切割西瓜 / Melon Slices",
+          "description": "将西瓜切成薄片 / Slice melon",
+          "recipe": {
+            "type": "farmersdelight:cutting",
+            "ingredients": [
+              {
+                "item": "minecraft:melon"
+              }
+            ],
+            "tool": {
+              "tag": "forge:tools/knives"
+            },
+            "result": [
+              {
+                "item": "minecraft:melon_slice",
+                "count": 9
+              }
+            ]
+          }
+        },
+        {
+          "name": "切割南瓜 / Pumpkin Slice",
+          "description": "将南瓜切成薄片，获得种子 / Slice pumpkin, get seeds",
+          "recipe": {
+            "type": "farmersdelight:cutting",
+            "ingredients": [
+              {
+                "item": "minecraft:pumpkin"
+              }
+            ],
+            "tool": {
+              "tag": "forge:tools/knives"
+            },
+            "result": [
+              {
+                "item": "farmersdelight:pumpkin_slice",
+                "count": 4
+              },
+              {
+                "item": "minecraft:pumpkin_seeds",
+                "count": 2
+              }
+            ]
+          }
+        }
+      ],
+      "conversion_hints": {
+        "from_crafting": {
+          "description": "从工作台转换时的建议 / Suggestions when converting from crafting",
+          "conditions": [
+            "单个输入转多个输出 / Single input to multiple outputs",
+            "涉及食材切割处理 / Involves food cutting/processing"
+          ],
+          "default_values": {
+            "tool": {
+              "tag": "forge:tools/knives"
+            }
+          }
+        }
+      }
+    }
+  ]
+}
