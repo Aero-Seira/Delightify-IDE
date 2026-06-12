@@ -1,3 +1,9 @@
+> **⚠️ 这是「规划 / 意图」文档，不是「已实现」的描述。**
+> 本指南所述架构（`global.db`/`project.db`、`data`/`semantic` 关系系统、三重 `jar-parser`、配方类型元数据等）**大部分尚未落地**；"路线图已完成"等说法**未经核实**。
+> 当前产品方向为 **ModPack IDE**——先读根目录 [`CLAUDE.md`](./CLAUDE.md)，完整规格在规划库 `…/MC-Workbench/Projects/ModPack IDE/`（`设计/01` 为真相源）。**实现以实际代码为准。**
+
+---
+
 # Delightify - AI Agent Guide
 
 > 本文档供 AI 编程助手阅读，帮助快速理解项目结构、技术栈与开发约定。
