@@ -552,6 +552,8 @@ MVP-0 先覆盖这些动作：
 - 脚本构造最小 Exporter v1 SQLite 快照。
 - 调用真实服务跑通 导入 → unify 查询 → dry-run → KubeJS 生成 → 重生成 → 撤销。
 - 覆盖低风险自动 change set 与高风险搁置项。
+- 支持传入真实快照：
+  `pnpm smoke:mvp0 -- --data-file /path/to/export.sqlite --query 铜锭 --target minecraft:copper_ingot`
 
 验收：
 

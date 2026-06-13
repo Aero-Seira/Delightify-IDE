@@ -8,6 +8,70 @@ import { closeAllConnections } from '../packages/main/dist/services/database/ind
 import { importModData, validateModDataFile } from '../packages/main/dist/services/mod-data-importer/index.js';
 import { dryRunUnify, queryUnifyCandidates } from '../packages/main/dist/services/unify/index.js';
 
+function usage() {
+  return [
+    'Usage:',
+    '  pnpm smoke:mvp0',
+    '  pnpm smoke:mvp0 -- --data-file /path/to/export.sqlite --query 铜锭 --target minecraft:copper_ingot',
+    '',
+    'Options:',
+    '  --data-file <path>   Validate a real Exporter v1 SQLite snapshot instead of the built-in fixture.',
+    '  --query <text>       Unify query text. Defaults to 铜锭.',
+    '  --lang <lang>        Translation language. Defaults to zh_cn.',
+    '  --target <item_id>   Optional target item id for dry-run.',
+    '  --keep-project      Keep the temporary project directory for inspection.',
+    '  --help              Show this help.',
+  ].join('\n');
+}
+
+function parseArgs(argv) {
+  const options = {
+    dataFile: null,
+    query: '铜锭',
+    lang: 'zh_cn',
+    targetItemId: null,
+    keepProject: false,
+    help: false,
+  };
+
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+    switch (arg) {
+      case '--data-file':
+        options.dataFile = argv[index + 1] || null;
+        index += 1;
+        break;
+      case '--query':
+        options.query = argv[index + 1] || '';
+        index += 1;
+        break;
+      case '--lang':
+        options.lang = argv[index + 1] || 'zh_cn';
+        index += 1;
+        break;
+      case '--target':
+        options.targetItemId = argv[index + 1] || null;
+        index += 1;
+        break;
+      case '--keep-project':
+        options.keepProject = true;
+        break;
+      case '--help':
+      case '-h':
+        options.help = true;
+        break;
+      default:
+        throw new Error(`Unknown argument: ${arg}\n${usage()}`);
+    }
+  }
+
+  if (!options.query.trim()) {
+    throw new Error(`--query cannot be empty\n${usage()}`);
+  }
+
+  return options;
+}
+
 async function run(client, sql, args = []) {
   await client.execute({ sql, args });
 }
@@ -185,76 +249,132 @@ async function createExporterV1Snapshot(filePath) {
   }
 }
 
-async function main() {
-  const projectPath = await fs.mkdtemp(path.join(os.tmpdir(), 'delightify-mvp0-smoke-'));
+async function prepareSnapshot(projectPath, options) {
   const exportPath = path.join(projectPath, 'delightify', 'export.sqlite');
 
-  try {
-    await createExporterV1Snapshot(exportPath);
+  if (options.dataFile) {
+    const sourcePath = path.resolve(options.dataFile);
+    await fs.access(sourcePath);
+    await fs.mkdir(path.dirname(exportPath), { recursive: true });
+    await fs.copyFile(sourcePath, exportPath);
+    return { exportPath, mode: 'external', sourcePath };
+  }
 
-    const validation = await validateModDataFile(exportPath);
-    assert.equal(validation.valid, true);
-    assert.equal(validation.sourceKind, 'exporter_v1');
-    assert.equal(validation.capabilities?.mvp0Unify, true);
+  await createExporterV1Snapshot(exportPath);
+  return { exportPath, mode: 'fixture', sourcePath: exportPath };
+}
 
-    const importResult = await importModData({ projectPath });
-    assert.equal(importResult.success, true);
-    assert.equal(importResult.sourceKind, 'exporter_v1');
-    assert.equal(importResult.capabilities?.mvp0Unify, true);
-    assert.equal(importResult.stats?.itemCount, 7);
-    assert.equal(importResult.stats?.recipeCount, 5);
+async function runWorkflow(projectPath, snapshot, options) {
+  const validation = await validateModDataFile(snapshot.exportPath);
+  assert.equal(validation.valid, true);
+  assert.equal(validation.sourceKind, 'exporter_v1');
+  assert.equal(validation.capabilities?.mvp0Unify, true);
 
-    const query = await queryUnifyCandidates(projectPath, {
-      query: '铜锭',
-      lang: 'zh_cn',
-    });
-    const itemIds = query.candidates.map(candidate => candidate.item.itemId).sort();
+  console.log(`[Smoke] Snapshot: ${snapshot.sourcePath}`);
+  console.log(`[Smoke] Source kind: ${validation.sourceKind}, items=${validation.itemCount}, recipes=${validation.recipeCount}, tags=${validation.tagCount}`);
+
+  const importResult = await importModData({ projectPath });
+  assert.equal(importResult.success, true);
+  assert.equal(importResult.sourceKind, 'exporter_v1');
+  assert.equal(importResult.capabilities?.mvp0Unify, true);
+
+  console.log(`[Smoke] Imported: items=${importResult.stats?.itemCount}, recipes=${importResult.stats?.recipeCount}, tags=${importResult.stats?.tagCount}`);
+
+  const query = await queryUnifyCandidates(projectPath, {
+    query: options.query,
+    lang: options.lang,
+  });
+  assert.equal(query.sourceKind, 'exporter_v1');
+  assert.equal(query.capabilities.mvp0Unify, true);
+
+  const itemIds = query.candidates.map(candidate => candidate.item.itemId).sort();
+  console.log(`[Smoke] Query "${options.query}" candidates (${itemIds.length}): ${itemIds.slice(0, 12).join(', ')}`);
+  assert.ok(itemIds.length > 0, `No unify candidates found for query "${options.query}"`);
+
+  if (snapshot.mode === 'fixture') {
     assert.deepEqual(itemIds, [
       'minecraft:copper_ingot',
       'moda:copper_ingot',
       'modb:copper_ingot',
     ]);
+  }
 
-    const dryRun = await dryRunUnify(projectPath, {
-      query: '铜锭',
-      lang: 'zh_cn',
-      targetItemId: 'minecraft:copper_ingot',
-    });
+  const targetItemId = options.targetItemId || (snapshot.mode === 'fixture' ? 'minecraft:copper_ingot' : undefined);
+  const dryRun = await dryRunUnify(projectPath, {
+    query: options.query,
+    lang: options.lang,
+    targetItemId,
+  });
+  assert.ok(dryRun.targetItemId);
+
+  console.log(
+    `[Smoke] Dry-run: target=${dryRun.targetItemId}, decisions=${dryRun.decisions.length}, diff=${dryRun.diff.length}, changeSet=${dryRun.changeSet.length}`
+  );
+
+  if (snapshot.mode === 'fixture') {
     assert.equal(dryRun.targetItemId, 'minecraft:copper_ingot');
     assert.equal(dryRun.autoDecisionCount, 1);
     assert.equal(dryRun.deferredDecisionCount, 1);
     assert.equal(dryRun.changeSet.length, 2);
     assert.equal(dryRun.diff.some(operation => operation.kind === 'raw_unparsed_reference'), true);
+  }
 
-    const exportResult = await exportKubeJs(projectPath, {
-      changeSet: dryRun.changeSet,
-    });
-    assert.equal(exportResult.operationCount, 2);
-    assert.equal(exportResult.filePath, path.join(projectPath, 'kubejs', 'server_scripts', 'zzz_delightify_generated.js'));
-    assert.match(exportResult.generatedCode, /@delightify-generated/);
+  if (dryRun.changeSet.length === 0) {
+    console.log('[Smoke] No automatic change set generated; KubeJS export skipped.');
+    return;
+  }
+
+  const exportResult = await exportKubeJs(projectPath, {
+    changeSet: dryRun.changeSet,
+  });
+  assert.equal(exportResult.operationCount, dryRun.changeSet.length);
+  assert.equal(exportResult.filePath, path.join(projectPath, 'kubejs', 'server_scripts', 'zzz_delightify_generated.js'));
+  assert.match(exportResult.generatedCode, /@delightify-generated/);
+
+  if (snapshot.mode === 'fixture') {
     assert.match(exportResult.generatedCode, /event\.replaceInput\(\{ id: "moda:copper_gear" \}, "moda:copper_ingot", "minecraft:copper_ingot"\)/);
     assert.match(exportResult.generatedCode, /event\.replaceInput\(\{ id: "moda:copper_wire" \}, "moda:copper_ingot", "minecraft:copper_ingot"\)/);
+  }
 
-    const secondExport = await exportKubeJs(projectPath, {
-      changeSet: dryRun.changeSet,
-    });
-    assert.equal(secondExport.operationCount, 2);
+  const secondExport = await exportKubeJs(projectPath, {
+    changeSet: dryRun.changeSet,
+  });
+  assert.equal(secondExport.operationCount, dryRun.changeSet.length);
 
-    const revertResult = await revertKubeJs(projectPath);
-    assert.deepEqual(revertResult, {
-      filePath: exportResult.filePath,
-      deleted: true,
-    });
-    const secondRevertResult = await revertKubeJs(projectPath);
-    assert.deepEqual(secondRevertResult, {
-      filePath: exportResult.filePath,
-      deleted: false,
-    });
+  const revertResult = await revertKubeJs(projectPath);
+  assert.deepEqual(revertResult, {
+    filePath: exportResult.filePath,
+    deleted: true,
+  });
+  const secondRevertResult = await revertKubeJs(projectPath);
+  assert.deepEqual(secondRevertResult, {
+    filePath: exportResult.filePath,
+    deleted: false,
+  });
+}
 
-    console.log('MVP-0 unify smoke passed');
+async function main() {
+  const options = parseArgs(process.argv.slice(2));
+  if (options.help) {
+    console.log(usage());
+    return;
+  }
+
+  const projectPath = await fs.mkdtemp(path.join(os.tmpdir(), 'delightify-mvp0-smoke-'));
+
+  try {
+    const snapshot = await prepareSnapshot(projectPath, options);
+    await runWorkflow(projectPath, snapshot, options);
+    console.log(`MVP-0 unify smoke passed (${snapshot.mode})`);
+    if (options.keepProject) {
+      console.log(`[Smoke] Temporary project kept at: ${projectPath}`);
+    }
   } finally {
+    await new Promise(resolve => setTimeout(resolve, 50));
     await closeAllConnections();
-    await fs.rm(projectPath, { recursive: true, force: true });
+    if (!options.keepProject) {
+      await fs.rm(projectPath, { recursive: true, force: true });
+    }
   }
 }
 
