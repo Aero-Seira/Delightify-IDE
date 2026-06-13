@@ -95,6 +95,102 @@ function generateMockRecipes(count: number): Recipe[] {
   });
 }
 
+function generateMockUnifyCandidates(): UnifyQueryResult['candidates'] {
+  return [
+    {
+      item: {
+        itemId: 'minecraft:copper_ingot',
+        modid: 'minecraft',
+        displayName: '铜锭',
+        translationKey: 'item.minecraft.copper_ingot',
+        tags: ['forge:ingots/copper', 'c:ingots/copper'],
+        isBlock: false,
+        maxStack: 64,
+        maxDamage: 0,
+        isDamageable: false,
+        isFireResistant: false,
+      },
+      matchedBy: [
+        { reason: 'display_name', value: '铜锭' },
+        { reason: 'item_id_path', value: 'copper_ingot' },
+      ],
+      references: {
+        directInputs: [],
+        tagInputs: [],
+        outputs: [{ kind: 'output', recipeId: 'minecraft:copper_ingot_from_block', typeId: 'minecraft:crafting_shapeless', modid: 'minecraft', unparsed: false, slot: 0, count: 9 }],
+        unparsedRaw: [],
+      },
+      riskSignals: [
+        { code: 'has_recipe_outputs', severity: 'medium', message: '候选作为配方输出出现，替换输出会影响产物流向。' },
+      ],
+      riskLevel: 'medium',
+    },
+    {
+      item: {
+        itemId: 'moda:copper_ingot',
+        modid: 'moda',
+        displayName: '铜锭',
+        translationKey: 'item.moda.copper_ingot',
+        tags: ['forge:ingots/copper'],
+        isBlock: false,
+        maxStack: 64,
+        maxDamage: 0,
+        isDamageable: false,
+        isFireResistant: false,
+      },
+      matchedBy: [
+        { reason: 'display_name', value: '铜锭' },
+        { reason: 'item_id_path', value: 'copper_ingot' },
+      ],
+      references: {
+        directInputs: [
+          { kind: 'direct_input', recipeId: 'moda:copper_gear', typeId: 'minecraft:crafting_shaped', modid: 'moda', unparsed: false, slot: 1, role: 'input', ref: 'moda:copper_ingot', count: 1 },
+          { kind: 'direct_input', recipeId: 'moda:copper_wire', typeId: 'minecraft:crafting_shapeless', modid: 'moda', unparsed: false, slot: 0, role: 'input', ref: 'moda:copper_ingot', count: 2 },
+        ],
+        tagInputs: [],
+        outputs: [],
+        unparsedRaw: [],
+      },
+      riskSignals: [],
+      riskLevel: 'low',
+    },
+    {
+      item: {
+        itemId: 'modb:copper_ingot',
+        modid: 'modb',
+        displayName: '铜锭',
+        translationKey: 'item.modb.copper_ingot',
+        tags: ['forge:ingots/copper'],
+        isBlock: false,
+        maxStack: 64,
+        maxDamage: 0,
+        isDamageable: false,
+        isFireResistant: false,
+      },
+      matchedBy: [
+        { reason: 'display_name', value: '铜锭' },
+      ],
+      references: {
+        directInputs: [
+          { kind: 'direct_input', recipeId: 'modb:copper_plate', typeId: 'minecraft:smelting', modid: 'modb', unparsed: false, slot: 0, role: 'input', ref: 'modb:copper_ingot', count: 1 },
+        ],
+        tagInputs: [
+          { kind: 'tag_input', recipeId: 'modb:machine_frame', typeId: 'minecraft:crafting_shaped', modid: 'modb', unparsed: false, slot: 4, role: 'input', ref: 'forge:ingots/copper', tagId: 'forge:ingots/copper', count: 1 },
+        ],
+        outputs: [],
+        unparsedRaw: [
+          { kind: 'raw_unparsed', recipeId: 'modb:scripted_copper', typeId: 'kubejs:custom', modid: 'modb', unparsed: true },
+        ],
+      },
+      riskSignals: [
+        { code: 'tag_input_references', severity: 'info', message: '候选通过 tag 被配方间接引用。' },
+        { code: 'related_unparsed_recipes', severity: 'high', message: '存在相关未结构化配方，不能自动 rewrite，只能进入风险说明。' },
+      ],
+      riskLevel: 'high',
+    },
+  ];
+}
+
 /**
  * Mock API
  */
@@ -321,27 +417,142 @@ export const mockElectronAPI = {
       lang: params.lang || 'zh_cn',
       sourceKind: 'exporter_v1' as const,
       capabilities: { browse: true, mvp0Unify: true },
-      candidates: [],
+      candidates: generateMockUnifyCandidates(),
       generatedAt: new Date().toISOString(),
     } satisfies UnifyQueryResult,
   }),
 
-  unifyDryRun: async (_projectPath: string, params: UnifyDryRunParams) => ({
-    success: true,
-    data: {
-      query: params.query,
-      normalizedQuery: params.query.trim().toLowerCase(),
-      lang: params.lang || 'zh_cn',
-      targetItemId: params.targetItemId || 'minecraft:copper_ingot',
-      targetReason: params.targetItemId ? 'user_selected' : 'mock_default',
-      decisions: [],
-      diff: [],
-      changeSet: [],
-      autoDecisionCount: 0,
-      deferredDecisionCount: 0,
-      generatedAt: new Date().toISOString(),
-    } satisfies UnifyDryRunResult,
-  }),
+  unifyDryRun: async (_projectPath: string, params: UnifyDryRunParams) => {
+    const targetItemId = params.targetItemId || 'minecraft:copper_ingot';
+    const diff: UnifyDryRunResult['diff'] = [
+      {
+        operationId: 'unify:moda:copper_ingot->minecraft:copper_ingot:op_1',
+        decisionId: 'unify:moda:copper_ingot->minecraft:copper_ingot',
+        kind: 'replace_recipe_input_item',
+        recipeId: 'moda:copper_gear',
+        typeId: 'minecraft:crafting_shaped',
+        modid: 'moda',
+        slot: 1,
+        before: { kind: 'item', ref: 'moda:copper_ingot', count: 1 },
+        after: { kind: 'item', ref: targetItemId, count: 1 },
+        includedInChangeSet: true,
+      },
+      {
+        operationId: 'unify:moda:copper_ingot->minecraft:copper_ingot:op_2',
+        decisionId: 'unify:moda:copper_ingot->minecraft:copper_ingot',
+        kind: 'replace_recipe_input_item',
+        recipeId: 'moda:copper_wire',
+        typeId: 'minecraft:crafting_shapeless',
+        modid: 'moda',
+        slot: 0,
+        before: { kind: 'item', ref: 'moda:copper_ingot', count: 2 },
+        after: { kind: 'item', ref: targetItemId, count: 2 },
+        includedInChangeSet: true,
+      },
+      {
+        operationId: 'unify:modb:copper_ingot->minecraft:copper_ingot:op_1',
+        decisionId: 'unify:modb:copper_ingot->minecraft:copper_ingot',
+        kind: 'replace_recipe_input_item',
+        recipeId: 'modb:copper_plate',
+        typeId: 'minecraft:smelting',
+        modid: 'modb',
+        slot: 0,
+        before: { kind: 'item', ref: 'modb:copper_ingot', count: 1 },
+        after: { kind: 'item', ref: targetItemId, count: 1 },
+        includedInChangeSet: false,
+        reason: '存在未结构化相关配方，需要人工审阅。',
+      },
+      {
+        operationId: 'unify:modb:copper_ingot->minecraft:copper_ingot:op_2',
+        decisionId: 'unify:modb:copper_ingot->minecraft:copper_ingot',
+        kind: 'raw_unparsed_reference',
+        recipeId: 'modb:scripted_copper',
+        typeId: 'kubejs:custom',
+        modid: 'modb',
+        before: { unparsed: true },
+        includedInChangeSet: false,
+        reason: '未结构化配方不能自动 rewrite。',
+      },
+    ];
+
+    return {
+      success: true,
+      data: {
+        query: params.query,
+        normalizedQuery: params.query.trim().toLowerCase(),
+        lang: params.lang || 'zh_cn',
+        targetItemId,
+        targetReason: params.targetItemId ? 'user_selected' : 'mock_default',
+        decisions: [
+          {
+            decisionId: 'unify:minecraft:copper_ingot->minecraft:copper_ingot',
+            status: 'target',
+            sourceItemId: 'minecraft:copper_ingot',
+            targetItemId,
+            action: { type: 'keep_target', targetItemId, operationIds: [] },
+            confidence: 1,
+            evidence: ['matched_by:display_name:铜锭', 'same_item_path:copper_ingot'],
+            riskSignals: [],
+            riskLevel: 'low',
+            reason: '保留目标物品，不生成替换操作。',
+            diffOperationIds: [],
+          },
+          {
+            decisionId: 'unify:moda:copper_ingot->minecraft:copper_ingot',
+            status: 'auto',
+            sourceItemId: 'moda:copper_ingot',
+            targetItemId,
+            action: {
+              type: 'replace_item_references',
+              sourceItemId: 'moda:copper_ingot',
+              targetItemId,
+              operationIds: [
+                'unify:moda:copper_ingot->minecraft:copper_ingot:op_1',
+                'unify:moda:copper_ingot->minecraft:copper_ingot:op_2',
+              ],
+            },
+            confidence: 0.95,
+            evidence: ['matched_by:display_name:铜锭', 'shared_tags:forge:ingots/copper', 'direct_inputs:2'],
+            riskSignals: [],
+            riskLevel: 'low',
+            reason: '低风险候选，仅包含可结构化替换的直接 item 输入引用。',
+            diffOperationIds: [
+              'unify:moda:copper_ingot->minecraft:copper_ingot:op_1',
+              'unify:moda:copper_ingot->minecraft:copper_ingot:op_2',
+            ],
+          },
+          {
+            decisionId: 'unify:modb:copper_ingot->minecraft:copper_ingot',
+            status: 'deferred',
+            sourceItemId: 'modb:copper_ingot',
+            targetItemId,
+            action: {
+              type: 'defer_review',
+              sourceItemId: 'modb:copper_ingot',
+              targetItemId,
+              operationIds: [],
+            },
+            confidence: 0.55,
+            evidence: ['matched_by:display_name:铜锭', 'tag_inputs:1', 'unparsed_related:1'],
+            riskSignals: [
+              { code: 'related_unparsed_recipes', severity: 'high', message: '存在相关未结构化配方，不能自动 rewrite，只能进入风险说明。' },
+            ],
+            riskLevel: 'high',
+            reason: '存在相关未结构化配方，不能自动 rewrite，只能进入风险说明。',
+            diffOperationIds: [
+              'unify:modb:copper_ingot->minecraft:copper_ingot:op_1',
+              'unify:modb:copper_ingot->minecraft:copper_ingot:op_2',
+            ],
+          },
+        ],
+        diff,
+        changeSet: diff.filter(operation => operation.includedInChangeSet),
+        autoDecisionCount: 1,
+        deferredDecisionCount: 1,
+        generatedAt: new Date().toISOString(),
+      } satisfies UnifyDryRunResult,
+    };
+  },
 
   // ========== 导出 ==========
   exportKubeJs: async (

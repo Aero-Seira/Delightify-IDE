@@ -529,6 +529,21 @@ MVP-0 先覆盖这些动作：
 - `pnpm build`
 - 对样例包执行 `/reload` 可生效。
 
+### PR 6：unify 审阅与导出 UI
+
+内容：
+
+- 改造 ConversionTool 为 MVP-0 unify 工作台。
+- 接入 `unifyQuery`、`unifyDryRun`、`exportKubeJs`、`revertKubeJs`。
+- 展示候选、目标选择、决策清单、diff、change set、生成结果。
+- browser/mock 模式提供可联调样例数据。
+
+验收：
+
+- `pnpm typecheck`
+- `pnpm build`
+- 在打开项目后可从“转换工具”完成 查询候选 → dry-run → 生成/撤销 KubeJS。
+
 ## 9. 当前代码对应关系
 
 可复用：
