@@ -1,5 +1,5 @@
 {
-  "name": "@modlab/main",
+  "name": "@delightify/main",
   "version": "0.3.0",
   "private": true,
   "main": "./dist/main.js",

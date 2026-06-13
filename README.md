@@ -1,6 +1,6 @@
 > **⚠️ 方向与现状说明（2026-06）**
-> 本项目现以 **ModPack IDE**（面向整合包作者的"意图编译器"）方向推进；**Delightify 是其前身/旧名**，同一项目。
-> - 开发请**先读 [`CLAUDE.md`](./CLAUDE.md)**。产品方向与完整规格在规划库 `…/MC-Workbench/Projects/ModPack IDE/`（`设计/01` 为唯一真相源）。
+> 本项目正式产品名为 **Delightify**；**ModPack IDE** 是产品定位/品类描述：面向整合包作者的"意图编译器"式桌面 IDE。
+> - 开发请**先读 [`CLAUDE.md`](./CLAUDE.md)**。产品方向与完整规格在规划库 `…/MC-Workbench/Projects/ModPack IDE/`（`设计/01` 为唯一真相源；目录名沿用规划期命名）。
 > - **本 README 及 `AGENTS.md`/`docs/` 多为「规划/意图」，大部分尚未实现——请以实际代码为准，勿把"路线图已完成"当真。**
 
 ---

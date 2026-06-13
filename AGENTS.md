@@ -1,6 +1,6 @@
 > **⚠️ 这是「规划 / 意图」文档，不是「已实现」的描述。**
 > 本指南所述架构（`global.db`/`project.db`、`data`/`semantic` 关系系统、三重 `jar-parser`、配方类型元数据等）**大部分尚未落地**；"路线图已完成"等说法**未经核实**。
-> 当前产品方向为 **ModPack IDE**——先读根目录 [`CLAUDE.md`](./CLAUDE.md)，完整规格在规划库 `…/MC-Workbench/Projects/ModPack IDE/`（`设计/01` 为真相源）。**实现以实际代码为准。**
+> 当前正式产品名为 **Delightify**；**ModPack IDE** 是产品定位/品类描述，也是规划库目录名。先读根目录 [`CLAUDE.md`](./CLAUDE.md)，完整规格在规划库 `…/MC-Workbench/Projects/ModPack IDE/`（`设计/01` 为真相源）。**实现以实际代码为准。**
 
 ---
 
@@ -13,7 +13,7 @@
 
 ## 项目概述 / Project Overview
 
-**Delightify** 是一个面向 Minecraft 整合包开发者的可视化配方魔改工作台。它是一个 Electron 桌面应用，帮助用户：
+**Delightify** 是一个面向 Minecraft 整合包开发者的 ModPack IDE / 意图编译器式桌面工作台。它是一个 Electron 桌面应用，目标是帮助用户：
 
 1. **导入模组 JAR** → 自动解析并建立物品、配方、材质的本地知识数据库
 2. **可视化浏览与编辑** → 拖拽式配方编辑器，实时预览生成的 KubeJS 脚本

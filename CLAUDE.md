@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-This repo is the **implementation** of **ModPack IDE** — an "intent compiler" desktop app for Minecraft modpack authors. It was forked from an unfinished visual recipe-modding workbench called **Delightify**, so most code, branding, and docs still say "Delightify" — **same project, current direction is "ModPack IDE"**. Electron + React + TypeScript, pnpm/Turborepo monorepo. **It is early-stage.**
+This repo is the **implementation** of **Delightify** — a ModPack IDE / "intent compiler" desktop app for Minecraft modpack authors. **Delightify is the product name**; "ModPack IDE" describes the product category and the planning/spec direction, not a replacement name. Electron + React + TypeScript, pnpm/Turborepo monorepo. **It is early-stage.**
 
 ## ⚠️ The repo's docs are mostly PLANNING, not built — verify before trusting
 
@@ -16,7 +16,7 @@ This repo carries extensive Delightify docs (`AGENTS.md`, `docs/project-structur
 ## The design spec (read this) — vendored locally + canonical vault
 
 The full v0 spec is **vendored locally** at **`docs/spec-snapshot/`** (`设计/01–10` + `例子/01–05`, read-only snapshot @2026-06-13) — read it there. The **canonical** source is the Obsidian planning vault at:
-`/Users/aeroseira/Library/Mobile Documents/iCloud~md~obsidian/Documents/MC-Workbench/Projects/ModPack IDE/` (may be newer; if in doubt it wins; re-copy to refresh).
+`/Users/aeroseira/Library/Mobile Documents/iCloud~md~obsidian/Documents/MC-Workbench/Projects/ModPack IDE/` (the planning vault still uses the product-category name; may be newer; if in doubt it wins; re-copy to refresh).
 
 - `设计/01-核心设计与决策模型.md` = **single source of truth**; `设计/03–10` = complete spec (Intent Spec, engine semantics, guided-planning, data layer, KubeJS output, UI, LLM/Agent, MVP roadmap); `例子/01–05` = behavioral specs / test cases. **Implement against that spec.**
 - One-line direction: author states a *goal* → Agent perceives the modpack, classifies each case semantically, plans how to apply it pack-wide. **(a) semantic recognition + (b) execution planning = Agent's job; (c) design/balance judgment = author's.** High-confidence+low-risk → auto (reviewable); uncertain/high-blast-radius → defer queue; over-broad/mostly-(c) requests → guided planning (read-only decision-support view).
