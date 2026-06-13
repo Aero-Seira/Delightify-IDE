@@ -9,7 +9,7 @@
 
 ## 为什么保留
 
-provider 调用层（鉴权、请求、流式、缓存）是可复用的基础设施。将来按规格（`docs/spec-snapshot/设计/09`）实现 Agent 层时，**复用 `providers/`，重写 `service.ts` 的任务逻辑**（语义识别 + 执行规划 + 置信×风险输出），不要从零造 provider 轮子。
+provider 调用层（鉴权、请求、流式、缓存）是可复用的基础设施。将来按规格（[`设计/09`](../../../../../docs/spec-snapshot/设计/09-LLM-Agent集成.md)）实现 Agent 层时，**复用 `providers/`，重写 `service.ts` 的任务逻辑**（语义识别 + 执行规划 + 置信×风险输出），不要从零造 provider 轮子。
 
 ## 重写时要对齐的规格
 

@@ -20,8 +20,8 @@ This document describes how to build and develop the Delightify project on Windo
 ### 1. 克隆仓库 / Clone Repository
 
 ```powershell
-git clone https://github.com/yourusername/Delightify.git
-cd Delightify
+git clone https://github.com/Aero-Seira/Delightify-IDE.git
+cd Delightify-IDE
 ```
 
 ### 2. 安装依赖 / Install Dependencies
@@ -276,7 +276,7 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 
 ## 相关文档 / Related Documentation
 
-- [项目结构](./project-structure.md)
+- [项目结构](../reference/project-structure.md)
 - [开发指南](../DEVELOPER_GUIDE.md)
 - [快速参考](../QUICK_REF.md)
 

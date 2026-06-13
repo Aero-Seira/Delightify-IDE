@@ -41,8 +41,8 @@
 
 ```bash
 # 克隆仓库
-git clone https://github.com/Aero-Seira/Delightify.git
-cd Delightify
+git clone https://github.com/Aero-Seira/Delightify-IDE.git
+cd Delightify-IDE
 
 # 安装依赖（需要 Node.js 18+ 和 pnpm）
 pnpm install
@@ -56,8 +56,8 @@ ollama pull qwen2.5:7b
 
 ```powershell
 # 克隆仓库
-git clone https://github.com/Aero-Seira/Delightify.git
-cd Delightify
+git clone https://github.com/Aero-Seira/Delightify-IDE.git
+cd Delightify-IDE
 
 # 方式1：使用 PowerShell 自动设置脚本
 .\scripts\setup-windows.ps1
@@ -67,7 +67,7 @@ pnpm install
 pnpm build
 ```
 
-详见 [Windows 构建指南](./docs/windows-build.md)
+详见 [Windows 构建指南](./docs/guides/windows-build.md)
 
 #### 配置 LLM
 
@@ -138,11 +138,11 @@ ServerEvents.recipes(event => {
 
 ### 📚 文档链接
 
-- 📘 [系统架构设计](docs/architecture.md) - 原始系统设计和工作流程（历史参考）
-- 📐 [技术栈决策](docs/tech-stack.md) - 技术选型决策记录与 ADR
-- 🗂️ [项目结构](docs/project-structure.md) - monorepo 结构、数据库 Schema、API 设计
-- ⚙️ [配置指南](docs/configuration.md) - LLM 配置、配方类型元数据、输出选项
-- 📋 [数据格式规范](docs/data-formats.md) - 输入输出格式的完整规范
+- 📚 [文档索引](docs/README.md) - 当前决策、规格快照、规划参考与历史归档
+- 🧭 [MVP-0 数据地基](docs/current/mvp0-data-foundation.md) - 当前 schema/importer/unify/KubeJS 实现依据
+- 📘 [系统架构设计](docs/reference/architecture.md) - 原始系统设计和工作流程（历史参考）
+- 📐 [技术栈决策](docs/reference/tech-stack.md) - 技术选型决策记录与 ADR
+- 🗂️ [项目结构](docs/reference/project-structure.md) - monorepo 结构、数据库 Schema、API 设计
 
 ### 🏗️ 项目架构
 
@@ -250,8 +250,8 @@ Modpack developers face many pain points when modifying recipes: looking up item
 
 ```bash
 # Clone repository
-git clone https://github.com/Aero-Seira/Delightify.git
-cd Delightify
+git clone https://github.com/Aero-Seira/Delightify-IDE.git
+cd Delightify-IDE
 
 # Install dependencies (requires Node.js 18+ and pnpm)
 pnpm install
@@ -305,11 +305,11 @@ Generate a complete KubeJS script and place it directly in your modpack's kubejs
 
 ### 📚 Documentation
 
-- 📘 [System Architecture Design](docs/architecture.md) - Original system design and workflow (historical reference)
-- 📐 [Tech Stack Decisions](docs/tech-stack.md) - Technology selection decisions and ADRs
-- 🗂️ [Project Structure](docs/project-structure.md) - Monorepo structure, database schema, API design
-- ⚙️ [Configuration Guide](docs/configuration.md) - LLM config, recipe type metadata, output options
-- 📋 [Data Format Specification](docs/data-formats.md) - Complete specification for input/output formats
+- 📚 [Documentation Index](docs/README.md) - Current decisions, spec snapshot, planning references, and archive
+- 🧭 [MVP-0 Data Foundation](docs/current/mvp0-data-foundation.md) - Current schema/importer/unify/KubeJS implementation baseline
+- 📘 [System Architecture Design](docs/reference/architecture.md) - Original system design and workflow (historical reference)
+- 📐 [Tech Stack Decisions](docs/reference/tech-stack.md) - Technology selection decisions and ADRs
+- 🗂️ [Project Structure](docs/reference/project-structure.md) - Monorepo structure, database schema, API design
 
 ### 🏗️ Architecture
 
@@ -396,7 +396,7 @@ MIT License - see [LICENSE](LICENSE)
 
 ## 📞 联系方式 / Contact
 
-- Issues: [GitHub Issues](https://github.com/Aero-Seira/Delightify/issues)
-- Discussions: [GitHub Discussions](https://github.com/Aero-Seira/Delightify/discussions)
+- Issues: [GitHub Issues](https://github.com/Aero-Seira/Delightify-IDE/issues)
+- Discussions: [GitHub Discussions](https://github.com/Aero-Seira/Delightify-IDE/discussions)
 
 **Made with ❤️ for the Minecraft modding community**

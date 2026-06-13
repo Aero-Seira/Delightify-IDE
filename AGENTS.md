@@ -66,7 +66,7 @@ pnpm build
 pnpm dev
 ```
 
-详见 [Windows 构建指南](./docs/windows-build.md)
+详见 [Windows 构建指南](./docs/guides/windows-build.md)
 
 ---
 
@@ -106,9 +106,12 @@ Delightify/
 │   └── item_categories.json # 物品分类定义
 │
 ├── docs/                    # 文档
-│   ├── project-structure.md # 数据库 Schema、路径体系
-│   ├── tech-stack.md        # 技术选型决策记录 (ADR)
-│   └── roadmap.md           # 开发路线图
+│   ├── README.md            # 文档索引
+│   ├── current/             # 当前决策与审计
+│   ├── reference/           # 规划参考
+│   ├── guides/              # 操作指南
+│   ├── archive/             # 历史归档
+│   └── spec-snapshot/       # vendored 规格快照
 │
 ├── pnpm-workspace.yaml      # pnpm 工作区定义
 ├── turbo.json               # Turborepo 任务编排
@@ -371,7 +374,7 @@ GitHub Actions 工作流（`.github/workflows/typecheck.yml`）：
 
 ## 技术决策记录（ADR）
 
-关键决策已记录在 `docs/tech-stack.md`：
+关键决策已记录在 `docs/reference/tech-stack.md`：
 
 | ADR | 决策 | 放弃方案 | 理由 |
 |-----|------|----------|------|
@@ -400,15 +403,18 @@ GitHub Actions 工作流（`.github/workflows/typecheck.yml`）：
 | M6 | v0.7 | LLM 批量迁移工作流（可选） | 📋 待开始 |
 | M7 | v0.8 | 打包分发、稳定性优化 | 📋 待开始 |
 
-详见 `docs/roadmap.md`
+详见 `docs/reference/roadmap.md`
 
 ---
 
 ## 相关文档索引
 
-- `docs/project-structure.md` - 数据库 Schema、路径体系、JAR 解析流程
-- `docs/tech-stack.md` - 完整技术选型决策记录
-- `docs/roadmap.md` - 开发路线图与里程碑规划
+- `docs/README.md` - 文档入口与目录说明
+- `docs/current/mvp0-data-foundation.md` - MVP-0 数据地基方案
+- `docs/current/现状审计.md` - 当前代码现状审计
+- `docs/reference/project-structure.md` - 数据库 Schema、路径体系、JAR 解析流程（规划参考）
+- `docs/reference/tech-stack.md` - 完整技术选型决策记录（规划参考）
+- `docs/reference/roadmap.md` - 开发路线图与里程碑规划（规划参考）
 - `README.md` - 项目介绍、快速开始、功能特性
 
 ---
