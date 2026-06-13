@@ -11,3 +11,4 @@ export * from './config';
 export * from './ipc';
 export * from './i18n';
 export * from './theme';
+export * from './unify';

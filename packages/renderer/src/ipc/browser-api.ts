@@ -90,6 +90,12 @@ export const browserElectronAPI = {
   recipesGetTypes: async () => ({ success: true, data: [] }),
   recipesGetDetail: async () => ({ success: true, data: null }),
 
+  // ========== Unify 查询 ==========
+  unifyQuery: async () => ({
+    success: false,
+    error: '浏览器模式不支持 unify 查询',
+  }),
+
   // ========== 配方类型元数据 ==========
   recipeTypesGetAll: async () => ({ success: true, data: [] }),
   recipeTypesGet: async () => ({ success: true, data: null }),

@@ -7,6 +7,8 @@ import type {
   Project, Item, Recipe, ModDataImportProgress,
   ItemQueryParams, ItemQueryResult,
   RecipeQueryParams,
+  UnifyQueryParams,
+  UnifyQueryResult,
 } from '@delightify/shared';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -303,6 +305,20 @@ export const mockElectronAPI = {
       hash: 'mock_hash',
       unparsed: false,
     },
+  }),
+
+  // ========== Unify 查询 ==========
+  unifyQuery: async (_projectPath: string, params: UnifyQueryParams) => ({
+    success: true,
+    data: {
+      query: params.query,
+      normalizedQuery: params.query.trim().toLowerCase(),
+      lang: params.lang || 'zh_cn',
+      sourceKind: 'exporter_v1' as const,
+      capabilities: { browse: true, mvp0Unify: true },
+      candidates: [],
+      generatedAt: new Date().toISOString(),
+    } satisfies UnifyQueryResult,
   }),
 
   // ========== 通用工具 ==========

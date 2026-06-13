@@ -33,6 +33,9 @@ export const IPC_CHANNELS = {
   RECIPES_GET_TYPES: 'recipes:get-types',
   RECIPES_GET_DETAIL: 'recipes:get-detail',
 
+  // Unify queries
+  UNIFY_QUERY: 'unify:query',
+
   // Recipe editing
   RECIPE_EDIT_CREATE: 'recipe-edit:create',
   RECIPE_EDIT_UPDATE: 'recipe-edit:update',

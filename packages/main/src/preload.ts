@@ -40,6 +40,9 @@ const IPC_CHANNELS = {
   RECIPES_GET_TYPES: 'recipes:get-types',
   RECIPES_GET_DETAIL: 'recipes:get-detail',
 
+  // Unify
+  UNIFY_QUERY: 'unify:query',
+
   // Debug
   DEBUG_DB_TABLES: 'debug:db-tables',
   DEBUG_DB_QUERY: 'debug:db-query',
@@ -93,6 +96,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   recipesGetTypes: (projectPath: string) => ipcRenderer.invoke(IPC_CHANNELS.RECIPES_GET_TYPES, projectPath),
   recipesGetDetail: (projectPath: string, recipeId: string) => 
     ipcRenderer.invoke(IPC_CHANNELS.RECIPES_GET_DETAIL, projectPath, recipeId),
+
+  // ========== Unify 查询 ==========
+  unifyQuery: (projectPath: string, params: unknown) =>
+    ipcRenderer.invoke(IPC_CHANNELS.UNIFY_QUERY, projectPath, params),
 
   // ========== 通用工具 ==========
   openExternal: (url: string) => ipcRenderer.invoke('shell:open-external', url),

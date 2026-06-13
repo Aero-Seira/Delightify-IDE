@@ -10,6 +10,7 @@ import { registerModDataHandlers } from './mod-data';
 import { registerItemsHandlers } from './items';
 import { registerRecipesHandlers } from './recipes';
 import { registerRecipeTypesHandlers } from './recipe-types';
+import { registerUnifyHandlers } from './unify';
 import { registerDebugHandlers } from './debug';
 
 export function registerAllHandlers(): void {
@@ -18,6 +19,7 @@ export function registerAllHandlers(): void {
   registerItemsHandlers();
   registerRecipesHandlers();
   registerRecipeTypesHandlers();
+  registerUnifyHandlers();
   registerDebugHandlers();
   
   // 通用工具处理器

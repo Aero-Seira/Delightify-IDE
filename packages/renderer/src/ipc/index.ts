@@ -21,6 +21,8 @@ import type {
   DataImportHistory,
   ManifestEntry,
   ValidationResult,
+  UnifyQueryParams,
+  UnifyQueryResult,
 } from '@delightify/shared';
 import { mockElectronAPI } from './mock';
 
@@ -56,6 +58,9 @@ export interface ElectronAPI {
   recipesQuery: (projectPath: string, params: RecipeQueryParams) => Promise<{ success: boolean; data?: { recipes: Recipe[]; total: number }; error?: string }>;
   recipesGetTypes: (projectPath: string) => Promise<{ success: boolean; data?: RecipeTypeInfo[]; error?: string }>;
   recipesGetDetail: (projectPath: string, recipeId: string) => Promise<{ success: boolean; data?: Recipe | null; error?: string }>;
+
+  // ========== Unify 查询 ==========
+  unifyQuery: (projectPath: string, params: UnifyQueryParams) => Promise<{ success: boolean; data?: UnifyQueryResult; error?: string }>;
 
   // ========== 配方类型元数据 ==========
   recipeTypesGetAll: () => Promise<{ success: boolean; data?: RecipeTypeMetadata[]; error?: string }>;
