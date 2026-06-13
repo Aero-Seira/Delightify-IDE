@@ -12,6 +12,8 @@ export type {
   ImportResult,
   ModDataImportOptions,
   ValidationResult,
+  DataSourceKind,
+  ProjectCapabilities,
   ManifestEntry,
   ModEntry,
   ItemEntry,

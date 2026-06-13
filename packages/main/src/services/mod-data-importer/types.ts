@@ -20,6 +20,8 @@ export interface ImportProgress {
 export interface ImportResult {
   success: boolean;
   importId?: string;
+  sourceKind?: DataSourceKind;
+  capabilities?: ProjectCapabilities;
   stats?: {
     modCount: number;
     itemCount: number;
@@ -42,6 +44,12 @@ export interface ModDataImportOptions {
 export interface ValidationResult {
   valid: boolean;
   version?: string;
+  schemaVersion?: string;
+  sourceKind?: DataSourceKind;
+  capabilities?: ProjectCapabilities;
+  loader?: string;
+  mcVersion?: string;
+  modlistHash?: string;
   exportedAt?: string;
   minecraftVersion?: string;
   forgeVersion?: string;
@@ -51,6 +59,25 @@ export interface ValidationResult {
   tagCount?: number;
   error?: string;
 }
+
+export type DataSourceKind = 'exporter_v1' | 'legacy_exporter';
+
+export interface ProjectCapabilities {
+  browse: boolean;
+  mvp0Unify: boolean;
+  reason?: string;
+}
+
+export const EXPORTER_V1_CAPABILITIES: ProjectCapabilities = {
+  browse: true,
+  mvp0Unify: true,
+};
+
+export const LEGACY_EXPORTER_CAPABILITIES: ProjectCapabilities = {
+  browse: true,
+  mvp0Unify: false,
+  reason: 'legacy_export_without_structured_recipes',
+};
 
 // ============================================================================
 // 附属Mod数据结构（与 export.sqlite 一致）
@@ -79,6 +106,18 @@ export interface ModEntry {
 export interface ItemEntry {
   item_id: string;
   modid: string;
+  translation_key?: string | null;
+  is_block?: number;
+  max_stack?: number;
+  max_damage?: number;
+  is_damageable?: number;
+  is_fire_resistant?: number;
+  rarity?: string | null;
+  enchant_value?: number | null;
+  food_nutrition?: number | null;
+  food_saturation?: number | null;
+  food_always_eat?: number | null;
+  default_components_json?: string | null;
 }
 
 /**
@@ -99,6 +138,7 @@ export interface RecipeEntry {
   hash: string;
   raw_json?: string;
   unparsed: boolean;
+  group?: string | null;
 }
 
 // ============================================================================
@@ -112,8 +152,33 @@ export interface DetectedDataFile {
 }
 
 // 数据文件预期路径（相对于整合包根目录）
-export const DATA_FILE_PATHS = [
+export const EXPORTER_V1_DATA_FILE_PATHS = [
+  'delightify/export.sqlite',
+  '.delightify/export.sqlite',
+];
+
+export const LEGACY_DATA_FILE_PATHS = [
   'delightify-exporter/export.sqlite',
   '.delightify-exporter/export.sqlite',
   'config/delightify-exporter/export.sqlite',
+];
+
+export const DATA_FILE_PATHS = [
+  ...EXPORTER_V1_DATA_FILE_PATHS,
+  ...LEGACY_DATA_FILE_PATHS,
+];
+
+export const LEGACY_REQUIRED_TABLES = [
+  'manifest',
+  'mods',
+  'items',
+  'item_tags',
+  'recipes',
+];
+
+export const EXPORTER_V1_REQUIRED_TABLES = [
+  ...LEGACY_REQUIRED_TABLES,
+  'recipe_inputs',
+  'recipe_outputs',
+  'translations',
 ];

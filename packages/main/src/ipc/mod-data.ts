@@ -12,6 +12,7 @@ import type {
   ModDataImportProgress,
   DataImportHistory,
   ManifestEntry,
+  ValidationResult,
 } from '@delightify/shared';
 import { appPaths } from '../services/paths';
 import { createProjectDbClient } from '../services/database';
@@ -22,6 +23,52 @@ import {
 } from '../services/mod-data-importer';
 
 const activeImports = new Map<string, { cancel: boolean }>();
+
+interface IpcProjectCapabilities {
+  browse: boolean;
+  mvp0Unify: boolean;
+  reason?: string;
+}
+
+interface ValidationResultWithCapabilities extends ValidationResult {
+  schemaVersion?: string;
+  sourceKind?: 'exporter_v1' | 'legacy_exporter';
+  capabilities?: IpcProjectCapabilities;
+  loader?: string;
+  mcVersion?: string;
+  modlistHash?: string;
+}
+
+interface DataImportHistoryWithCapabilities extends DataImportHistory {
+  sourceKind?: 'exporter_v1' | 'legacy_exporter';
+  schemaVersion?: string;
+  capabilities?: IpcProjectCapabilities;
+  modlistHash?: string;
+  errorMessage?: string;
+}
+
+function parseCapabilities(value: unknown): IpcProjectCapabilities | undefined {
+  if (typeof value !== 'string' || value.length === 0) {
+    return undefined;
+  }
+
+  try {
+    const parsed = JSON.parse(value) as {
+      browse?: unknown;
+      mvp0Unify?: unknown;
+      mvp0_unify?: unknown;
+      reason?: unknown;
+    };
+
+    return {
+      browse: Boolean(parsed.browse),
+      mvp0Unify: Boolean(parsed.mvp0Unify ?? parsed.mvp0_unify),
+      reason: typeof parsed.reason === 'string' ? parsed.reason : undefined,
+    };
+  } catch {
+    return undefined;
+  }
+}
 
 function sendProgress(
   win: BrowserWindow | null,
@@ -56,32 +103,12 @@ export function registerModDataHandlers(): void {
   ipcMain.handle(IPC_CHANNELS.MOD_DATA_VALIDATE, async (
     _event,
     filePath: string
-  ): Promise<IpcResponse<{ 
-    valid: boolean; 
-    minecraftVersion?: string;
-    forgeVersion?: string;
-    exportedAt?: string;
-    modCount?: number;
-    itemCount?: number;
-    recipeCount?: number;
-    tagCount?: number;
-    error?: string 
-  }>> => {
+  ): Promise<IpcResponse<ValidationResultWithCapabilities>> => {
     try {
       const result = await validateModDataFile(filePath);
       return {
         success: true,
-        data: {
-          valid: result.valid,
-          minecraftVersion: result.minecraftVersion,
-          forgeVersion: result.forgeVersion,
-          exportedAt: result.exportedAt,
-          modCount: result.modCount,
-          itemCount: result.itemCount,
-          recipeCount: result.recipeCount,
-          tagCount: result.tagCount,
-          error: result.error,
-        },
+        data: result,
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '验证失败';
@@ -129,7 +156,7 @@ export function registerModDataHandlers(): void {
   ipcMain.handle(IPC_CHANNELS.MOD_DATA_GET_IMPORT_HISTORY, async (
     _event,
     projectPath: string
-  ): Promise<IpcResponse<DataImportHistory[]>> => {
+  ): Promise<IpcResponse<DataImportHistoryWithCapabilities[]>> => {
     try {
       const dbPath = appPaths.projectDb(projectPath);
       const client = createProjectDbClient(dbPath);
@@ -138,10 +165,14 @@ export function registerModDataHandlers(): void {
         'SELECT * FROM data_imports ORDER BY imported_at DESC'
       );
 
-      const history: DataImportHistory[] = result.rows.map((row: any) => ({
+      const history: DataImportHistoryWithCapabilities[] = result.rows.map((row: any) => ({
         importId: row.import_id,
         sourceFilePath: row.source_file_path,
+        sourceKind: row.source_kind,
         dataVersion: row.data_version,
+        schemaVersion: row.schema_version,
+        capabilities: parseCapabilities(row.capabilities_json),
+        modlistHash: row.modlist_hash,
         exportedAt: row.exported_at,
         modCount: row.mod_count,
         itemCount: row.item_count,
@@ -149,6 +180,7 @@ export function registerModDataHandlers(): void {
         tagCount: row.tag_count,
         importedAt: row.imported_at,
         isSuccess: Boolean(row.is_success),
+        errorMessage: row.error_message,
       }));
 
       return { success: true, data: history };

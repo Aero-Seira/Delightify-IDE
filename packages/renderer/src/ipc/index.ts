@@ -20,6 +20,7 @@ import type {
   ModDataImportProgress,
   DataImportHistory,
   ManifestEntry,
+  ValidationResult,
 } from '@delightify/shared';
 import { mockElectronAPI } from './mock';
 
@@ -36,7 +37,7 @@ export interface ElectronAPI {
 
   // ========== Mod数据导入 ==========
   modDataDetect: (projectPath: string) => Promise<{ success: boolean; data?: { filePath: string | null; found: boolean }; error?: string }>;
-  modDataValidate: (filePath: string) => Promise<{ success: boolean; data?: { valid: boolean; version?: string; minecraftVersion?: string; forgeVersion?: string; exportedAt?: string; modCount?: number; itemCount?: number; recipeCount?: number; tagCount?: number; error?: string }; error?: string }>;
+  modDataValidate: (filePath: string) => Promise<{ success: boolean; data?: ValidationResult; error?: string }>;
   modDataImport: (projectPath: string, dataFilePath?: string) => Promise<{ success: boolean; data?: ModDataImportResult; error?: string }>;
   onModDataImportProgress: (callback: (progress: ModDataImportProgress) => void) => () => void;
   modDataGetImportHistory: (projectPath: string) => Promise<{ success: boolean; data?: DataImportHistory[]; error?: string }>;

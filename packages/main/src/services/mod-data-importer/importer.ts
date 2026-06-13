@@ -16,6 +16,8 @@ import type {
   ItemTagEntry,
   RecipeEntry,
   ManifestEntry,
+  ProjectCapabilities,
+  DataSourceKind,
 } from './types';
 import { validateModDataFile, DATA_FILE_PATHS } from './validator';
 import { createSchemaManager } from '../database/schema-manager';
@@ -64,6 +66,16 @@ export async function importModData(options: ModDataImportOptions): Promise<Impo
         success: false,
         importId,
         error: validation.error || '数据文件验证失败',
+      };
+    }
+
+    if (validation.sourceKind === 'exporter_v1') {
+      return {
+        success: false,
+        importId,
+        sourceKind: validation.sourceKind,
+        capabilities: validation.capabilities,
+        error: '已识别 Exporter v1 数据文件，但 v1 完整导入将在下一步实现。当前版本不会用 legacy 路径半导入结构化数据。',
       };
     }
 
@@ -128,6 +140,8 @@ export async function importModData(options: ModDataImportOptions): Promise<Impo
     
     const targetClient = createClient({ url: `file:${projectDbPath}` });
 
+    let transactionStarted = false;
+
     try {
       // 初始化/验证数据库结构
       onProgress?.({
@@ -140,14 +154,17 @@ export async function importModData(options: ModDataImportOptions): Promise<Impo
       await schemaManager.initialize();
       
       // 验证数据库结构
-      const validation = await schemaManager.validateSchema();
-      if (!validation.valid) {
-        console.warn('[Importer] Schema validation warnings:', validation);
+      const schemaValidation = await schemaManager.validateSchema();
+      if (!schemaValidation.valid) {
+        console.warn('[Importer] Schema validation warnings:', schemaValidation);
         // 尝试修复缺失的表
-        for (const tableName of validation.missingTables) {
+        for (const tableName of schemaValidation.missingTables) {
           console.log(`[Importer] Creating missing table: ${tableName}`);
         }
       }
+
+      await targetClient.execute('BEGIN');
+      transactionStarted = true;
       
       // 清空现有数据
       await clearExistingData(targetClient);
@@ -204,11 +221,22 @@ export async function importModData(options: ModDataImportOptions): Promise<Impo
       await recordImportHistory(targetClient, {
         importId,
         sourceFilePath: dataFilePath,
-        dataVersion: '1.0',
-        exportedAt: manifestData.find(m => m.key === 'exported_at_utc')?.value,
+        sourceKind: validation.sourceKind || 'legacy_exporter',
+        dataVersion: validation.version || '1.0',
+        schemaVersion: validation.schemaVersion || validation.version || '1.0',
+        capabilities: validation.capabilities || {
+          browse: true,
+          mvp0Unify: false,
+          reason: 'legacy_export_without_structured_recipes',
+        },
+        modlistHash: validation.modlistHash,
+        exportedAt: validation.exportedAt || manifestData.find(m => m.key === 'exported_at_utc')?.value,
         ...stats,
         importedAt: now,
       });
+
+      await targetClient.execute('COMMIT');
+      transactionStarted = false;
 
       onProgress?.({
         phase: 'completed',
@@ -219,8 +247,15 @@ export async function importModData(options: ModDataImportOptions): Promise<Impo
       return {
         success: true,
         importId,
+        sourceKind: validation.sourceKind || 'legacy_exporter',
+        capabilities: validation.capabilities,
         stats,
       };
+    } catch (error) {
+      if (transactionStarted) {
+        try { await targetClient.execute('ROLLBACK'); } catch {}
+      }
+      throw error;
     } finally {
       // 确保目标连接被关闭
       try { await targetClient.close(); } catch {}
@@ -268,10 +303,24 @@ export async function detectModDataFile(projectPath: string): Promise<string | n
  * 清空现有数据
  */
 async function clearExistingData(client: Client): Promise<void> {
-  const tables = ['recipes', 'item_tags', 'items', 'mods', 'manifest', 'item_resources'];
+  const tables = [
+    'recipe_view_backgrounds',
+    'recipe_views',
+    'translations',
+    'recipe_outputs',
+    'recipe_inputs',
+    'recipes',
+    'item_tags',
+    'item_creative_tabs',
+    'blocks',
+    'item_resources',
+    'items',
+    'mods',
+    'manifest',
+  ];
   for (const table of tables) {
     try {
-      await client.execute(`DELETE FROM ${table}`);
+      await client.execute(`DELETE FROM "${table}"`);
     } catch (error) {
       // 表可能不存在，忽略错误
       console.log(`[Importer] Clear table ${table} skipped (may not exist)`);
@@ -378,6 +427,7 @@ async function readRecipes(client: Client): Promise<RecipeEntry[]> {
       hash: hash || '', // hash 缺失时使用空字符串
       raw_json: (row.raw_json as string) || undefined,
       unparsed: String(row.unparsed) === '1' || String(row.unparsed) === 'true',
+      group: (row.group as string) || null,
     });
   }
   
@@ -577,7 +627,7 @@ async function importRecipes(client: Client, recipes: RecipeEntry[]): Promise<vo
     
     if (validBatch.length === 0) continue;
     
-    const values = validBatch.map(() => '(?, ?, ?, ?, ?, ?)').join(',');
+    const values = validBatch.map(() => '(?, ?, ?, ?, ?, ?, ?)').join(',');
     const args = validBatch.flatMap(recipe => [
       recipe.recipe_id,
       recipe.type_id,
@@ -585,11 +635,12 @@ async function importRecipes(client: Client, recipes: RecipeEntry[]): Promise<vo
       recipe.hash || '', // hash 缺失时使用空字符串
       recipe.raw_json || null, // raw_json 为空时使用 null
       recipe.unparsed ? 1 : 0,
+      recipe.group || null,
     ]);
     
     try {
       await client.execute({
-        sql: `INSERT INTO recipes (recipe_id, type_id, modid, hash, raw_json, unparsed) VALUES ${values}`,
+        sql: `INSERT INTO recipes (recipe_id, type_id, modid, hash, raw_json, unparsed, "group") VALUES ${values}`,
         args,
       });
       successCount += validBatch.length;
@@ -601,7 +652,7 @@ async function importRecipes(client: Client, recipes: RecipeEntry[]): Promise<vo
       for (const recipe of validBatch) {
         try {
           await client.execute({
-            sql: 'INSERT INTO recipes (recipe_id, type_id, modid, hash, raw_json, unparsed) VALUES (?, ?, ?, ?, ?, ?)',
+            sql: 'INSERT INTO recipes (recipe_id, type_id, modid, hash, raw_json, unparsed, "group") VALUES (?, ?, ?, ?, ?, ?, ?)',
             args: [
               recipe.recipe_id,
               recipe.type_id,
@@ -609,6 +660,7 @@ async function importRecipes(client: Client, recipes: RecipeEntry[]): Promise<vo
               recipe.hash || '',
               recipe.raw_json || null,
               recipe.unparsed ? 1 : 0,
+              recipe.group || null,
             ],
           });
         } catch (singleError) {
@@ -626,7 +678,11 @@ async function recordImportHistory(
   data: {
     importId: string;
     sourceFilePath: string;
+    sourceKind: DataSourceKind;
     dataVersion: string;
+    schemaVersion: string;
+    capabilities: ProjectCapabilities;
+    modlistHash?: string;
     exportedAt?: string;
     modCount: number;
     itemCount: number;
@@ -637,12 +693,31 @@ async function recordImportHistory(
 ): Promise<void> {
   await client.execute({
     sql: `INSERT INTO data_imports 
-          (import_id, source_file_path, data_version, exported_at, mod_count, item_count, recipe_count, tag_count, imported_at, is_success)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          (
+            import_id,
+            source_file_path,
+            source_kind,
+            data_version,
+            schema_version,
+            capabilities_json,
+            modlist_hash,
+            exported_at,
+            mod_count,
+            item_count,
+            recipe_count,
+            tag_count,
+            imported_at,
+            is_success
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     args: [
       data.importId,
       data.sourceFilePath,
+      data.sourceKind,
       data.dataVersion,
+      data.schemaVersion,
+      serializeCapabilities(data.capabilities),
+      data.modlistHash || null,
       data.exportedAt || null,
       data.modCount,
       data.itemCount,
@@ -651,6 +726,14 @@ async function recordImportHistory(
       data.importedAt,
       1,
     ],
+  });
+}
+
+function serializeCapabilities(capabilities: ProjectCapabilities): string {
+  return JSON.stringify({
+    browse: capabilities.browse,
+    mvp0_unify: capabilities.mvp0Unify,
+    reason: capabilities.reason,
   });
 }
 
@@ -713,16 +796,14 @@ async function importItemResources(client: Client, resources: ItemResourceEntry[
     return;
   }
   
-  // 导入 texture 和 lang_name 类型的资源（纹理和翻译）
-  const filteredResources = resources.filter(r => r.resource_type === 'texture' || r.resource_type === 'lang_name');
-  console.log(`[Importer] Importing ${filteredResources.length} resources (${resources.length} total, textures + translations)`);
+  console.log(`[Importer] Importing ${resources.length} resources`);
   
   // 使用批量插入
   const batchSize = 100;
   let successCount = 0;
   
-  for (let i = 0; i < filteredResources.length; i += batchSize) {
-    const batch = filteredResources.slice(i, i + batchSize);
+  for (let i = 0; i < resources.length; i += batchSize) {
+    const batch = resources.slice(i, i + batchSize);
     
     const values = batch.map(() => '(?, ?, ?, ?, ?)').join(',');
     const args = batch.flatMap(resource => [
@@ -767,5 +848,5 @@ async function importItemResources(client: Client, resources: ItemResourceEntry[
     }
   }
   
-  console.log(`[Importer] Resources imported: ${successCount}/${filteredResources.length}`);
+  console.log(`[Importer] Resources imported: ${successCount}/${resources.length}`);
 }

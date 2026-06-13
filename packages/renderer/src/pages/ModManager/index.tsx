@@ -184,6 +184,7 @@ export default function DataImportPage(): React.ReactElement {
 
   const [currentStep, setCurrentStep] = useState(0);
   const steps = ['检测数据', '预览确认', '执行导入'];
+  const isExporterV1PendingImport = validationResult?.sourceKind === 'exporter_v1';
 
   // 自动开始检测（如果通过导航传入参数）
   useEffect(() => {
@@ -304,7 +305,7 @@ export default function DataImportPage(): React.ReactElement {
               <p>
                 点击下方按钮检测整合包目录中的数据文件。
                 <br />
-                预期路径：<code>delightify-exporter/export.sqlite</code>
+                预期路径：<code>delightify/export.sqlite</code> 或 <code>delightify-exporter/export.sqlite</code>
               </p>
               <button className={styles.primaryButton} onClick={handleDetect}>
                 <RefreshIcon />
@@ -357,6 +358,28 @@ export default function DataImportPage(): React.ReactElement {
                   <span className={styles.metaValue}>{validationResult.forgeVersion}</span>
                 </div>
               )}
+              {validationResult.sourceKind && (
+                <div className={styles.metaItem}>
+                  <span className={styles.metaLabel}>数据源</span>
+                  <span className={styles.metaValue}>
+                    {validationResult.sourceKind === 'exporter_v1' ? 'Exporter v1' : 'Legacy Exporter'}
+                  </span>
+                </div>
+              )}
+              {validationResult.schemaVersion && (
+                <div className={styles.metaItem}>
+                  <span className={styles.metaLabel}>Schema</span>
+                  <span className={styles.metaValue}>{validationResult.schemaVersion}</span>
+                </div>
+              )}
+              {validationResult.capabilities && (
+                <div className={styles.metaItem}>
+                  <span className={styles.metaLabel}>能力</span>
+                  <span className={styles.metaValue}>
+                    {validationResult.capabilities.mvp0Unify ? '浏览 + MVP-0 unify' : '仅浏览'}
+                  </span>
+                </div>
+              )}
               {validationResult.exportedAt && (
                 <div className={styles.metaItem}>
                   <span className={styles.metaLabel}>导出时间</span>
@@ -366,6 +389,16 @@ export default function DataImportPage(): React.ReactElement {
                 </div>
               )}
             </div>
+
+            {isExporterV1PendingImport && (
+              <div className={styles.errorAlert}>
+                <AlertIcon />
+                <div>
+                  <strong>Exporter v1 已识别</strong>
+                  <p>当前步骤只完成 schema 与能力检测，v1 完整导入会在下一步接入。</p>
+                </div>
+              </div>
+            )}
 
             {/* 数据预览卡片 */}
             <div className={styles.previewCards}>
@@ -400,7 +433,11 @@ export default function DataImportPage(): React.ReactElement {
               <button className={styles.secondaryButton} onClick={handleReset}>
                 重新检测
               </button>
-              <button className={styles.primaryButton} onClick={handleImport}>
+              <button
+                className={styles.primaryButton}
+                onClick={handleImport}
+                disabled={isExporterV1PendingImport}
+              >
                 开始导入
                 <ChevronRightIcon />
               </button>

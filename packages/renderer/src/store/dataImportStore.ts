@@ -116,23 +116,11 @@ export const useDataImportStore = create<DataImportState>((set, get) => ({
       const result = await electronAPI().modDataValidate(filePath);
       
       if (result.success && result.data) {
-        const validationResult: ValidationResult = {
-          valid: result.data.valid,
-          version: result.data.version,
-          minecraftVersion: result.data.minecraftVersion,
-          forgeVersion: result.data.forgeVersion,
-          exportedAt: result.data.exportedAt,
-          modCount: result.data.modCount,
-          itemCount: result.data.itemCount,
-          recipeCount: result.data.recipeCount,
-          tagCount: result.data.tagCount,
-          error: result.data.error,
-        };
         set({ 
-          validationResult,
+          validationResult: result.data,
           isValidating: false 
         });
-        return validationResult;
+        return result.data;
       } else {
         set({ 
           validationError: result.error || '验证数据文件失败',

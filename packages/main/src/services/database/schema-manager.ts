@@ -25,7 +25,19 @@ export interface ColumnDef {
 export interface TableDef {
   name: string;
   columns: ColumnDef[];
+  constraints?: string[];
   indexes?: string[];
+}
+
+function quoteIdentifier(identifier: string): string {
+  return `"${identifier.replace(/"/g, '""')}"`;
+}
+
+function formatDefaultValue(value: string | number): string {
+  if (typeof value === 'number') {
+    return String(value);
+  }
+  return `'${value.replace(/'/g, "''")}'`;
 }
 
 // 核心表结构定义
@@ -56,8 +68,45 @@ export const CORE_TABLES: TableDef[] = [
     columns: [
       { name: 'item_id', type: 'TEXT', primaryKey: true },
       { name: 'modid', type: 'TEXT', nullable: false },
+      { name: 'translation_key', type: 'TEXT', nullable: true },
+      { name: 'is_block', type: 'INTEGER', nullable: false, default: 0 },
+      { name: 'max_stack', type: 'INTEGER', nullable: false, default: 64 },
+      { name: 'max_damage', type: 'INTEGER', nullable: false, default: 0 },
+      { name: 'is_damageable', type: 'INTEGER', nullable: false, default: 0 },
+      { name: 'is_fire_resistant', type: 'INTEGER', nullable: false, default: 0 },
+      { name: 'rarity', type: 'TEXT', nullable: true },
+      { name: 'enchant_value', type: 'INTEGER', nullable: true, default: 0 },
+      { name: 'food_nutrition', type: 'INTEGER', nullable: true },
+      { name: 'food_saturation', type: 'REAL', nullable: true },
+      { name: 'food_always_eat', type: 'INTEGER', nullable: true },
+      { name: 'default_components_json', type: 'TEXT', nullable: true },
     ],
     indexes: ['CREATE INDEX IF NOT EXISTS idx_items_modid ON items(modid)'],
+  },
+  {
+    name: 'blocks',
+    columns: [
+      { name: 'block_id', type: 'TEXT', primaryKey: true },
+      { name: 'item_id', type: 'TEXT', nullable: true },
+      { name: 'hardness', type: 'REAL', nullable: true },
+      { name: 'resistance', type: 'REAL', nullable: true },
+      { name: 'light_emission', type: 'INTEGER', nullable: true },
+      { name: 'requires_correct_tool', type: 'INTEGER', nullable: true },
+      { name: 'sound_type', type: 'TEXT', nullable: true },
+    ],
+    indexes: ['CREATE INDEX IF NOT EXISTS idx_blocks_item_id ON blocks(item_id)'],
+  },
+  {
+    name: 'item_creative_tabs',
+    columns: [
+      { name: 'item_id', type: 'TEXT', nullable: false },
+      { name: 'tab_id', type: 'TEXT', nullable: false },
+    ],
+    constraints: ['PRIMARY KEY(item_id, tab_id)'],
+    indexes: [
+      'CREATE INDEX IF NOT EXISTS idx_item_creative_tabs_item_id ON item_creative_tabs(item_id)',
+      'CREATE INDEX IF NOT EXISTS idx_item_creative_tabs_tab_id ON item_creative_tabs(tab_id)',
+    ],
   },
   {
     name: 'item_tags',
@@ -65,6 +114,7 @@ export const CORE_TABLES: TableDef[] = [
       { name: 'tag_id', type: 'TEXT', nullable: false },
       { name: 'item_id', type: 'TEXT', nullable: false },
     ],
+    constraints: ['PRIMARY KEY(tag_id, item_id)'],
     indexes: [
       'CREATE INDEX IF NOT EXISTS idx_item_tags_item_id ON item_tags(item_id)',
       'CREATE INDEX IF NOT EXISTS idx_item_tags_tag_id ON item_tags(tag_id)',
@@ -79,6 +129,7 @@ export const CORE_TABLES: TableDef[] = [
       { name: 'hash', type: 'TEXT', nullable: false },
       { name: 'raw_json', type: 'TEXT', nullable: true },
       { name: 'unparsed', type: 'INTEGER', nullable: false, default: 0 },
+      { name: 'group', type: 'TEXT', nullable: true },
     ],
     indexes: [
       'CREATE INDEX IF NOT EXISTS idx_recipes_type_id ON recipes(type_id)',
@@ -86,11 +137,59 @@ export const CORE_TABLES: TableDef[] = [
     ],
   },
   {
+    name: 'recipe_inputs',
+    columns: [
+      { name: 'recipe_id', type: 'TEXT', nullable: false },
+      { name: 'slot', type: 'INTEGER', nullable: false },
+      { name: 'role', type: 'TEXT', nullable: false },
+      { name: 'kind', type: 'TEXT', nullable: false },
+      { name: 'ref', type: 'TEXT', nullable: true },
+      { name: 'count', type: 'INTEGER', nullable: false, default: 1 },
+    ],
+    constraints: ['PRIMARY KEY(recipe_id, slot, role, kind, ref)'],
+    indexes: [
+      'CREATE INDEX IF NOT EXISTS idx_recipe_inputs_ref ON recipe_inputs(kind, ref)',
+      'CREATE INDEX IF NOT EXISTS idx_recipe_inputs_recipe_id ON recipe_inputs(recipe_id)',
+    ],
+  },
+  {
+    name: 'recipe_outputs',
+    columns: [
+      { name: 'recipe_id', type: 'TEXT', nullable: false },
+      { name: 'slot', type: 'INTEGER', nullable: false },
+      { name: 'item_id', type: 'TEXT', nullable: false },
+      { name: 'count', type: 'INTEGER', nullable: false, default: 1 },
+      { name: 'components_json', type: 'TEXT', nullable: true },
+      { name: 'is_primary', type: 'INTEGER', nullable: false, default: 1 },
+    ],
+    constraints: ['PRIMARY KEY(recipe_id, slot, item_id)'],
+    indexes: [
+      'CREATE INDEX IF NOT EXISTS idx_recipe_outputs_item_id ON recipe_outputs(item_id)',
+      'CREATE INDEX IF NOT EXISTS idx_recipe_outputs_recipe_id ON recipe_outputs(recipe_id)',
+    ],
+  },
+  {
+    name: 'translations',
+    columns: [
+      { name: 'key', type: 'TEXT', nullable: false },
+      { name: 'lang', type: 'TEXT', nullable: false },
+      { name: 'value', type: 'TEXT', nullable: false },
+    ],
+    constraints: ['PRIMARY KEY(key, lang)'],
+    indexes: [
+      'CREATE INDEX IF NOT EXISTS idx_translations_lang_value ON translations(lang, value)',
+    ],
+  },
+  {
     name: 'data_imports',
     columns: [
       { name: 'import_id', type: 'TEXT', primaryKey: true },
       { name: 'source_file_path', type: 'TEXT', nullable: false },
+      { name: 'source_kind', type: 'TEXT', nullable: false, default: 'legacy_exporter' },
       { name: 'data_version', type: 'TEXT', nullable: false },
+      { name: 'schema_version', type: 'TEXT', nullable: false, default: '1.0' },
+      { name: 'capabilities_json', type: 'TEXT', nullable: false, default: '{"browse":true,"mvp0_unify":false,"reason":"legacy_export_without_structured_recipes"}' },
+      { name: 'modlist_hash', type: 'TEXT', nullable: true },
       { name: 'exported_at', type: 'TEXT', nullable: true },
       { name: 'mod_count', type: 'INTEGER', nullable: false, default: 0 },
       { name: 'item_count', type: 'INTEGER', nullable: false, default: 0 },
@@ -110,9 +209,27 @@ export const CORE_TABLES: TableDef[] = [
       { name: 'path', type: 'TEXT', nullable: false },
       { name: 'content', type: 'TEXT', nullable: true },
     ],
+    constraints: ['PRIMARY KEY(item_id, resource_type, namespace, path)'],
     indexes: [
       'CREATE INDEX IF NOT EXISTS idx_item_resources_item_id ON item_resources(item_id)',
       'CREATE UNIQUE INDEX IF NOT EXISTS idx_item_resources_pk ON item_resources(item_id, resource_type, namespace, path)',
+    ],
+  },
+  {
+    name: 'recipe_views',
+    columns: [
+      { name: 'type_id', type: 'TEXT', primaryKey: true },
+      { name: 'layout_json', type: 'TEXT', nullable: false },
+      { name: 'base64_png', type: 'TEXT', nullable: true },
+      { name: 'version', type: 'INTEGER', nullable: true },
+    ],
+  },
+  {
+    name: 'recipe_view_backgrounds',
+    columns: [
+      { name: 'type_id', type: 'TEXT', primaryKey: true },
+      { name: 'png', type: 'BLOB', nullable: false },
+      { name: 'sha1', type: 'TEXT', nullable: false },
     ],
   },
 ];
@@ -216,10 +333,10 @@ export class SchemaManager {
       // 构建 ALTER TABLE 语句
       const nullable = field.defaultValue === undefined ? '' : 'NOT NULL';
       const defaultClause = field.defaultValue !== undefined 
-        ? `DEFAULT ${typeof field.defaultValue === 'string' ? `'${field.defaultValue}'` : field.defaultValue}`
+        ? `DEFAULT ${formatDefaultValue(field.defaultValue)}`
         : '';
 
-      const sql = `ALTER TABLE ${field.tableName} ADD COLUMN ${field.columnName} ${field.columnType} ${nullable} ${defaultClause}`.trim();
+      const sql = `ALTER TABLE ${quoteIdentifier(field.tableName)} ADD COLUMN ${quoteIdentifier(field.columnName)} ${field.columnType} ${nullable} ${defaultClause}`.trim();
       
       await this.client.execute(sql);
       console.log(`[SchemaManager] Added column: ${field.tableName}.${field.columnName}`);
@@ -250,7 +367,7 @@ export class SchemaManager {
         tables.push(tableName);
 
         // 获取表的所有列
-        const columnsResult = await this.client.execute(`PRAGMA table_info(${tableName})`);
+        const columnsResult = await this.client.execute(`PRAGMA table_info(${quoteIdentifier(tableName)})`);
         columns[tableName] = columnsResult.rows.map((col: unknown) => {
           const c = col as { name: string };
           return c.name;
@@ -325,7 +442,7 @@ export class SchemaManager {
         console.log(`[SchemaManager] Checking table ${table.name} for migration...`);
 
         // 获取表的当前列信息
-        const columnsResult = await this.client.execute(`PRAGMA table_info(${table.name})`);
+        const columnsResult = await this.client.execute(`PRAGMA table_info(${quoteIdentifier(table.name)})`);
         const existingColumns = new Map(
           columnsResult.rows.map((row: unknown) => {
             const r = row as { name: string; notnull: number; dflt_value: string | null };
@@ -368,10 +485,10 @@ export class SchemaManager {
     try {
       const nullable = colDef.nullable === false ? 'NOT NULL' : '';
       const defaultClause = colDef.default !== undefined 
-        ? `DEFAULT ${typeof colDef.default === 'string' ? `'${colDef.default}'` : colDef.default}`
+        ? `DEFAULT ${formatDefaultValue(colDef.default)}`
         : '';
 
-      const sql = `ALTER TABLE ${tableName} ADD COLUMN ${colDef.name} ${colDef.type} ${nullable} ${defaultClause}`.trim();
+      const sql = `ALTER TABLE ${quoteIdentifier(tableName)} ADD COLUMN ${quoteIdentifier(colDef.name)} ${colDef.type} ${nullable} ${defaultClause}`.trim();
       await this.client.execute(sql);
       console.log(`[SchemaManager] Added column: ${tableName}.${colDef.name}`);
     } catch (error) {
@@ -395,29 +512,31 @@ export class SchemaManager {
 
     // 1. 创建临时表（使用正确的约束）
     const columnsSql = table.columns.map(col => {
-      let sql = `${col.name} ${col.type}`;
+      let sql = `${quoteIdentifier(col.name)} ${col.type}`;
       if (col.primaryKey) sql += ' PRIMARY KEY';
       if (col.nullable === false && !col.primaryKey) sql += ' NOT NULL';
       if (col.default !== undefined) {
-        sql += ` DEFAULT ${typeof col.default === 'string' ? `'${col.default}'` : col.default}`;
+        sql += ` DEFAULT ${formatDefaultValue(col.default)}`;
       }
       return sql;
-    }).join(', ');
+    });
+    const constraintsSql = table.constraints ?? [];
+    const tableSql = [...columnsSql, ...constraintsSql].join(', ');
 
-    await this.client.execute(`CREATE TABLE ${tempTableName} (${columnsSql})`);
+    await this.client.execute(`CREATE TABLE ${quoteIdentifier(tempTableName)} (${tableSql})`);
 
     // 2. 复制数据
-    const columnNames = table.columns.map(col => col.name).join(', ');
+    const columnNames = table.columns.map(col => quoteIdentifier(col.name)).join(', ');
     await this.client.execute(`
-      INSERT INTO ${tempTableName} (${columnNames})
-      SELECT ${columnNames} FROM ${table.name}
+      INSERT INTO ${quoteIdentifier(tempTableName)} (${columnNames})
+      SELECT ${columnNames} FROM ${quoteIdentifier(table.name)}
     `);
 
     // 3. 删除旧表
-    await this.client.execute(`DROP TABLE ${table.name}`);
+    await this.client.execute(`DROP TABLE ${quoteIdentifier(table.name)}`);
 
     // 4. 重命名临时表
-    await this.client.execute(`ALTER TABLE ${tempTableName} RENAME TO ${table.name}`);
+    await this.client.execute(`ALTER TABLE ${quoteIdentifier(tempTableName)} RENAME TO ${quoteIdentifier(table.name)}`);
 
     // 5. 重建索引
     if (table.indexes) {
@@ -443,17 +562,19 @@ export class SchemaManager {
 
   private async createTableIfNotExists(table: TableDef): Promise<void> {
     const columnsSql = table.columns.map(col => {
-      let sql = `${col.name} ${col.type}`;
+      let sql = `${quoteIdentifier(col.name)} ${col.type}`;
       if (col.primaryKey) sql += ' PRIMARY KEY';
       // 只有明确设置 nullable: false 时才添加 NOT NULL
       if (col.nullable === false && !col.primaryKey) sql += ' NOT NULL';
       if (col.default !== undefined) {
-        sql += ` DEFAULT ${typeof col.default === 'string' ? `'${col.default}'` : col.default}`;
+        sql += ` DEFAULT ${formatDefaultValue(col.default)}`;
       }
       return sql;
-    }).join(', ');
+    });
+    const constraintsSql = table.constraints ?? [];
+    const tableSql = [...columnsSql, ...constraintsSql].join(', ');
 
-    const createSql = `CREATE TABLE IF NOT EXISTS ${table.name} (${columnsSql})`;
+    const createSql = `CREATE TABLE IF NOT EXISTS ${quoteIdentifier(table.name)} (${tableSql})`;
     
     await this.client.execute(createSql);
 
@@ -482,7 +603,7 @@ export class SchemaManager {
 
   private async checkColumnExists(tableName: string, columnName: string): Promise<boolean> {
     try {
-      const result = await this.client.execute(`PRAGMA table_info(${tableName})`);
+      const result = await this.client.execute(`PRAGMA table_info(${quoteIdentifier(tableName)})`);
       return result.rows.some((row: unknown) => {
         const r = row as { name: string };
         return r.name === columnName;

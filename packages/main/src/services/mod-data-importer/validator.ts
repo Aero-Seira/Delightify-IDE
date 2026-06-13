@@ -5,14 +5,110 @@
  */
 
 import { createClient } from '@libsql/client';
-import type { ValidationResult } from './types';
+import type { DataSourceKind, ProjectCapabilities, ValidationResult } from './types';
+import {
+  DATA_FILE_PATHS,
+  EXPORTER_V1_CAPABILITIES,
+  EXPORTER_V1_REQUIRED_TABLES,
+  LEGACY_EXPORTER_CAPABILITIES,
+  LEGACY_REQUIRED_TABLES,
+} from './types';
 
-// 附属Mod数据文件预期路径
-export const DATA_FILE_PATHS = [
-  'delightify-exporter/export.sqlite',
-  '.delightify-exporter/export.sqlite',
-  'config/delightify-exporter/export.sqlite',
-];
+export { DATA_FILE_PATHS };
+
+type LibsqlClient = ReturnType<typeof createClient>;
+
+function toStringValue(value: unknown): string | undefined {
+  return typeof value === 'string' && value.length > 0 ? value : undefined;
+}
+
+function hasAllTables(tables: Set<string>, requiredTables: string[]): boolean {
+  return requiredTables.every(table => tables.has(table));
+}
+
+function listMissingTables(tables: Set<string>, requiredTables: string[]): string[] {
+  return requiredTables.filter(table => !tables.has(table));
+}
+
+async function readTableNames(client: LibsqlClient): Promise<Set<string>> {
+  const result = await client.execute(`
+    SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'
+  `);
+  return new Set(result.rows.map(row => row.name as string));
+}
+
+async function readManifest(client: LibsqlClient): Promise<Map<string, string>> {
+  const manifest = new Map<string, string>();
+
+  try {
+    const result = await client.execute('SELECT key, value FROM manifest');
+    for (const row of result.rows) {
+      const key = row.key as string | undefined;
+      const value = row.value as string | undefined;
+      if (key && value !== undefined) {
+        manifest.set(key, value);
+      }
+    }
+  } catch {
+    // 缺 manifest 会在表检测阶段报错，这里保持容错。
+  }
+
+  return manifest;
+}
+
+async function readSchemaVersion(client: LibsqlClient, manifest: Map<string, string>): Promise<string | undefined> {
+  const manifestVersion = manifest.get('schema_version');
+  if (manifestVersion) {
+    return manifestVersion;
+  }
+
+  try {
+    const result = await client.execute('SELECT version FROM schema_version ORDER BY version DESC LIMIT 1');
+    const version = result.rows[0]?.version;
+    if (version !== undefined && version !== null) {
+      return String(version);
+    }
+  } catch {
+    // schema_version 表在 legacy 文件中可能不存在。
+  }
+
+  return undefined;
+}
+
+async function countRows(client: LibsqlClient, tableName: string): Promise<number> {
+  const result = await client.execute(`SELECT COUNT(*) as count FROM "${tableName}"`);
+  return Number(result.rows[0]?.count || 0);
+}
+
+function classifyDataSource(tables: Set<string>): { sourceKind: DataSourceKind; capabilities: ProjectCapabilities } | { error: string } {
+  if (hasAllTables(tables, EXPORTER_V1_REQUIRED_TABLES)) {
+    return {
+      sourceKind: 'exporter_v1',
+      capabilities: EXPORTER_V1_CAPABILITIES,
+    };
+  }
+
+  const structuredTables = ['recipe_inputs', 'recipe_outputs', 'translations'];
+  const hasPartialV1Tables = structuredTables.some(table => tables.has(table));
+  if (hasPartialV1Tables) {
+    const missingTables = listMissingTables(tables, EXPORTER_V1_REQUIRED_TABLES);
+    return {
+      error: `Exporter v1 数据文件缺少必需的表: ${missingTables.join(', ')}`,
+    };
+  }
+
+  if (hasAllTables(tables, LEGACY_REQUIRED_TABLES)) {
+    return {
+      sourceKind: 'legacy_exporter',
+      capabilities: LEGACY_EXPORTER_CAPABILITIES,
+    };
+  }
+
+  const missingTables = listMissingTables(tables, LEGACY_REQUIRED_TABLES);
+  return {
+    error: `数据文件缺少必需的表: ${missingTables.join(', ')}`,
+  };
+}
 
 /**
  * 验证数据文件
@@ -35,66 +131,46 @@ export async function validateModDataFile(filePath: string): Promise<ValidationR
       url: `file:${filePath}`,
     });
 
-    // 检查必需的表是否存在
-    const requiredTables = ['manifest', 'mods', 'items', 'item_tags', 'recipes'];
-    for (const table of requiredTables) {
-      const result = await client.execute({
-        sql: `SELECT name FROM sqlite_master WHERE type='table' AND name=?`,
-        args: [table],
-      });
-      if (result.rows.length === 0) {
-        return { valid: false, error: `数据文件缺少必需的表: ${table}` };
-      }
+    const tables = await readTableNames(client);
+    const classification = classifyDataSource(tables);
+    if ('error' in classification) {
+      return { valid: false, error: classification.error };
     }
 
     // 读取 manifest 获取元数据
-    let minecraftVersion: string | undefined;
-    let forgeVersion: string | undefined;
-    let exportedAt: string | undefined;
-    let modCount = 0;
-
-    try {
-      const manifestResult = await client.execute('SELECT * FROM manifest');
-      for (const row of manifestResult.rows) {
-        const key = row.key as string;
-        const value = row.value as string;
-        
-        switch (key) {
-          case 'minecraft_version':
-            minecraftVersion = value;
-            break;
-          case 'forge_version':
-            forgeVersion = value;
-            break;
-          case 'exported_at_utc':
-            exportedAt = value;
-            break;
-          case 'mod_count':
-            modCount = parseInt(value, 10) || 0;
-            break;
-        }
-      }
-    } catch {
-      // manifest 读取失败不影响验证
-    }
+    const manifest = await readManifest(client);
+    const schemaVersion = await readSchemaVersion(client, manifest);
+    const loader = toStringValue(manifest.get('loader'));
+    const mcVersion = toStringValue(manifest.get('mc_version'));
+    const minecraftVersion = toStringValue(manifest.get('minecraft_version')) || mcVersion;
+    const forgeVersion = toStringValue(manifest.get('forge_version'));
+    const exportedAt = toStringValue(manifest.get('exported_at_utc')) || toStringValue(manifest.get('exported_at'));
+    const modlistHash = toStringValue(manifest.get('modlist_hash'));
 
     // 统计各项数量
-    const [itemsResult, recipesResult, tagsResult] = await Promise.all([
-      client.execute('SELECT COUNT(*) as count FROM items'),
-      client.execute('SELECT COUNT(*) as count FROM recipes'),
-      client.execute('SELECT COUNT(*) as count FROM item_tags'),
+    const [modsCount, itemsCount, recipesCount, tagsCount] = await Promise.all([
+      countRows(client, 'mods'),
+      countRows(client, 'items'),
+      countRows(client, 'recipes'),
+      countRows(client, 'item_tags'),
     ]);
 
     return {
       valid: true,
-      version: '1.0',
+      version: schemaVersion || (classification.sourceKind === 'legacy_exporter' ? '1.0' : undefined),
+      schemaVersion: schemaVersion || (classification.sourceKind === 'legacy_exporter' ? '1.0' : undefined),
+      sourceKind: classification.sourceKind,
+      capabilities: classification.capabilities,
+      loader,
+      mcVersion,
       minecraftVersion,
       forgeVersion,
       exportedAt,
-      modCount,
-      itemCount: Number(itemsResult.rows[0]?.count || 0),
-      recipeCount: Number(recipesResult.rows[0]?.count || 0),
-      tagCount: Number(tagsResult.rows[0]?.count || 0),
+      modlistHash,
+      modCount: Number(manifest.get('mod_count')) || modsCount,
+      itemCount: itemsCount,
+      recipeCount: recipesCount,
+      tagCount: tagsCount,
     };
   } catch (error) {
     return {

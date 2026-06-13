@@ -20,6 +20,10 @@ export interface ModDataImportResult {
   success: boolean;
   /** 导入记录ID */
   importId?: string;
+  /** 数据源类型 */
+  sourceKind?: DataSourceKind;
+  /** 项目能力 */
+  capabilities?: ProjectCapabilities;
   /** 导入统计 */
   stats?: {
     modCount: number;
@@ -53,8 +57,16 @@ export interface DataImportHistory {
   importId: string;
   /** 数据源文件路径 */
   sourceFilePath: string;
+  /** 数据源类型 */
+  sourceKind?: DataSourceKind;
   /** 数据版本 */
   dataVersion: string;
+  /** schema 版本 */
+  schemaVersion?: string;
+  /** 项目能力 */
+  capabilities?: ProjectCapabilities;
+  /** 模组列表哈希 */
+  modlistHash?: string;
   /** 附属Mod导出时间 */
   exportedAt?: string;
   /** 导入的模组数量 */
@@ -69,6 +81,8 @@ export interface DataImportHistory {
   importedAt: string;
   /** 是否成功 */
   isSuccess: boolean;
+  /** 错误信息 */
+  errorMessage?: string;
 }
 
 /** 清单条目 */
@@ -77,12 +91,37 @@ export interface ManifestEntry {
   value: string;
 }
 
+/** 数据源类型 */
+export type DataSourceKind = 'exporter_v1' | 'legacy_exporter';
+
+/** 项目能力 */
+export interface ProjectCapabilities {
+  /** 是否支持浏览物品/配方数据 */
+  browse: boolean;
+  /** 是否支持 MVP-0 unify 工作流 */
+  mvp0Unify: boolean;
+  /** 能力受限原因 */
+  reason?: string;
+}
+
 /** 验证结果 */
 export interface ValidationResult {
   /** 是否有效 */
   valid: boolean;
   /** 数据版本 */
   version?: string;
+  /** schema 版本 */
+  schemaVersion?: string;
+  /** 数据源类型 */
+  sourceKind?: DataSourceKind;
+  /** 项目能力 */
+  capabilities?: ProjectCapabilities;
+  /** loader 类型 */
+  loader?: string;
+  /** Minecraft 版本，兼容 v1 manifest.mc_version */
+  mcVersion?: string;
+  /** 模组列表哈希 */
+  modlistHash?: string;
   /** Minecraft版本 */
   minecraftVersion?: string;
   /** Forge版本 */
