@@ -11,6 +11,9 @@ import type {
   UnifyDryRunResult,
   UnifyQueryParams,
   UnifyQueryResult,
+  KubeJsExportParams,
+  KubeJsExportResult,
+  KubeJsRevertResult,
 } from '@delightify/shared';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -338,6 +341,41 @@ export const mockElectronAPI = {
       deferredDecisionCount: 0,
       generatedAt: new Date().toISOString(),
     } satisfies UnifyDryRunResult,
+  }),
+
+  // ========== 导出 ==========
+  exportKubeJs: async (
+    projectPath: string,
+    params: KubeJsExportParams
+  ): Promise<{ success: boolean; data: KubeJsExportResult }> => {
+    const writtenAt = new Date().toISOString();
+    return {
+      success: true,
+      data: {
+        filePath: `${projectPath}/kubejs/server_scripts/zzz_delightify_generated.js`,
+        operationCount: params.changeSet.length,
+        generatedCode: [
+          '// @delightify-generated',
+          '// Do not edit by hand. Regenerate from Delightify.',
+          `// Generated at: ${writtenAt}`,
+          '',
+          'ServerEvents.recipes(event => {',
+          '})',
+          '',
+        ].join('\n'),
+        writtenAt,
+      },
+    };
+  },
+
+  revertKubeJs: async (
+    projectPath: string
+  ): Promise<{ success: boolean; data: KubeJsRevertResult }> => ({
+    success: true,
+    data: {
+      filePath: `${projectPath}/kubejs/server_scripts/zzz_delightify_generated.js`,
+      deleted: true,
+    },
   }),
 
   // ========== 通用工具 ==========

@@ -48,6 +48,10 @@ const IPC_CHANNELS = {
   DEBUG_DB_TABLES: 'debug:db-tables',
   DEBUG_DB_QUERY: 'debug:db-query',
   DEBUG_CLEAR_DATA: 'debug:clear-data',
+
+  // Export
+  EXPORT_KUBEJS: 'export:kubejs',
+  EXPORT_KUBEJS_REVERT: 'export:kubejs:revert',
 } as const;
 
 contextBridge.exposeInMainWorld('electronAPI', {
@@ -103,6 +107,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke(IPC_CHANNELS.UNIFY_QUERY, projectPath, params),
   unifyDryRun: (projectPath: string, params: unknown) =>
     ipcRenderer.invoke(IPC_CHANNELS.UNIFY_DRY_RUN, projectPath, params),
+
+  // ========== 导出 ==========
+  exportKubeJs: (projectPath: string, params: unknown) =>
+    ipcRenderer.invoke(IPC_CHANNELS.EXPORT_KUBEJS, projectPath, params),
+  revertKubeJs: (projectPath: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.EXPORT_KUBEJS_REVERT, projectPath),
 
   // ========== 通用工具 ==========
   openExternal: (url: string) => ipcRenderer.invoke('shell:open-external', url),

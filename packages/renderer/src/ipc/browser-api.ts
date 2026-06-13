@@ -100,6 +100,16 @@ export const browserElectronAPI = {
     error: '浏览器模式不支持 unify dry-run',
   }),
 
+  // ========== 导出 ==========
+  exportKubeJs: async () => ({
+    success: false,
+    error: '浏览器模式不支持 KubeJS 导出',
+  }),
+  revertKubeJs: async () => ({
+    success: false,
+    error: '浏览器模式不支持 KubeJS 生成文件撤销',
+  }),
+
   // ========== 配方类型元数据 ==========
   recipeTypesGetAll: async () => ({ success: true, data: [] }),
   recipeTypesGet: async () => ({ success: true, data: null }),

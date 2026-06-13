@@ -25,6 +25,9 @@ import type {
   UnifyDryRunResult,
   UnifyQueryParams,
   UnifyQueryResult,
+  KubeJsExportParams,
+  KubeJsExportResult,
+  KubeJsRevertResult,
 } from '@delightify/shared';
 import { mockElectronAPI } from './mock';
 
@@ -64,6 +67,10 @@ export interface ElectronAPI {
   // ========== Unify 查询 ==========
   unifyQuery: (projectPath: string, params: UnifyQueryParams) => Promise<{ success: boolean; data?: UnifyQueryResult; error?: string }>;
   unifyDryRun: (projectPath: string, params: UnifyDryRunParams) => Promise<{ success: boolean; data?: UnifyDryRunResult; error?: string }>;
+
+  // ========== 导出 ==========
+  exportKubeJs: (projectPath: string, params: KubeJsExportParams) => Promise<{ success: boolean; data?: KubeJsExportResult; error?: string }>;
+  revertKubeJs: (projectPath: string) => Promise<{ success: boolean; data?: KubeJsRevertResult; error?: string }>;
 
   // ========== 配方类型元数据 ==========
   recipeTypesGetAll: () => Promise<{ success: boolean; data?: RecipeTypeMetadata[]; error?: string }>;

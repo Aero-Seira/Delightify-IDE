@@ -11,6 +11,7 @@ import { registerItemsHandlers } from './items';
 import { registerRecipesHandlers } from './recipes';
 import { registerRecipeTypesHandlers } from './recipe-types';
 import { registerUnifyHandlers } from './unify';
+import { registerExportHandlers } from './export';
 import { registerDebugHandlers } from './debug';
 
 export function registerAllHandlers(): void {
@@ -20,6 +21,7 @@ export function registerAllHandlers(): void {
   registerRecipesHandlers();
   registerRecipeTypesHandlers();
   registerUnifyHandlers();
+  registerExportHandlers();
   registerDebugHandlers();
   
   // 通用工具处理器

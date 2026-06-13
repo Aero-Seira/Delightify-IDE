@@ -45,6 +45,7 @@ export const IPC_CHANNELS = {
 
   // Export
   EXPORT_KUBEJS: 'export:kubejs',
+  EXPORT_KUBEJS_REVERT: 'export:kubejs:revert',
   EXPORT_DATAPACK: 'export:datapack',
 
   // Debug
