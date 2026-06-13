@@ -58,6 +58,7 @@ mods(modid TEXT PRIMARY KEY, version TEXT, name TEXT)
 items(
   item_id TEXT PRIMARY KEY,          -- namespace:path
   modid TEXT NOT NULL,
+  translation_key TEXT,              -- 运行时真实 description id，如 item.minecraft.diamond
   is_block INTEGER NOT NULL,         -- 是否有对应方块
   max_stack INTEGER NOT NULL,
   max_damage INTEGER NOT NULL DEFAULT 0,   -- 0 = 不可损耗
