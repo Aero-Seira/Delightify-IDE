@@ -15,6 +15,7 @@
     "dev:electron:direct": "cd packages/main && pnpm electron",
     "build": "turbo run build",
     "typecheck": "turbo run typecheck",
+    "smoke:mvp0": "pnpm build && node scripts/smoke-mvp0-unify.mjs",
     "clean": "turbo run clean",
     "dist:win": "cd packages/main && pnpm dist:win",
     "dist:win:dir": "cd packages/main && pnpm dist:win:dir",

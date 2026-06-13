@@ -544,6 +544,20 @@ MVP-0 先覆盖这些动作：
 - `pnpm build`
 - 在打开项目后可从“转换工具”完成 查询候选 → dry-run → 生成/撤销 KubeJS。
 
+### PR 7：MVP-0 smoke 验收脚本
+
+内容：
+
+- 新增 `pnpm smoke:mvp0`。
+- 脚本构造最小 Exporter v1 SQLite 快照。
+- 调用真实服务跑通 导入 → unify 查询 → dry-run → KubeJS 生成 → 重生成 → 撤销。
+- 覆盖低风险自动 change set 与高风险搁置项。
+
+验收：
+
+- `pnpm smoke:mvp0`
+- `pnpm typecheck`
+
 ## 9. 当前代码对应关系
 
 可复用：
