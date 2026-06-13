@@ -21,6 +21,8 @@ import type {
   DataImportHistory,
   ManifestEntry,
   ValidationResult,
+  UnifyDryRunParams,
+  UnifyDryRunResult,
   UnifyQueryParams,
   UnifyQueryResult,
 } from '@delightify/shared';
@@ -61,6 +63,7 @@ export interface ElectronAPI {
 
   // ========== Unify 查询 ==========
   unifyQuery: (projectPath: string, params: UnifyQueryParams) => Promise<{ success: boolean; data?: UnifyQueryResult; error?: string }>;
+  unifyDryRun: (projectPath: string, params: UnifyDryRunParams) => Promise<{ success: boolean; data?: UnifyDryRunResult; error?: string }>;
 
   // ========== 配方类型元数据 ==========
   recipeTypesGetAll: () => Promise<{ success: boolean; data?: RecipeTypeMetadata[]; error?: string }>;

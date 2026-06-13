@@ -95,6 +95,10 @@ export const browserElectronAPI = {
     success: false,
     error: '浏览器模式不支持 unify 查询',
   }),
+  unifyDryRun: async () => ({
+    success: false,
+    error: '浏览器模式不支持 unify dry-run',
+  }),
 
   // ========== 配方类型元数据 ==========
   recipeTypesGetAll: async () => ({ success: true, data: [] }),

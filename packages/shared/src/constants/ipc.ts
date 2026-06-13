@@ -35,6 +35,7 @@ export const IPC_CHANNELS = {
 
   // Unify queries
   UNIFY_QUERY: 'unify:query',
+  UNIFY_DRY_RUN: 'unify:dry-run',
 
   // Recipe editing
   RECIPE_EDIT_CREATE: 'recipe-edit:create',

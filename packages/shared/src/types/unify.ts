@@ -85,3 +85,66 @@ export interface UnifyQueryResult {
   candidates: UnifyCandidate[];
   generatedAt: string;
 }
+
+export interface UnifyDryRunParams extends UnifyQueryParams {
+  targetItemId?: string;
+}
+
+export type UnifyDecisionStatus = 'target' | 'auto' | 'deferred';
+
+export type UnifyActionType = 'keep_target' | 'replace_item_references' | 'defer_review';
+
+export type UnifyDiffOperationKind =
+  | 'replace_recipe_input_item'
+  | 'replace_recipe_output_item'
+  | 'tag_input_reference'
+  | 'raw_unparsed_reference';
+
+export interface UnifyDiffOperation {
+  operationId: string;
+  decisionId: string;
+  kind: UnifyDiffOperationKind;
+  recipeId: string;
+  typeId: string;
+  modid: string;
+  slot?: number;
+  before: Record<string, unknown>;
+  after?: Record<string, unknown>;
+  includedInChangeSet: boolean;
+  reason?: string;
+}
+
+export interface UnifyAction {
+  type: UnifyActionType;
+  sourceItemId?: string;
+  targetItemId: string;
+  operationIds: string[];
+}
+
+export interface UnifyDecision {
+  decisionId: string;
+  status: UnifyDecisionStatus;
+  sourceItemId: string;
+  targetItemId: string;
+  action: UnifyAction;
+  confidence: number;
+  evidence: string[];
+  riskSignals: UnifyRiskSignal[];
+  riskLevel: UnifyRiskSeverity;
+  reason: string;
+  diffOperationIds: string[];
+}
+
+export interface UnifyDryRunResult {
+  query: string;
+  normalizedQuery: string;
+  lang: string;
+  targetItemId: string;
+  targetReason: string;
+  decisions: UnifyDecision[];
+  diff: UnifyDiffOperation[];
+  changeSet: UnifyDiffOperation[];
+  autoDecisionCount: number;
+  deferredDecisionCount: number;
+  generatedAt: string;
+}

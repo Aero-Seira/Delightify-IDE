@@ -7,6 +7,8 @@ import type {
   Project, Item, Recipe, ModDataImportProgress,
   ItemQueryParams, ItemQueryResult,
   RecipeQueryParams,
+  UnifyDryRunParams,
+  UnifyDryRunResult,
   UnifyQueryParams,
   UnifyQueryResult,
 } from '@delightify/shared';
@@ -319,6 +321,23 @@ export const mockElectronAPI = {
       candidates: [],
       generatedAt: new Date().toISOString(),
     } satisfies UnifyQueryResult,
+  }),
+
+  unifyDryRun: async (_projectPath: string, params: UnifyDryRunParams) => ({
+    success: true,
+    data: {
+      query: params.query,
+      normalizedQuery: params.query.trim().toLowerCase(),
+      lang: params.lang || 'zh_cn',
+      targetItemId: params.targetItemId || 'minecraft:copper_ingot',
+      targetReason: params.targetItemId ? 'user_selected' : 'mock_default',
+      decisions: [],
+      diff: [],
+      changeSet: [],
+      autoDecisionCount: 0,
+      deferredDecisionCount: 0,
+      generatedAt: new Date().toISOString(),
+    } satisfies UnifyDryRunResult,
   }),
 
   // ========== 通用工具 ==========

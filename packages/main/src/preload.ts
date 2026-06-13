@@ -42,6 +42,7 @@ const IPC_CHANNELS = {
 
   // Unify
   UNIFY_QUERY: 'unify:query',
+  UNIFY_DRY_RUN: 'unify:dry-run',
 
   // Debug
   DEBUG_DB_TABLES: 'debug:db-tables',
@@ -100,6 +101,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // ========== Unify 查询 ==========
   unifyQuery: (projectPath: string, params: unknown) =>
     ipcRenderer.invoke(IPC_CHANNELS.UNIFY_QUERY, projectPath, params),
+  unifyDryRun: (projectPath: string, params: unknown) =>
+    ipcRenderer.invoke(IPC_CHANNELS.UNIFY_DRY_RUN, projectPath, params),
 
   // ========== 通用工具 ==========
   openExternal: (url: string) => ipcRenderer.invoke('shell:open-external', url),
