@@ -19,4 +19,11 @@ export type {
   ItemEntry,
   ItemTagEntry,
   RecipeEntry,
+  BlockEntry,
+  ItemCreativeTabEntry,
+  RecipeInputEntry,
+  RecipeOutputEntry,
+  TranslationEntry,
+  RecipeViewEntry,
+  RecipeViewBackgroundEntry,
 } from './types';

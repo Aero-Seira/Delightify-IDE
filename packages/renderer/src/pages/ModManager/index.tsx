@@ -184,7 +184,6 @@ export default function DataImportPage(): React.ReactElement {
 
   const [currentStep, setCurrentStep] = useState(0);
   const steps = ['检测数据', '预览确认', '执行导入'];
-  const isExporterV1PendingImport = validationResult?.sourceKind === 'exporter_v1';
 
   // 自动开始检测（如果通过导航传入参数）
   useEffect(() => {
@@ -390,16 +389,6 @@ export default function DataImportPage(): React.ReactElement {
               )}
             </div>
 
-            {isExporterV1PendingImport && (
-              <div className={styles.errorAlert}>
-                <AlertIcon />
-                <div>
-                  <strong>Exporter v1 已识别</strong>
-                  <p>当前步骤只完成 schema 与能力检测，v1 完整导入会在下一步接入。</p>
-                </div>
-              </div>
-            )}
-
             {/* 数据预览卡片 */}
             <div className={styles.previewCards}>
               <DataPreviewCard
@@ -433,11 +422,7 @@ export default function DataImportPage(): React.ReactElement {
               <button className={styles.secondaryButton} onClick={handleReset}>
                 重新检测
               </button>
-              <button
-                className={styles.primaryButton}
-                onClick={handleImport}
-                disabled={isExporterV1PendingImport}
-              >
+              <button className={styles.primaryButton} onClick={handleImport}>
                 开始导入
                 <ChevronRightIcon />
               </button>

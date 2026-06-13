@@ -18,12 +18,49 @@ import type {
   ManifestEntry,
   ProjectCapabilities,
   DataSourceKind,
+  BlockEntry,
+  ItemCreativeTabEntry,
+  RecipeInputEntry,
+  RecipeOutputEntry,
+  TranslationEntry,
+  RecipeViewEntry,
+  RecipeViewBackgroundEntry,
 } from './types';
 import { validateModDataFile, DATA_FILE_PATHS } from './validator';
 import { createSchemaManager } from '../database/schema-manager';
 
 function generateId(): string {
   return `${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+}
+
+type DbRow = Record<string, unknown>;
+
+function optionalString(value: unknown): string | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  const text = String(value);
+  return text.length > 0 ? text : null;
+}
+
+function optionalNumber(value: unknown): number | null {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+  const numberValue = Number(value);
+  return Number.isFinite(numberValue) ? numberValue : null;
+}
+
+function numberOrDefault(value: unknown, defaultValue: number): number {
+  return optionalNumber(value) ?? defaultValue;
+}
+
+async function tableExists(client: Client, tableName: string): Promise<boolean> {
+  const result = await client.execute({
+    sql: "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+    args: [tableName],
+  });
+  return result.rows.length > 0;
 }
 
 /**
@@ -69,16 +106,6 @@ export async function importModData(options: ModDataImportOptions): Promise<Impo
       };
     }
 
-    if (validation.sourceKind === 'exporter_v1') {
-      return {
-        success: false,
-        importId,
-        sourceKind: validation.sourceKind,
-        capabilities: validation.capabilities,
-        error: '已识别 Exporter v1 数据文件，但 v1 完整导入将在下一步实现。当前版本不会用 legacy 路径半导入结构化数据。',
-      };
-    }
-
     // Step 3: 读取源数据库
     onProgress?.({
       phase: 'reading',
@@ -94,6 +121,13 @@ export async function importModData(options: ModDataImportOptions): Promise<Impo
     let tagsData: ItemTagEntry[] = [];
     let recipesData: RecipeEntry[] = [];
     let resourcesData: any[] = [];
+    let blocksData: BlockEntry[] = [];
+    let creativeTabsData: ItemCreativeTabEntry[] = [];
+    let recipeInputsData: RecipeInputEntry[] = [];
+    let recipeOutputsData: RecipeOutputEntry[] = [];
+    let translationsData: TranslationEntry[] = [];
+    let recipeViewsData: RecipeViewEntry[] = [];
+    let recipeViewBackgroundsData: RecipeViewBackgroundEntry[] = [];
     
     try {
       // 读取所有数据
@@ -103,6 +137,13 @@ export async function importModData(options: ModDataImportOptions): Promise<Impo
       tagsData = await readItemTags(sourceClient);
       recipesData = await readRecipes(sourceClient);
       resourcesData = await readItemResources(sourceClient);
+      blocksData = await readBlocks(sourceClient);
+      creativeTabsData = await readItemCreativeTabs(sourceClient);
+      recipeInputsData = await readRecipeInputs(sourceClient);
+      recipeOutputsData = await readRecipeOutputs(sourceClient);
+      translationsData = await readTranslations(sourceClient);
+      recipeViewsData = await readRecipeViews(sourceClient);
+      recipeViewBackgroundsData = await readRecipeViewBackgrounds(sourceClient);
     } finally {
       // 确保源连接被关闭
       try { await sourceClient.close(); } catch {}
@@ -114,6 +155,13 @@ export async function importModData(options: ModDataImportOptions): Promise<Impo
       tagCount: tagsData.length,
       recipeCount: recipesData.length,
       resourceCount: resourcesData.length,
+      blockCount: blocksData.length,
+      creativeTabCount: creativeTabsData.length,
+      recipeInputCount: recipeInputsData.length,
+      recipeOutputCount: recipeOutputsData.length,
+      translationCount: translationsData.length,
+      recipeViewCount: recipeViewsData.length,
+      recipeViewBackgroundCount: recipeViewBackgroundsData.length,
     };
 
     onProgress?.({
@@ -193,6 +241,22 @@ export async function importModData(options: ModDataImportOptions): Promise<Impo
       });
       await importItems(targetClient, itemsData);
 
+      // 导入方块事实
+      onProgress?.({
+        phase: 'importing',
+        percent: 50,
+        message: `导入方块事实... (${blocksData.length})`,
+      });
+      await importBlocks(targetClient, blocksData);
+
+      // 导入创造模式标签页
+      onProgress?.({
+        phase: 'importing',
+        percent: 55,
+        message: `导入创造模式标签页... (${creativeTabsData.length})`,
+      });
+      await importItemCreativeTabs(targetClient, creativeTabsData);
+
       // 导入标签
       onProgress?.({
         phase: 'importing',
@@ -209,6 +273,23 @@ export async function importModData(options: ModDataImportOptions): Promise<Impo
       });
       await importRecipes(targetClient, recipesData);
 
+      // 导入结构化配方输入/输出
+      onProgress?.({
+        phase: 'importing',
+        percent: 80,
+        message: `导入结构化配方... (${recipeInputsData.length}/${recipeOutputsData.length})`,
+      });
+      await importRecipeInputs(targetClient, recipeInputsData);
+      await importRecipeOutputs(targetClient, recipeOutputsData);
+
+      // 导入翻译
+      onProgress?.({
+        phase: 'importing',
+        percent: 83,
+        message: `导入翻译... (${translationsData.length})`,
+      });
+      await importTranslations(targetClient, translationsData);
+
       // 导入资源
       onProgress?.({
         phase: 'importing',
@@ -216,6 +297,15 @@ export async function importModData(options: ModDataImportOptions): Promise<Impo
         message: `导入资源... (${resourcesData.length})`,
       });
       await importItemResources(targetClient, resourcesData);
+
+      // 导入配方视图
+      onProgress?.({
+        phase: 'importing',
+        percent: 90,
+        message: `导入配方视图... (${recipeViewsData.length})`,
+      });
+      await importRecipeViews(targetClient, recipeViewsData);
+      await importRecipeViewBackgrounds(targetClient, recipeViewBackgroundsData);
 
       // 记录导入历史
       await recordImportHistory(targetClient, {
@@ -377,7 +467,22 @@ async function readItems(client: Client): Promise<ItemEntry[]> {
       continue;
     }
     
-    entries.push({ item_id, modid });
+    entries.push({
+      item_id,
+      modid,
+      translation_key: optionalString(row.translation_key),
+      is_block: numberOrDefault(row.is_block, 0),
+      max_stack: numberOrDefault(row.max_stack, 64),
+      max_damage: numberOrDefault(row.max_damage, 0),
+      is_damageable: numberOrDefault(row.is_damageable, 0),
+      is_fire_resistant: numberOrDefault(row.is_fire_resistant, 0),
+      rarity: optionalString(row.rarity),
+      enchant_value: optionalNumber(row.enchant_value),
+      food_nutrition: optionalNumber(row.food_nutrition),
+      food_saturation: optionalNumber(row.food_saturation),
+      food_always_eat: optionalNumber(row.food_always_eat),
+      default_components_json: optionalString(row.default_components_json),
+    });
   }
   
   return entries;
@@ -431,6 +536,187 @@ async function readRecipes(client: Client): Promise<RecipeEntry[]> {
     });
   }
   
+  return entries;
+}
+
+async function readBlocks(client: Client): Promise<BlockEntry[]> {
+  if (!await tableExists(client, 'blocks')) {
+    return [];
+  }
+
+  const result = await client.execute('SELECT * FROM blocks');
+  const entries: BlockEntry[] = [];
+
+  for (const row of result.rows as DbRow[]) {
+    const block_id = optionalString(row.block_id);
+    if (!block_id) {
+      console.warn('[Importer] Skipping invalid block: missing block_id');
+      continue;
+    }
+
+    entries.push({
+      block_id,
+      item_id: optionalString(row.item_id),
+      hardness: optionalNumber(row.hardness),
+      resistance: optionalNumber(row.resistance),
+      light_emission: optionalNumber(row.light_emission),
+      requires_correct_tool: optionalNumber(row.requires_correct_tool),
+      sound_type: optionalString(row.sound_type),
+    });
+  }
+
+  return entries;
+}
+
+async function readItemCreativeTabs(client: Client): Promise<ItemCreativeTabEntry[]> {
+  if (!await tableExists(client, 'item_creative_tabs')) {
+    return [];
+  }
+
+  const result = await client.execute('SELECT * FROM item_creative_tabs');
+  const entries: ItemCreativeTabEntry[] = [];
+
+  for (const row of result.rows as DbRow[]) {
+    const item_id = optionalString(row.item_id);
+    const tab_id = optionalString(row.tab_id);
+    if (!item_id || !tab_id) {
+      console.warn('[Importer] Skipping invalid creative tab entry');
+      continue;
+    }
+    entries.push({ item_id, tab_id });
+  }
+
+  return entries;
+}
+
+async function readRecipeInputs(client: Client): Promise<RecipeInputEntry[]> {
+  if (!await tableExists(client, 'recipe_inputs')) {
+    return [];
+  }
+
+  const result = await client.execute('SELECT * FROM recipe_inputs');
+  const entries: RecipeInputEntry[] = [];
+
+  for (const row of result.rows as DbRow[]) {
+    const recipe_id = optionalString(row.recipe_id);
+    const role = optionalString(row.role);
+    const kind = optionalString(row.kind);
+    const slot = optionalNumber(row.slot);
+    if (!recipe_id || !role || !kind || slot === null) {
+      console.warn('[Importer] Skipping invalid recipe input entry');
+      continue;
+    }
+
+    entries.push({
+      recipe_id,
+      slot,
+      role,
+      kind,
+      ref: optionalString(row.ref),
+      count: numberOrDefault(row.count, 1),
+    });
+  }
+
+  return entries;
+}
+
+async function readRecipeOutputs(client: Client): Promise<RecipeOutputEntry[]> {
+  if (!await tableExists(client, 'recipe_outputs')) {
+    return [];
+  }
+
+  const result = await client.execute('SELECT * FROM recipe_outputs');
+  const entries: RecipeOutputEntry[] = [];
+
+  for (const row of result.rows as DbRow[]) {
+    const recipe_id = optionalString(row.recipe_id);
+    const item_id = optionalString(row.item_id);
+    const slot = optionalNumber(row.slot);
+    if (!recipe_id || !item_id || slot === null) {
+      console.warn('[Importer] Skipping invalid recipe output entry');
+      continue;
+    }
+
+    entries.push({
+      recipe_id,
+      slot,
+      item_id,
+      count: numberOrDefault(row.count, 1),
+      components_json: optionalString(row.components_json),
+      is_primary: numberOrDefault(row.is_primary, 1),
+    });
+  }
+
+  return entries;
+}
+
+async function readTranslations(client: Client): Promise<TranslationEntry[]> {
+  if (!await tableExists(client, 'translations')) {
+    return [];
+  }
+
+  const result = await client.execute('SELECT * FROM translations');
+  const entries: TranslationEntry[] = [];
+
+  for (const row of result.rows as DbRow[]) {
+    const key = optionalString(row.key);
+    const lang = optionalString(row.lang);
+    const value = optionalString(row.value);
+    if (!key || !lang || value === null) {
+      console.warn('[Importer] Skipping invalid translation entry');
+      continue;
+    }
+    entries.push({ key, lang, value });
+  }
+
+  return entries;
+}
+
+async function readRecipeViews(client: Client): Promise<RecipeViewEntry[]> {
+  if (!await tableExists(client, 'recipe_views')) {
+    return [];
+  }
+
+  const result = await client.execute('SELECT * FROM recipe_views');
+  const entries: RecipeViewEntry[] = [];
+
+  for (const row of result.rows as DbRow[]) {
+    const type_id = optionalString(row.type_id);
+    const layout_json = optionalString(row.layout_json);
+    if (!type_id || !layout_json) {
+      console.warn('[Importer] Skipping invalid recipe view entry');
+      continue;
+    }
+    entries.push({
+      type_id,
+      layout_json,
+      base64_png: optionalString(row.base64_png),
+      version: optionalNumber(row.version),
+    });
+  }
+
+  return entries;
+}
+
+async function readRecipeViewBackgrounds(client: Client): Promise<RecipeViewBackgroundEntry[]> {
+  if (!await tableExists(client, 'recipe_view_backgrounds')) {
+    return [];
+  }
+
+  const result = await client.execute('SELECT * FROM recipe_view_backgrounds');
+  const entries: RecipeViewBackgroundEntry[] = [];
+
+  for (const row of result.rows as DbRow[]) {
+    const type_id = optionalString(row.type_id);
+    const sha1 = optionalString(row.sha1);
+    const png = row.png;
+    if (!type_id || !sha1 || !(png instanceof ArrayBuffer || png instanceof Uint8Array)) {
+      console.warn('[Importer] Skipping invalid recipe view background entry');
+      continue;
+    }
+    entries.push({ type_id, png, sha1 });
+  }
+
   return entries;
 }
 
@@ -509,12 +795,42 @@ async function importItems(client: Client, items: ItemEntry[]): Promise<void> {
     
     if (validBatch.length === 0) continue;
     
-    const values = validBatch.map(() => '(?, ?)').join(',');
-    const args = validBatch.flatMap(item => [item.item_id, item.modid]);
+    const values = validBatch.map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').join(',');
+    const args = validBatch.flatMap(item => [
+      item.item_id,
+      item.modid,
+      item.translation_key || null,
+      item.is_block ?? 0,
+      item.max_stack ?? 64,
+      item.max_damage ?? 0,
+      item.is_damageable ?? 0,
+      item.is_fire_resistant ?? 0,
+      item.rarity || null,
+      item.enchant_value ?? 0,
+      item.food_nutrition ?? null,
+      item.food_saturation ?? null,
+      item.food_always_eat ?? null,
+      item.default_components_json || null,
+    ]);
     
     try {
       await client.execute({
-        sql: `INSERT INTO items (item_id, modid) VALUES ${values}`,
+        sql: `INSERT INTO items (
+          item_id,
+          modid,
+          translation_key,
+          is_block,
+          max_stack,
+          max_damage,
+          is_damageable,
+          is_fire_resistant,
+          rarity,
+          enchant_value,
+          food_nutrition,
+          food_saturation,
+          food_always_eat,
+          default_components_json
+        ) VALUES ${values}`,
         args,
       });
       successCount += validBatch.length;
@@ -525,8 +841,38 @@ async function importItems(client: Client, items: ItemEntry[]): Promise<void> {
       for (const item of validBatch) {
         try {
           await client.execute({
-            sql: 'INSERT INTO items (item_id, modid) VALUES (?, ?)',
-            args: [item.item_id, item.modid],
+            sql: `INSERT INTO items (
+              item_id,
+              modid,
+              translation_key,
+              is_block,
+              max_stack,
+              max_damage,
+              is_damageable,
+              is_fire_resistant,
+              rarity,
+              enchant_value,
+              food_nutrition,
+              food_saturation,
+              food_always_eat,
+              default_components_json
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            args: [
+              item.item_id,
+              item.modid,
+              item.translation_key || null,
+              item.is_block ?? 0,
+              item.max_stack ?? 64,
+              item.max_damage ?? 0,
+              item.is_damageable ?? 0,
+              item.is_fire_resistant ?? 0,
+              item.rarity || null,
+              item.enchant_value ?? 0,
+              item.food_nutrition ?? null,
+              item.food_saturation ?? null,
+              item.food_always_eat ?? null,
+              item.default_components_json || null,
+            ],
           });
         } catch (singleError) {
           // 可能是重复键，记录但不中断
@@ -671,6 +1017,193 @@ async function importRecipes(client: Client, recipes: RecipeEntry[]): Promise<vo
   }
   
   console.log(`[Importer] Recipes imported: ${successCount} success, ${errorCount} errors`);
+}
+
+async function importRows<T>(
+  client: Client,
+  label: string,
+  entries: T[],
+  batchSize: number,
+  insertSql: string,
+  placeholders: string,
+  argsForEntry: (entry: T) => any[]
+): Promise<void> {
+  if (entries.length === 0) {
+    console.log(`[Importer] No ${label} to import`);
+    return;
+  }
+
+  let successCount = 0;
+
+  for (let i = 0; i < entries.length; i += batchSize) {
+    const batch = entries.slice(i, i + batchSize);
+    const values = batch.map(() => placeholders).join(',');
+    const args = batch.flatMap(argsForEntry);
+
+    try {
+      await client.execute({
+        sql: `${insertSql} VALUES ${values}`,
+        args,
+      });
+      successCount += batch.length;
+    } catch (error) {
+      console.error(`[Importer] Failed to insert ${label} batch ${i}-${i + batchSize}:`, error);
+
+      for (const entry of batch) {
+        try {
+          await client.execute({
+            sql: `${insertSql} VALUES ${placeholders}`,
+            args: argsForEntry(entry),
+          });
+          successCount++;
+        } catch (singleError) {
+          if ((singleError as Error).message?.includes('UNIQUE constraint failed')) {
+            console.warn(`[Importer] Duplicate ${label} skipped`);
+          } else {
+            console.error(`[Importer] Failed to insert ${label}:`, singleError);
+          }
+        }
+      }
+    }
+  }
+
+  console.log(`[Importer] ${label} imported: ${successCount}/${entries.length}`);
+}
+
+async function importBlocks(client: Client, blocks: BlockEntry[]): Promise<void> {
+  await importRows(
+    client,
+    'blocks',
+    blocks,
+    300,
+    `INSERT INTO blocks (
+      block_id,
+      item_id,
+      hardness,
+      resistance,
+      light_emission,
+      requires_correct_tool,
+      sound_type
+    )`,
+    '(?, ?, ?, ?, ?, ?, ?)',
+    block => [
+      block.block_id,
+      block.item_id || null,
+      block.hardness ?? null,
+      block.resistance ?? null,
+      block.light_emission ?? null,
+      block.requires_correct_tool ?? null,
+      block.sound_type || null,
+    ]
+  );
+}
+
+async function importItemCreativeTabs(client: Client, tabs: ItemCreativeTabEntry[]): Promise<void> {
+  await importRows(
+    client,
+    'item creative tabs',
+    tabs,
+    500,
+    'INSERT INTO item_creative_tabs (item_id, tab_id)',
+    '(?, ?)',
+    tab => [tab.item_id, tab.tab_id]
+  );
+}
+
+async function importRecipeInputs(client: Client, inputs: RecipeInputEntry[]): Promise<void> {
+  await importRows(
+    client,
+    'recipe inputs',
+    inputs,
+    500,
+    `INSERT INTO recipe_inputs (
+      recipe_id,
+      slot,
+      role,
+      kind,
+      ref,
+      count
+    )`,
+    '(?, ?, ?, ?, ?, ?)',
+    input => [
+      input.recipe_id,
+      input.slot,
+      input.role,
+      input.kind,
+      input.ref || null,
+      input.count,
+    ]
+  );
+}
+
+async function importRecipeOutputs(client: Client, outputs: RecipeOutputEntry[]): Promise<void> {
+  await importRows(
+    client,
+    'recipe outputs',
+    outputs,
+    500,
+    `INSERT INTO recipe_outputs (
+      recipe_id,
+      slot,
+      item_id,
+      count,
+      components_json,
+      is_primary
+    )`,
+    '(?, ?, ?, ?, ?, ?)',
+    output => [
+      output.recipe_id,
+      output.slot,
+      output.item_id,
+      output.count,
+      output.components_json || null,
+      output.is_primary,
+    ]
+  );
+}
+
+async function importTranslations(client: Client, translations: TranslationEntry[]): Promise<void> {
+  await importRows(
+    client,
+    'translations',
+    translations,
+    500,
+    'INSERT INTO translations ("key", lang, value)',
+    '(?, ?, ?)',
+    translation => [translation.key, translation.lang, translation.value]
+  );
+}
+
+async function importRecipeViews(client: Client, views: RecipeViewEntry[]): Promise<void> {
+  await importRows(
+    client,
+    'recipe views',
+    views,
+    100,
+    'INSERT INTO recipe_views (type_id, layout_json, base64_png, version)',
+    '(?, ?, ?, ?)',
+    view => [
+      view.type_id,
+      view.layout_json,
+      view.base64_png || null,
+      view.version ?? null,
+    ]
+  );
+}
+
+async function importRecipeViewBackgrounds(
+  client: Client,
+  backgrounds: RecipeViewBackgroundEntry[]
+): Promise<void> {
+  await importRows(
+    client,
+    'recipe view backgrounds',
+    backgrounds,
+    50,
+    'INSERT INTO recipe_view_backgrounds (type_id, png, sha1)',
+    '(?, ?, ?)',
+    background => [background.type_id, background.png, background.sha1]
+  );
 }
 
 async function recordImportHistory(

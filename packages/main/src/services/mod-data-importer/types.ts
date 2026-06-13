@@ -141,6 +141,58 @@ export interface RecipeEntry {
   group?: string | null;
 }
 
+export interface BlockEntry {
+  block_id: string;
+  item_id?: string | null;
+  hardness?: number | null;
+  resistance?: number | null;
+  light_emission?: number | null;
+  requires_correct_tool?: number | null;
+  sound_type?: string | null;
+}
+
+export interface ItemCreativeTabEntry {
+  item_id: string;
+  tab_id: string;
+}
+
+export interface RecipeInputEntry {
+  recipe_id: string;
+  slot: number;
+  role: string;
+  kind: string;
+  ref?: string | null;
+  count: number;
+}
+
+export interface RecipeOutputEntry {
+  recipe_id: string;
+  slot: number;
+  item_id: string;
+  count: number;
+  components_json?: string | null;
+  is_primary: number;
+}
+
+export interface TranslationEntry {
+  key: string;
+  lang: string;
+  value: string;
+}
+
+export interface RecipeViewEntry {
+  type_id: string;
+  layout_json: string;
+  base64_png?: string | null;
+  version?: number | null;
+}
+
+export interface RecipeViewBackgroundEntry {
+  type_id: string;
+  png: ArrayBuffer | Uint8Array;
+  sha1: string;
+}
+
 // ============================================================================
 // 检测相关
 // ============================================================================
