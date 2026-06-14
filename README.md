@@ -95,6 +95,9 @@ pnpm build
 ```bash
 # 启动 Electron 开发模式（前端热重载 + 主进程监听）
 pnpm dev
+
+# 构建运行时数据导出器（NeoForge 1.21.1 / Java 21）
+pnpm exporter:build
 ```
 
 Electron 窗口将自动打开
@@ -138,11 +141,11 @@ ServerEvents.recipes(event => {
 
 ### 📚 文档链接
 
-- 📚 [文档索引](docs/README.md) - 当前决策、规格快照、规划参考与历史归档
+- 📚 [文档索引](docs/README.md) - 当前决策、规格快照与历史归档
 - 🧭 [MVP-0 数据地基](docs/current/mvp0-data-foundation.md) - 当前 schema/importer/unify/KubeJS 实现依据
-- 📘 [系统架构设计](docs/reference/architecture.md) - 原始系统设计和工作流程（历史参考）
-- 📐 [技术栈决策](docs/reference/tech-stack.md) - 技术选型决策记录与 ADR
-- 🗂️ [项目结构](docs/reference/project-structure.md) - monorepo 结构、数据库 Schema、API 设计
+- 📘 [旧系统架构设计](docs/archive/planning/architecture.md) - 已归档的历史参考
+- 📐 [旧技术栈决策](docs/archive/planning/tech-stack.md) - 已归档的历史 ADR
+- 🗂️ [旧项目结构规划](docs/archive/planning/project-structure.md) - 已归档，当前实现以代码为准
 
 ### 🏗️ 项目架构
 
@@ -178,6 +181,8 @@ ServerEvents.recipes(event => {
 │  └───────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────┘
 ```
+
+运行时事实数据由 monorepo 内的 `packages/exporter` 提供。该子包是 NeoForge 1.21.1 mod，使用 Gradle/Java 21 构建；默认 `pnpm build` 不自动构建它，需显式运行 `pnpm exporter:build`。
 
 ### 🛣️ 开发路线图
 
@@ -305,11 +310,11 @@ Generate a complete KubeJS script and place it directly in your modpack's kubejs
 
 ### 📚 Documentation
 
-- 📚 [Documentation Index](docs/README.md) - Current decisions, spec snapshot, planning references, and archive
+- 📚 [Documentation Index](docs/README.md) - Current decisions, spec snapshot, and archive
 - 🧭 [MVP-0 Data Foundation](docs/current/mvp0-data-foundation.md) - Current schema/importer/unify/KubeJS implementation baseline
-- 📘 [System Architecture Design](docs/reference/architecture.md) - Original system design and workflow (historical reference)
-- 📐 [Tech Stack Decisions](docs/reference/tech-stack.md) - Technology selection decisions and ADRs
-- 🗂️ [Project Structure](docs/reference/project-structure.md) - Monorepo structure, database schema, API design
+- 📘 [Archived Architecture](docs/archive/planning/architecture.md) - Historical reference
+- 📐 [Archived Tech Stack Decisions](docs/archive/planning/tech-stack.md) - Historical ADRs
+- 🗂️ [Archived Project Structure](docs/archive/planning/project-structure.md) - Historical planning; code is current truth
 
 ### 🏗️ Architecture
 

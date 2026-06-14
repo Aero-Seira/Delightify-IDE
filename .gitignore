@@ -56,6 +56,12 @@ dist/
 out/
 build/
 
+# Gradle / Java build outputs
+.gradle/
+run/
+runs/
+run-data/
+
 # Turborepo cache
 .turbo/
 

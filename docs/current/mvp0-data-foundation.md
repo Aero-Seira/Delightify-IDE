@@ -1,7 +1,7 @@
 # MVP-0 数据地基方案
 
-> 状态：已决策，待实现。日期：2026-06-13。
-> 本文把 `exporter-contract-v1.md`、`现状审计.md` 与当前代码基线收敛成可落地方案。
+> 状态：已决策，部分已实现。日期：2026-06-13。
+> 本文把 `exporter-contract-v1.md`、归档审计 [`现状审计-2026-06-13.md`](../archive/audits/现状审计-2026-06-13.md) 与当时代码基线收敛成可落地方案。
 > 目标只覆盖 MVP-0：导入一个真实整合包快照，跑通“统一同名/等价物品”工作流，生成可审 diff，并输出 KubeJS。
 
 ## 1. 范围
@@ -306,6 +306,8 @@ recipe_view_backgrounds(
 建议候选路径：
 
 ```text
+mpide-exporter/export.sqlite             # v1 当前 exporter 输出
+.mpide-exporter/export.sqlite            # v1 可选
 delightify-exporter/export.sqlite        # legacy
 .delightify-exporter/export.sqlite       # legacy
 config/delightify-exporter/export.sqlite # legacy

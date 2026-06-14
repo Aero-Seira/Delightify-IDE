@@ -2,6 +2,8 @@
 
 > 这是当前会话的事实快照和迁移交接，不是路线图完成声明。后续实现仍以真实代码、实跑构建和样本数据库为准。
 
+> 更新：NeoForge exporter 已从上级兄弟仓并入本仓 `packages/exporter`，作为 monorepo 子包维护。兄弟仓 `../modpack-ide-exporter` 仅是迁入来源快照，不再作为主开发路径。
+
 ## 读法
 
 新会话或迁移后，优先按这个顺序恢复上下文：
@@ -18,14 +20,13 @@
 
 | 名称 | 当前路径 | 远端 |
 | --- | --- | --- |
-| Delightify IDE 主仓 | `/Volumes/SSD-1/Repos/Delightify-IDE` | `git@github.com:Aero-Seira/Delightify-IDE.git` |
-| NeoForge exporter | `/Volumes/SSD-1/Repos/modpack-ide-exporter` | `git@github.com:Aero-Seira/modpack-ide-exporter.git` |
+| Delightify monorepo | `/Users/aeroseira/repos/Delightify-IDE` | `https://github.com/Aero-Seira/Delightify-IDE.git` |
+| NeoForge exporter | `packages/exporter` | 已并入 Delightify monorepo |
 
 建议迁移到 APFS 本机路径：
 
 ```bash
 ~/Repos/Delightify-IDE
-~/Repos/modpack-ide-exporter
 ~/Transmation/export.sqlite
 ```
 
@@ -73,9 +74,9 @@ ELECTRON_OVERRIDE_DIST_PATH="$HOME/Library/Caches/delightify/electron-v29.4.0-da
 
 长期方案：把仓库迁到 APFS 路径后重新 `pnpm install`，不要依赖这个 override。
 
-### Exporter 仓
+### Exporter 子包
 
-当前 exporter HEAD 为 `ce7d14b`。
+当前 `packages/exporter` 迁入自 exporter HEAD `ce7d14b`。
 
 近期关键提交：
 
@@ -102,8 +103,8 @@ fe5f8be fix: lower neoforge runtime minimum
 验证命令：
 
 ```bash
-./gradlew build
-./gradlew compileJava -Pneo_version=21.1.1 --rerun-tasks --quiet
+pnpm exporter:build
+cd packages/exporter && ./gradlew compileJava -Pneo_version=21.1.1 --rerun-tasks --quiet
 ```
 
 运行时容错：
@@ -187,13 +188,11 @@ pnpm typecheck
 pnpm dev
 ```
 
-### 2. 克隆 exporter
+### 2. 构建 monorepo 内置 exporter
 
 ```bash
-cd ~/Repos
-git clone git@github.com:Aero-Seira/modpack-ide-exporter.git
-cd modpack-ide-exporter
-./gradlew build
+cd ~/Repos/Delightify-IDE
+pnpm exporter:build
 ```
 
 ### 3. 复制样本数据
@@ -209,7 +208,7 @@ cp "/Volumes/SSD-1/Transmation/游戏日志 - Labpack-1.21.1.log" ~/Transmation/
 迁移后开启新会话时，给 agent 的最短上下文：
 
 ```text
-仓库在 ~/Repos/Delightify-IDE。先读 CLAUDE.md 和 docs/current/session-handoff-2026-06-14.md。
+仓库在 ~/Repos/Delightify-IDE。先读 CLAUDE.md 和 docs/README.md；本交接文件已归档，仅作历史背景。
 目标是把 ~/Transmation/export.sqlite 按 docs/current/exporter-contract-v1.md 接入 Delightify importer。
 ```
 

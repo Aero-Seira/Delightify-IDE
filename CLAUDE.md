@@ -4,14 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-This repo is the **implementation** of **Delightify** — a ModPack IDE / "intent compiler" desktop app for Minecraft modpack authors. **Delightify is the product name**; "ModPack IDE" describes the product category and the planning/spec direction, not a replacement name. Electron + React + TypeScript, pnpm/Turborepo monorepo. **It is early-stage.**
+This repo is the **implementation** of **Delightify** — a ModPack IDE / "intent compiler" desktop app for Minecraft modpack authors. **Delightify is the product name**; "ModPack IDE" describes the product category and the planning/spec direction, not a replacement name. Electron + React + TypeScript, pnpm/Turborepo monorepo, with the NeoForge runtime exporter vendored as `packages/exporter`. **It is early-stage.**
 
 ## ⚠️ The repo's docs are mostly PLANNING, not built — verify before trusting
 
-This repo carries extensive Delightify docs (`AGENTS.md`, `docs/reference/project-structure.md`, `docs/reference/roadmap.md`, etc.) describing an intended architecture: two-tier `global.db`/`project.db`, a `data`/`semantic` relations system with global-recommendation + project-override, a three-strategy JAR parser, recipe-type metadata, etc. **Per the project owner, most of this is NOT implemented yet.** Treat those docs as *design intent*, and treat roadmap "✅ done" claims as **unverified**.
+This repo carries extensive archived Delightify planning docs (`docs/archive/planning/`, `docs/archive/import-engine/`, etc.) describing older intended architecture: two-tier `global.db`/`project.db`, a `data`/`semantic` relations system with global-recommendation + project-override, a three-strategy JAR parser, recipe-type metadata, etc. **Most of this is NOT current implementation.** Treat archived docs as background only, and treat roadmap "done" claims as historical unless verified against code.
 
-- **First task for any new session: establish ground truth by reading the actual code** — `packages/main/src/{services,ipc}`, any database/schema code, `packages/renderer/src/pages`, and the Java tool — to see what truly exists vs. what's only planned. Do not build on a doc's claim without confirming the code. → A ready-made step-by-step is in **`docs/current/启动清单-审计与MVP0.md`** (run it → read key files → verify each feature → audit → define MVP-0).
-- Concretely present **as code** (functional completeness UNVERIFIED — read/run before trusting): `packages/main/src/services/{database (schema/client/schema-manager/batch-save), mod-data-importer, llm (+providers), recipe-types, config, paths}`, `ipc/{items,recipes,recipe-types,mod-data,project,debug}`, and **8 renderer pages** (Dashboard, ModManager, ProjectManager, ItemBrowser, RecipeBrowser, RecipeEditor, ConversionTool, DebugTools). Plus the Java bytecode analyzer (`com.delightify.modinspector`, item/block registrations). ~14.6k lines TS total; single commit "initial commit from Delightify v0.3". So this is a **real (if early) app, not a bare skeleton** — but how much actually works vs. stub/partial is unverified, and the owner states most of the *ambitious planned* architecture (the data/semantic relations graph, two-tier override model, agent migration) is not done. Note the code already moved toward a **`mod-data-importer`** (not a raw "jar-parser"), matching `ARCHITECTURE_REFACTOR_PLAN.md`.
+- **First task for any new session: establish ground truth by reading the actual code** — `packages/main/src/{services,ipc}`, database/schema code, `packages/renderer/src/pages`, and `packages/exporter` — to see what truly exists vs. what's only planned. Do not build on a doc's claim without confirming the code.
+- Concretely present **as code** (functional completeness UNVERIFIED — read/run before trusting): `packages/main/src/services/{database, mod-data-importer, unify, export, llm (+providers), recipe-types, config, paths}`, `ipc/{items,recipes,recipe-types,mod-data,project,unify,export,debug}`, **8 renderer pages** (Dashboard, ModManager, ProjectManager, ItemBrowser, RecipeBrowser, RecipeEditor, ConversionTool, DebugTools), and the NeoForge exporter in `packages/exporter`. This is a **real (if early) app, not a bare skeleton** — but how much actually works vs. stub/partial must still be verified from code and commands.
 
 ## The design spec (read this) — vendored locally + canonical vault
 
@@ -38,14 +38,17 @@ pnpm build            # turbo run build  (the `shared` package must build first)
 pnpm typecheck        # turbo run typecheck  — this is what CI runs
 pnpm clean
 pnpm dist:win | dist:mac | dist:linux   # package
+pnpm exporter:build   # build the NeoForge exporter in packages/exporter
+pnpm exporter:compile # compile Java only
+pnpm exporter:runClient | exporter:runServer
 ```
 **No unit-test command exists** — CI only runs `pnpm typecheck`. Verify changes by `pnpm typecheck` + building/running the app.
 
 ## Intended architecture (per docs — confirm against code)
 
-- **Monorepo**: `packages/shared` (cross-process TS types + IPC channel constants) → `packages/main` (Electron main: `ipc/` handlers, `services/`, `fs/` AppPaths) + `packages/renderer` (React + Vite: `pages/`).
+- **Monorepo**: `packages/shared` (cross-process TS types + IPC channel constants) → `packages/main` (Electron main: `ipc/` handlers, `services/`, `fs/` AppPaths) + `packages/renderer` (React + Vite: `pages/`) + `packages/exporter` (NeoForge 1.21.1 runtime data exporter, Gradle/Java 21).
 - **IPC**: Electron `contextBridge`/preload only (no `nodeIntegration`); channels whitelisted in `packages/shared/src/constants/ipc.ts`; handlers return `{ success, data?, error? }`.
-- **Data**: a DB layer exists at `services/database/` (schema.ts, client.ts, schema-manager.ts, batch-save.ts) using Drizzle over libsql; AppPaths in `services/paths.ts`. Intended two-tier `global.db` / per-modpack `project.db` — confirm how much of the two-tier + graph/relations schema is actually implemented vs. just the basic tables.
+- **Data**: a DB layer exists at `services/database/` (schema.ts, client.ts, schema-manager.ts) using Drizzle over libsql; AppPaths in `services/paths.ts`. Current MVP-0 work is project-db/exporter-v1-first; archived `global.db` / graph/relations plans are not current ground truth.
 
 ## Locked decisions (from the spec; see `设计/01` §2,§6 and `设计/04` §2)
 
@@ -58,4 +61,4 @@ pnpm dist:win | dist:mac | dist:linux   # package
 
 - **Respond in Chinese.** Repo comments/docs are Chinese; match them.
 - Shared types in `packages/shared/src/types/`; keep DB schema and types in sync.
-- Doc landscape: start at `docs/README.md`. Current decisions live in `docs/current/`; the vendored spec lives in `docs/spec-snapshot/`; older planning references live in `docs/reference/`; stale implementation logs live in `docs/archive/`.
+- Doc landscape: start at `docs/README.md`. Current decisions live in `docs/current/`; the vendored spec lives in `docs/spec-snapshot/`; old planning, stale audits and legacy implementation logs live in `docs/archive/`.

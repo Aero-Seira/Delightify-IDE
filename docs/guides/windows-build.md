@@ -276,7 +276,7 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 
 ## 相关文档 / Related Documentation
 
-- [项目结构](../reference/project-structure.md)
+- [旧项目结构规划](../archive/planning/project-structure.md)
 - [开发指南](../DEVELOPER_GUIDE.md)
 - [快速参考](../QUICK_REF.md)
 

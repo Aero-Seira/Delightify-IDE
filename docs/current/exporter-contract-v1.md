@@ -1,14 +1,14 @@
 # Exporter 契约 v1（草案）
 
 > ModPack IDE ↔ Exporter 的接口定义。**契约先行**：exporter（NeoForge 1.21.1）与 IDE importer 并行对此实现。
-> 状态：草案，待评审。日期 2026-06-13。背景见 `现状审计.md`、记忆 [[exporter-rewrite-neoforge]]。
+> 状态：草案，待评审。日期 2026-06-13。背景见归档审计 [`现状审计-2026-06-13.md`](../archive/audits/现状审计-2026-06-13.md)、记忆 [[exporter-rewrite-neoforge]]。
 
 ## 0. 决策摘要（已拍板）
 
 - 目标平台：**1.21.1 NeoForge 优先**；采集逻辑与版本/平台解耦（差异收敛进 `manifest` + 注入参数），为将来重接 1.20.1 留接口。
 - exporter 是 `data:*` 事实的**权威来源**；离线 JAR 解析降级为预览/差集/资源提取的辅助层。
 - **性能是首要目标**（见 §1）。
-- 工作仓库：**新建独立 repo**（脱离旧 Delightify-Exporter）。
+- 工作路径：`packages/exporter`（已并入 Delightify monorepo；早期独立 repo 仅为迁入来源）。
 
 ---
 
