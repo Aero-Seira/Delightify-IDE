@@ -49,6 +49,7 @@ export default function ItemBrowser(): React.ReactElement {
     modId: '',
     tag: '',
   });
+  const [lang, setLang] = useState('zh_cn');
   
   // 视图状态
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
@@ -79,6 +80,7 @@ export default function ItemBrowser(): React.ReactElement {
       const response = await api.itemsQuery(currentProject.path, {
         page: currentPage,
         pageSize,
+        lang,
         search: filters.search || undefined,
         searchField: filters.searchField,
         modid: filters.modId || undefined,
@@ -96,7 +98,7 @@ export default function ItemBrowser(): React.ReactElement {
     } finally {
       setIsLoading(false);
     }
-  }, [currentProject, currentPage, pageSize, filters]);
+  }, [currentProject, currentPage, pageSize, filters, lang]);
 
   // 加载可用选项
   const loadOptions = useCallback(async () => {
@@ -145,6 +147,7 @@ export default function ItemBrowser(): React.ReactElement {
           const response = await api.itemsQuery(currentProject.path, {
             page: 1,
             pageSize: 1,
+            lang,
             search: filters.search || undefined,
             searchField: filters.searchField,
             modid: mod.modid,
@@ -161,7 +164,7 @@ export default function ItemBrowser(): React.ReactElement {
     } catch {
       // 静默失败
     }
-  }, [currentProject, filters.search, filters.searchField, filters.tag, mods]);
+  }, [currentProject, filters.search, filters.searchField, filters.tag, lang, mods]);
 
   // 计算标签在当前搜索条件下的匹配数量（排除标签筛选本身）
   const updateTagCounts = useCallback(async () => {
@@ -180,6 +183,7 @@ export default function ItemBrowser(): React.ReactElement {
           const response = await api.itemsQuery(currentProject.path, {
             page: 1,
             pageSize: 1,
+            lang,
             search: filters.search || undefined,
             searchField: filters.searchField,
             modid: filters.modId || undefined,
@@ -196,7 +200,7 @@ export default function ItemBrowser(): React.ReactElement {
     } catch {
       // 静默失败
     }
-  }, [currentProject, filters.search, filters.searchField, filters.modId, tags]);
+  }, [currentProject, filters.search, filters.searchField, filters.modId, lang, tags]);
 
   // 当筛选条件变化时重新计算数量（防抖）
   useEffect(() => {
@@ -478,7 +482,7 @@ export default function ItemBrowser(): React.ReactElement {
                 type="text"
                 placeholder={
                   filters.searchField === 'id' ? '搜索物品ID...' :
-                  filters.searchField === 'name' ? '搜索中文名称...' :
+                  filters.searchField === 'name' ? '搜索显示名称...' :
                   filters.searchField === 'tag' ? '搜索标签ID...' :
                   '搜索ID、名称或标签...'
                 }
@@ -536,6 +540,19 @@ export default function ItemBrowser(): React.ReactElement {
             title="筛选标签"
             hideEmpty={true}
           />
+
+          <select
+            className={styles.languageSelect}
+            value={lang}
+            onChange={(e) => {
+              setLang(e.target.value);
+              setCurrentPage(1);
+            }}
+            title="显示语言"
+          >
+            <option value="zh_cn">简体中文</option>
+            <option value="en_us">English</option>
+          </select>
 
           {/* 清除过滤按钮 */}
           {hasFilters && (

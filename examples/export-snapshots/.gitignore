@@ -1,0 +1,9 @@
+# 真实 exporter 快照默认不纳入 Git。
+*.sqlite
+*.sqlite3
+*.db
+*.db-shm
+*.db-wal
+*.sqlite-shm
+*.sqlite-wal
+*.tmp

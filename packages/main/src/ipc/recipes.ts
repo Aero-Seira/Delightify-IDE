@@ -10,6 +10,7 @@ import { IPC_CHANNELS } from '@delightify/shared';
 import type { 
   IpcResponse, 
   Recipe,
+  RecipeDetail,
   RecipeQueryParams,
   RecipeTypeInfo,
 } from '@delightify/shared';
@@ -115,11 +116,13 @@ export function registerRecipesHandlers(): void {
   ipcMain.handle(IPC_CHANNELS.RECIPES_GET_DETAIL, async (
     _event,
     projectPath: string,
-    recipeId: string
-  ): Promise<IpcResponse<Recipe | null>> => {
+    recipeId: string,
+    lang = 'zh_cn'
+  ): Promise<IpcResponse<RecipeDetail | null>> => {
     try {
       const dbPath = appPaths.projectDb(projectPath);
       const db = createProjectDbClient(dbPath);
+      const fallbackLang = 'en_us';
       
       const result = await db.execute({
         sql: 'SELECT * FROM recipes WHERE recipe_id = ?',
@@ -131,16 +134,75 @@ export function registerRecipesHandlers(): void {
       if (!row) {
         return { success: true, data: null };
       }
+
+      const recipe: Recipe = {
+        recipeId: row.recipe_id,
+        typeId: row.type_id,
+        modid: row.modid,
+        hash: row.hash,
+        rawJson: row.raw_json,
+        unparsed: Boolean(row.unparsed),
+      };
+
+      const [inputsResult, outputsResult] = await Promise.all([
+        db.execute({
+          sql: `
+            SELECT
+              ri.slot,
+              ri.role,
+              ri.kind,
+              ri.ref,
+              ri.count,
+              COALESCE(tl.value, te.value) as display_name
+            FROM recipe_inputs ri
+            LEFT JOIN items i ON ri.kind = 'item' AND i.item_id = ri.ref
+            LEFT JOIN translations tl ON tl.key = i.translation_key AND tl.lang = ?
+            LEFT JOIN translations te ON te.key = i.translation_key AND te.lang = ?
+            WHERE ri.recipe_id = ?
+            ORDER BY ri.slot
+          `,
+          args: [lang, fallbackLang, recipeId],
+        }),
+        db.execute({
+          sql: `
+            SELECT
+              ro.slot,
+              ro.item_id,
+              ro.count,
+              ro.components_json,
+              ro.is_primary,
+              COALESCE(tl.value, te.value) as display_name
+            FROM recipe_outputs ro
+            LEFT JOIN items i ON i.item_id = ro.item_id
+            LEFT JOIN translations tl ON tl.key = i.translation_key AND tl.lang = ?
+            LEFT JOIN translations te ON te.key = i.translation_key AND te.lang = ?
+            WHERE ro.recipe_id = ?
+            ORDER BY ro.slot
+          `,
+          args: [lang, fallbackLang, recipeId],
+        }),
+      ]);
       
       return {
         success: true,
         data: {
-          recipeId: row.recipe_id,
-          typeId: row.type_id,
-          modid: row.modid,
-          hash: row.hash,
-          rawJson: row.raw_json,
-          unparsed: Boolean(row.unparsed),
+          recipe,
+          inputs: inputsResult.rows.map((inputRow: any) => ({
+            slot: Number(inputRow.slot),
+            role: inputRow.role,
+            kind: inputRow.kind,
+            ref: inputRow.ref || undefined,
+            count: Number(inputRow.count),
+            displayName: inputRow.display_name || undefined,
+          })),
+          outputs: outputsResult.rows.map((outputRow: any) => ({
+            slot: Number(outputRow.slot),
+            itemId: outputRow.item_id,
+            count: Number(outputRow.count),
+            componentsJson: outputRow.components_json || undefined,
+            isPrimary: Boolean(outputRow.is_primary),
+            displayName: outputRow.display_name || undefined,
+          })),
         },
       };
     } catch (error) {

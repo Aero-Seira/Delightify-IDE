@@ -74,6 +74,7 @@ function emitOperation(operation: UnifyDiffOperation): string {
   switch (operation.kind) {
     case 'replace_recipe_input_item':
       return `  event.replaceInput(${recipeFilter(operation)}, ${jsString(itemRefFromBefore(operation))}, ${jsString(itemRefFromAfter(operation))})`;
+    // TODO: replaceOutput 语义/版本兼容未验证，MVP-0 不纳入 change set
     case 'replace_recipe_output_item':
       return `  event.replaceOutput(${recipeFilter(operation)}, ${jsString(itemRefFromBefore(operation))}, ${jsString(itemRefFromAfter(operation))})`;
     default:

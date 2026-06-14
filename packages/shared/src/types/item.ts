@@ -10,7 +10,7 @@ export interface Item {
   itemId: string;
   /** 所属模组ID */
   modid: string;
-  /** 显示名称（从 item_resources.lang_name 获取） */
+  /** 显示名称（来自 items.translation_key -> translations） */
   displayName?: string;
 }
 
@@ -29,6 +29,8 @@ export type SearchField = 'id' | 'name' | 'tag' | 'all';
 export interface ItemQueryParams {
   /** 搜索关键词 */
   search?: string;
+  /** 显示语言 */
+  lang?: string;
   /** 搜索字段类型：id=物品ID, name=翻译名, tag=标签, all=全部 */
   searchField?: SearchField;
   /** 按模组筛选 */

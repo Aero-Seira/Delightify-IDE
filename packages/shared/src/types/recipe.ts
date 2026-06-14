@@ -116,6 +116,48 @@ export interface Recipe {
   unparsed: boolean;
 }
 
+/** 配方输入槽位视图 */
+export interface RecipeInputView {
+  /** 槽位序号 */
+  slot: number;
+  /** 槽位角色 */
+  role: string;
+  /** 引用类型 */
+  kind: string;
+  /** item/tag 引用 */
+  ref?: string;
+  /** 数量 */
+  count: number;
+  /** 显示名称 */
+  displayName?: string;
+}
+
+/** 配方输出槽位视图 */
+export interface RecipeOutputView {
+  /** 槽位序号 */
+  slot: number;
+  /** 输出物品ID */
+  itemId: string;
+  /** 数量 */
+  count: number;
+  /** components JSON */
+  componentsJson?: string;
+  /** 是否主输出 */
+  isPrimary: boolean;
+  /** 显示名称 */
+  displayName?: string;
+}
+
+/** 配方详情 */
+export interface RecipeDetail {
+  /** 配方基础信息 */
+  recipe: Recipe;
+  /** 结构化输入 */
+  inputs: RecipeInputView[];
+  /** 结构化输出 */
+  outputs: RecipeOutputView[];
+}
+
 /** 配方查询参数 */
 export interface RecipeQueryParams {
   /** 搜索关键词 */

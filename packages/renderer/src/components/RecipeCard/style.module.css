@@ -30,6 +30,14 @@
 }
 
 /* 配方类型标签 */
+.badgeRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
 .typeBadge {
   display: inline-flex;
   align-items: center;
@@ -38,6 +46,20 @@
   font-size: 12px;
   font-weight: 500;
   width: fit-content;
+}
+
+.unparsedBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: #fff4e6;
+  color: #d9480f;
+  border: 1px solid #ffd8a8;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
 /* 配方主体 */
@@ -154,6 +176,22 @@
   border-radius: 6px;
   color: #adb5bd;
   font-size: 18px;
+}
+
+.unparsedOutput {
+  width: 72px;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff4e6;
+  border: 1px dashed #ffd8a8;
+  border-radius: 6px;
+  color: #d9480f;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  padding: 4px;
 }
 
 .inputFallback {
@@ -329,9 +367,20 @@
 }
 
 .listOutputSlot {
-  width: 28px;
+  width: 72px;
   height: 28px;
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.listOutputFallback {
+  color: #d9480f;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 /* ========== 详情卡片 ========== */
@@ -422,6 +471,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
 }
 
 .detailOutputIcon {
@@ -439,11 +489,36 @@
   white-space: nowrap;
 }
 
+.detailSlotMeta {
+  margin-top: 2px;
+  color: #adb5bd;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
 .detailEmpty {
   color: #adb5bd;
   font-size: 13px;
   font-style: italic;
   margin: 0;
+}
+
+.detailStatus,
+.detailErrorText {
+  margin-bottom: 12px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.detailStatus {
+  background: #e7f5ff;
+  color: #1971c2;
+}
+
+.detailErrorText {
+  background: #fff5f5;
+  color: #c92a2a;
 }
 
 .detailArrow {
@@ -538,6 +613,18 @@
   color: #868e96;
 }
 
+[data-theme='dark'] .unparsedBadge {
+  background: rgba(255, 146, 43, 0.14);
+  border-color: rgba(255, 146, 43, 0.35);
+  color: #ffa94d;
+}
+
+[data-theme='dark'] .unparsedOutput {
+  background: rgba(255, 146, 43, 0.12);
+  border-color: rgba(255, 146, 43, 0.35);
+  color: #ffa94d;
+}
+
 [data-theme='dark'] .smeltingInput {
   background: #3d3d3d;
   border-color: #4d4d4d;
@@ -577,6 +664,10 @@
   color: #868e96;
 }
 
+[data-theme='dark'] .listOutputFallback {
+  color: #ffa94d;
+}
+
 [data-theme='dark'] .detailCard {
   background: #2d2d2d;
   border-color: #3d3d3d;
@@ -594,8 +685,22 @@
   color: #adb5bd;
 }
 
+[data-theme='dark'] .detailSlotMeta {
+  color: #868e96;
+}
+
 [data-theme='dark'] .detailEmpty {
   color: #868e96;
+}
+
+[data-theme='dark'] .detailStatus {
+  background: rgba(77, 171, 247, 0.15);
+  color: #74c0fc;
+}
+
+[data-theme='dark'] .detailErrorText {
+  background: rgba(250, 82, 82, 0.14);
+  color: #ff8787;
 }
 
 [data-theme='dark'] .detailArrow {

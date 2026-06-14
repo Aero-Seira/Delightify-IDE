@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import type { Recipe, RecipeTypeInfo, RecipeQueryParams } from '@delightify/shared';
+import type { Recipe, RecipeDetail, RecipeTypeInfo, RecipeQueryParams } from '@delightify/shared';
 import RecipeCard, { RecipeListRow, RecipeDetailCard } from '../../components/RecipeCard';
 import SearchableSelect from '../../components/SearchableSelect';
 import ErrorBoundary from '../../components/ErrorBoundary';
@@ -47,6 +47,10 @@ export default function RecipeBrowserPage(): React.ReactElement {
   // 视图状态
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
+  const [selectedRecipeDetail, setSelectedRecipeDetail] = useState<RecipeDetail | null>(null);
+  const [detailRecipeId, setDetailRecipeId] = useState<string | null>(null);
+  const [isDetailLoading, setIsDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState<string | null>(null);
   const [showDetailPanel, setShowDetailPanel] = useState(false);
   
   // 可用选项
@@ -146,18 +150,58 @@ export default function RecipeBrowserPage(): React.ReactElement {
     setCurrentPage(1);
   };
 
+  const loadRecipeDetail = useCallback(async (recipeId: string) => {
+    if (!currentProject) return;
+
+    setIsDetailLoading(true);
+    setDetailError(null);
+    setDetailRecipeId(recipeId);
+    try {
+      const response = await electronAPI().recipesGetDetail(currentProject.path, recipeId);
+      if (response.success) {
+        setSelectedRecipeDetail(response.data ?? null);
+      } else {
+        setSelectedRecipeDetail(null);
+        setDetailError(response.error || '加载配方详情失败');
+      }
+    } catch (err) {
+      setSelectedRecipeDetail(null);
+      setDetailError(err instanceof Error ? err.message : '加载配方详情失败');
+    } finally {
+      setIsDetailLoading(false);
+    }
+  }, [currentProject]);
+
   // 处理配方点击
   const handleRecipeClick = (recipe: Recipe) => {
     setSelectedRecipe(recipe);
+    setSelectedRecipeDetail(null);
+    setDetailRecipeId(null);
+    setDetailError(null);
     if (viewMode === 'detail') {
       setShowDetailPanel(true);
+      void loadRecipeDetail(recipe.recipeId);
     }
   };
+
+  useEffect(() => {
+    if (
+      viewMode === 'detail'
+      && selectedRecipe
+      && detailRecipeId !== selectedRecipe.recipeId
+      && !isDetailLoading
+    ) {
+      void loadRecipeDetail(selectedRecipe.recipeId);
+    }
+  }, [detailRecipeId, isDetailLoading, loadRecipeDetail, selectedRecipe, viewMode]);
 
   // 关闭详情面板
   const closeDetailPanel = () => {
     setShowDetailPanel(false);
     setSelectedRecipe(null);
+    setSelectedRecipeDetail(null);
+    setDetailRecipeId(null);
+    setDetailError(null);
   };
 
   // 渲染配方卡片
@@ -176,9 +220,17 @@ export default function RecipeBrowserPage(): React.ReactElement {
         );
       case 'detail':
         if (isSelected) {
+          const detail = selectedRecipeDetail?.recipe.recipeId === recipe.recipeId
+            ? selectedRecipeDetail
+            : undefined;
           return (
             <div key={recipe.recipeId} className={styles.detailItemWrapper}>
-              <RecipeDetailCard recipe={recipe} />
+              <RecipeDetailCard
+                recipe={recipe}
+                detail={detail}
+                isLoading={isDetailLoading}
+                error={detailError}
+              />
             </div>
           );
         }
@@ -488,7 +540,19 @@ export default function RecipeBrowserPage(): React.ReactElement {
               </button>
             </div>
             <div className={styles.detailPanelContent}>
-              <RecipeDetailCard recipe={selectedRecipe} />
+              {(() => {
+                const detail = selectedRecipeDetail?.recipe.recipeId === selectedRecipe.recipeId
+                  ? selectedRecipeDetail
+                  : undefined;
+                return (
+                  <RecipeDetailCard
+                    recipe={detail?.recipe ?? selectedRecipe}
+                    detail={detail}
+                    isLoading={isDetailLoading}
+                    error={detailError}
+                  />
+                );
+              })()}
             </div>
           </div>
         )}

@@ -12,6 +12,7 @@ import type {
   ItemQueryParams,
   ItemQueryResult,
   Recipe,
+  RecipeDetail,
   RecipeQueryParams,
   RecipeTypeInfo,
   RecipeTypeMetadata,
@@ -62,7 +63,7 @@ export interface ElectronAPI {
   // ========== 配方查询 ==========
   recipesQuery: (projectPath: string, params: RecipeQueryParams) => Promise<{ success: boolean; data?: { recipes: Recipe[]; total: number }; error?: string }>;
   recipesGetTypes: (projectPath: string) => Promise<{ success: boolean; data?: RecipeTypeInfo[]; error?: string }>;
-  recipesGetDetail: (projectPath: string, recipeId: string) => Promise<{ success: boolean; data?: Recipe | null; error?: string }>;
+  recipesGetDetail: (projectPath: string, recipeId: string) => Promise<{ success: boolean; data?: RecipeDetail | null; error?: string }>;
 
   // ========== Unify 查询 ==========
   unifyQuery: (projectPath: string, params: UnifyQueryParams) => Promise<{ success: boolean; data?: UnifyQueryResult; error?: string }>;

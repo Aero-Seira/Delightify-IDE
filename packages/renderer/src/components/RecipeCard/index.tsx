@@ -10,7 +10,7 @@
  */
 
 import React, { useMemo, useState } from 'react';
-import type { Recipe } from '@delightify/shared';
+import type { Recipe, RecipeDetail, RecipeInputView } from '@delightify/shared';
 import ItemIcon from '../ItemIcon';
 import styles from './style.module.css';
 
@@ -19,6 +19,13 @@ interface RecipeCardProps {
   selected?: boolean;
   onClick?: () => void;
   onDoubleClick?: () => void;
+}
+
+interface RecipeDetailCardProps {
+  recipe: Recipe;
+  detail?: RecipeDetail | null;
+  isLoading?: boolean;
+  error?: string | null;
 }
 
 interface RecipeSlot {
@@ -51,6 +58,17 @@ function getRecipeTypeMeta(typeId: string): { name: string; color: string } {
         : '#868e96';
 
   return { name, color };
+}
+
+function formatRecipeRef(ref?: string, displayName?: string): string {
+  if (displayName) return displayName;
+  if (!ref) return '?';
+  return ref.split(':').pop()?.replace(/_/g, ' ') || ref;
+}
+
+function getStructuredInputItemId(input: RecipeInputView): string {
+  if (!input.ref) return '';
+  return input.kind === 'tag' ? `tag:${input.ref}` : input.ref;
 }
 
 /**
@@ -176,6 +194,7 @@ export default function RecipeCard({
   onDoubleClick,
 }: RecipeCardProps): React.ReactElement {
   const [showDebug, setShowDebug] = useState(false);
+  const isUnparsed = recipe.unparsed || !recipe.rawJson;
   
   const { inputs, output, isShaped, parseInfo } = useMemo(() => {
     try {
@@ -239,8 +258,13 @@ export default function RecipeCard({
       onDoubleClick={onDoubleClick}
     >
       {/* 类型标签 */}
-      <div className={styles.typeBadge} style={typeBadgeStyle}>
-        {typeName}
+      <div className={styles.badgeRow}>
+        <div className={styles.typeBadge} style={typeBadgeStyle}>
+          {typeName}
+        </div>
+        {isUnparsed && (
+          <span className={styles.unparsedBadge}>未结构化/脚本配方</span>
+        )}
       </div>
 
       {/* 配方内容 */}
@@ -317,7 +341,9 @@ export default function RecipeCard({
               )}
             </div>
           ) : (
-            <div className={styles.emptyOutput}>?</div>
+            <div className={isUnparsed ? styles.unparsedOutput : styles.emptyOutput}>
+              {isUnparsed ? '未结构化' : '?'}
+            </div>
           )}
         </div>
       </div>
@@ -363,6 +389,7 @@ export function RecipeListRow({
   onClick,
   onDoubleClick,
 }: RecipeCardProps): React.ReactElement {
+  const isUnparsed = recipe.unparsed || !recipe.rawJson;
   const { inputs, output } = useMemo(() => {
     try {
       const json = recipe.rawJson ? JSON.parse(recipe.rawJson) : null;
@@ -388,6 +415,9 @@ export function RecipeListRow({
       >
         {typeName}
       </span>
+      {isUnparsed && (
+        <span className={styles.unparsedBadge}>未结构化/脚本配方</span>
+      )}
       
       <div className={styles.listInputs}>
         {inputs.slice(0, 3).map((slot, idx) => (
@@ -400,14 +430,16 @@ export function RecipeListRow({
       <span className={styles.listArrow}>→</span>
 
       <div className={styles.listOutputSlot}>
-        {output && (
+        {output ? (
           <>
             <ItemIcon itemId={output.item || ''} size={28} />
             {(output.count || 1) > 1 && (
               <span className={styles.slotCount}>{output.count}</span>
             )}
           </>
-        )}
+        ) : isUnparsed ? (
+          <span className={styles.listOutputFallback}>未结构化</span>
+        ) : null}
       </div>
 
       <div className={styles.listInfo}>
@@ -421,48 +453,100 @@ export function RecipeListRow({
 /**
  * 详情卡片
  */
-export function RecipeDetailCard({ recipe }: { recipe: Recipe }): React.ReactElement {
-  const { inputs, output, parseInfo } = useMemo(() => {
+export function RecipeDetailCard({
+  recipe,
+  detail,
+  isLoading = false,
+  error = null,
+}: RecipeDetailCardProps): React.ReactElement {
+  const activeRecipe = detail?.recipe ?? recipe;
+  const isUnparsed = activeRecipe.unparsed || !activeRecipe.rawJson;
+  const hasStructuredDetail = !!detail;
+
+  const { inputs, output } = useMemo(() => {
     try {
-      const json = recipe.rawJson ? JSON.parse(recipe.rawJson) : null;
+      const json = activeRecipe.rawJson ? JSON.parse(activeRecipe.rawJson) : null;
       const { inputs, output } = extractItemsFromRecipe(json);
-      return { 
-        inputs, 
-        output, 
-        parseInfo: {
-          hasRawJson: !!recipe.rawJson,
-          jsonKeys: json ? Object.keys(json) : [],
-          type: json?.type,
-        }
-      };
-    } catch (e) {
-      return { inputs: [], output: null, parseInfo: { error: String(e) } };
+      return { inputs, output };
+    } catch {
+      return { inputs: [], output: null };
     }
-  }, [recipe.rawJson]);
+  }, [activeRecipe.rawJson]);
   
   const [showJson, setShowJson] = React.useState(false);
   const { name: typeName, color: typeColor } = useMemo(
-    () => getRecipeTypeMeta(recipe.typeId),
-    [recipe.typeId]
+    () => getRecipeTypeMeta(activeRecipe.typeId),
+    [activeRecipe.typeId]
   );
+  const formattedRawJson = useMemo(() => {
+    if (!activeRecipe.rawJson) return undefined;
+    try {
+      return JSON.stringify(JSON.parse(activeRecipe.rawJson), null, 2);
+    } catch {
+      return activeRecipe.rawJson;
+    }
+  }, [activeRecipe.rawJson]);
+
+  const structuredInputs = detail?.inputs ?? [];
+  const structuredOutputs = detail?.outputs ?? [];
+  const inputCount = hasStructuredDetail ? structuredInputs.length : inputs.length;
+  const outputCount = hasStructuredDetail ? structuredOutputs.length : (output ? 1 : 0);
 
   return (
     <div className={styles.detailCard}>
       <div className={styles.detailHeader}>
-        <span
-          className={styles.detailTypeBadge}
-          style={{ backgroundColor: `${typeColor}20`, color: typeColor }}
-        >
-          {typeName}
-        </span>
-        <span className={styles.detailMod}>{recipe.modid}</span>
+        <div className={styles.badgeRow}>
+          <span
+            className={styles.detailTypeBadge}
+            style={{ backgroundColor: `${typeColor}20`, color: typeColor }}
+          >
+            {typeName}
+          </span>
+          {isUnparsed && (
+            <span className={styles.unparsedBadge}>未结构化/脚本配方</span>
+          )}
+        </div>
+        <span className={styles.detailMod}>{activeRecipe.modid}</span>
       </div>
+
+      {isLoading && (
+        <div className={styles.detailStatus}>加载结构化槽位...</div>
+      )}
+      {error && (
+        <div className={styles.detailErrorText}>{error}</div>
+      )}
 
       <div className={styles.detailBody}>
         <div className={styles.detailSection}>
-          <h4>输入 ({inputs.length})</h4>
+          <h4>输入 ({inputCount})</h4>
           <div className={styles.detailInputs}>
-            {inputs.length > 0 ? (
+            {hasStructuredDetail ? (
+              structuredInputs.length > 0 ? (
+                <div className={styles.detailItemsGrid}>
+                  {structuredInputs.map((slot) => (
+                    <div
+                      key={`${slot.slot}-${slot.role}-${slot.kind}-${slot.ref ?? ''}`}
+                      className={styles.detailItem}
+                    >
+                      <div className={styles.detailItemIcon}>
+                        <ItemIcon itemId={getStructuredInputItemId(slot)} size={48} />
+                        {slot.count > 1 && (
+                          <span className={styles.slotCount}>{slot.count}</span>
+                        )}
+                      </div>
+                      <div className={styles.detailSlotName}>
+                        {formatRecipeRef(slot.ref, slot.displayName)}
+                      </div>
+                      <div className={styles.detailSlotMeta}>
+                        #{slot.slot} {slot.kind}/{slot.role}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className={styles.detailEmpty}>{isUnparsed ? '未结构化输入' : '无输入'}</p>
+              )
+            ) : inputs.length > 0 ? (
               <div className={styles.detailItemsGrid}>
                 {inputs.map((slot, idx) => (
                   <div key={idx} className={styles.detailItem}>
@@ -476,7 +560,7 @@ export function RecipeDetailCard({ recipe }: { recipe: Recipe }): React.ReactEle
                 ))}
               </div>
             ) : (
-              <p className={styles.detailEmpty}>无输入</p>
+              <p className={styles.detailEmpty}>{isUnparsed ? '未结构化输入' : '无输入'}</p>
             )}
           </div>
         </div>
@@ -484,9 +568,34 @@ export function RecipeDetailCard({ recipe }: { recipe: Recipe }): React.ReactEle
         <div className={styles.detailArrow}>→</div>
 
         <div className={styles.detailSection}>
-          <h4>输出</h4>
+          <h4>输出 ({outputCount})</h4>
           <div className={styles.detailOutputs}>
-            {output ? (
+            {hasStructuredDetail ? (
+              structuredOutputs.length > 0 ? (
+                structuredOutputs.map((slot) => (
+                  <div
+                    key={`${slot.slot}-${slot.itemId}`}
+                    className={styles.detailOutputItem}
+                  >
+                    <div className={styles.detailOutputIcon}>
+                      <ItemIcon itemId={slot.itemId} size={56} />
+                      {slot.count > 1 && (
+                        <span className={styles.slotCount}>{slot.count}</span>
+                      )}
+                    </div>
+                    <div className={styles.detailSlotName}>
+                      {formatRecipeRef(slot.itemId, slot.displayName)}
+                      {slot.count > 1 ? ` x${slot.count}` : ''}
+                    </div>
+                    <div className={styles.detailSlotMeta}>
+                      #{slot.slot}{slot.isPrimary ? ' 主输出' : ''}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className={styles.detailEmpty}>{isUnparsed ? '未结构化输出' : '无输出'}</p>
+              )
+            ) : output ? (
               <div className={styles.detailOutputItem}>
                 <div className={styles.detailOutputIcon}>
                   <ItemIcon itemId={output.item || ''} size={56} />
@@ -500,25 +609,27 @@ export function RecipeDetailCard({ recipe }: { recipe: Recipe }): React.ReactEle
                 </div>
               </div>
             ) : (
-              <p className={styles.detailEmpty}>无输出</p>
+              <p className={styles.detailEmpty}>{isUnparsed ? '未结构化输出' : '无输出'}</p>
             )}
           </div>
         </div>
       </div>
 
       <div className={styles.detailFooter}>
-        <code className={styles.detailRecipeId}>{recipe.recipeId}</code>
-        <button 
-          type="button"
-          onClick={() => setShowJson(!showJson)}
-          className={styles.toggleJsonBtn}
-        >
-          {showJson ? '隐藏 JSON' : '查看 JSON'}
-        </button>
+        <code className={styles.detailRecipeId}>{activeRecipe.recipeId}</code>
+        {formattedRawJson && (
+          <button
+            type="button"
+            onClick={() => setShowJson(!showJson)}
+            className={styles.toggleJsonBtn}
+          >
+            {showJson ? '隐藏 JSON' : '查看 JSON'}
+          </button>
+        )}
       </div>
 
-      {showJson && recipe.rawJson && (
-        <pre className={styles.jsonViewer}>{JSON.stringify(JSON.parse(recipe.rawJson), null, 2)}</pre>
+      {showJson && formattedRawJson && (
+        <pre className={styles.jsonViewer}>{formattedRawJson}</pre>
       )}
     </div>
   );

@@ -150,6 +150,22 @@
   width: 140px;
 }
 
+.languageSelect {
+  width: 112px;
+  padding: 8px 28px 8px 12px;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  background: white;
+  color: #495057;
+  font-size: 13px;
+  cursor: pointer;
+  outline: none;
+}
+
+.languageSelect:hover {
+  border-color: #adb5bd;
+}
+
 /* 清除过滤按钮 */
 .clearFiltersBtn {
   display: flex;
@@ -771,7 +787,8 @@
     color: #adb5bd;
   }
 
-  .filterSelect {
+  .filterSelect,
+  .languageSelect {
     background: #3d3d3d;
     border-color: #4d4d4d;
     color: #adb5bd;
@@ -995,7 +1012,8 @@
     max-width: none;
   }
 
-  .filterSelect {
+  .filterSelect,
+  .languageSelect {
     flex: 1;
     min-width: 100px;
   }

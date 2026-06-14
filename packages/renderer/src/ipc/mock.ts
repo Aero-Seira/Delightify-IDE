@@ -4,7 +4,7 @@
  */
 
 import type { 
-  Project, Item, Recipe, ModDataImportProgress,
+  Project, Item, Recipe, RecipeDetail, ModDataImportProgress,
   ItemQueryParams, ItemQueryResult,
   RecipeQueryParams,
   UnifyDryRunParams,
@@ -397,14 +397,18 @@ export const mockElectronAPI = {
     ],
   }),
 
-  recipesGetDetail: async (_projectPath: string, recipeId: string) => ({
+  recipesGetDetail: async (_projectPath: string, recipeId: string): Promise<{ success: boolean; data: RecipeDetail }> => ({
     success: true,
     data: {
-      recipeId,
-      typeId: 'minecraft:crafting_shaped',
-      modid: 'minecraft',
-      hash: 'mock_hash',
-      unparsed: false,
+      recipe: {
+        recipeId,
+        typeId: 'minecraft:crafting_shaped',
+        modid: 'minecraft',
+        hash: 'mock_hash',
+        unparsed: false,
+      },
+      inputs: [],
+      outputs: [],
     },
   }),
 

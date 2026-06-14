@@ -26,6 +26,7 @@ import type {
   RecipeViewEntry,
   RecipeViewBackgroundEntry,
 } from './types';
+import { LEGACY_EXPORTER_CAPABILITIES } from './types';
 import { validateModDataFile, DATA_FILE_PATHS } from './validator';
 import { createSchemaManager } from '../database/schema-manager';
 
@@ -71,6 +72,8 @@ export async function importModData(options: ModDataImportOptions): Promise<Impo
   
   const importId = generateId();
   const now = new Date().toISOString();
+  let dataFilePathForHistory = providedDataFilePath || '';
+  let sourceKindForHistory: DataSourceKind | undefined;
   
   try {
     // Step 1: 检测数据文件
@@ -81,13 +84,10 @@ export async function importModData(options: ModDataImportOptions): Promise<Impo
     });
 
     const dataFilePath = providedDataFilePath || await detectModDataFile(projectPath);
+    dataFilePathForHistory = dataFilePath || dataFilePathForHistory;
     
     if (!dataFilePath) {
-      return {
-        success: false,
-        importId,
-        error: `未找到数据文件。请确保已安装附属Mod并启动游戏。\n预期路径: ${DATA_FILE_PATHS.join(', ')}`,
-      };
+      throw new Error(`未找到数据文件。请确保已安装附属Mod并启动游戏。\n预期路径: ${DATA_FILE_PATHS.join(', ')}`);
     }
 
     // Step 2: 验证数据文件
@@ -98,12 +98,9 @@ export async function importModData(options: ModDataImportOptions): Promise<Impo
     });
 
     const validation = await validateModDataFile(dataFilePath);
+    sourceKindForHistory = validation.sourceKind;
     if (!validation.valid) {
-      return {
-        success: false,
-        importId,
-        error: validation.error || '数据文件验证失败',
-      };
+      throw new Error(validation.error || '数据文件验证失败');
     }
 
     // Step 3: 读取源数据库
@@ -352,6 +349,14 @@ export async function importModData(options: ModDataImportOptions): Promise<Impo
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : '导入数据失败';
+    await recordFailedImport({
+      projectPath,
+      importId,
+      sourceFilePath: dataFilePathForHistory,
+      sourceKind: sourceKindForHistory,
+      errorMessage,
+      importedAt: now,
+    });
     onProgress?.({
       phase: 'error',
       percent: 0,
@@ -1260,6 +1265,75 @@ async function recordImportHistory(
       1,
     ],
   });
+}
+
+async function recordFailedImport(data: {
+  projectPath: string;
+  importId: string;
+  sourceFilePath: string;
+  sourceKind?: DataSourceKind;
+  errorMessage: string;
+  importedAt: string;
+}): Promise<void> {
+  let client: Client | null = null;
+
+  try {
+    const projectDbPath = path.join(data.projectPath, '.delightify', 'project.db');
+    const fs = await import('fs');
+    const dbDir = path.dirname(projectDbPath);
+    if (!fs.existsSync(dbDir)) {
+      fs.mkdirSync(dbDir, { recursive: true });
+    }
+
+    client = createClient({ url: `file:${projectDbPath}` });
+    const schemaManager = createSchemaManager(client);
+    await schemaManager.initialize();
+
+    await client.execute({
+      sql: `INSERT OR REPLACE INTO data_imports
+            (
+              import_id,
+              source_file_path,
+              source_kind,
+              data_version,
+              schema_version,
+              capabilities_json,
+              modlist_hash,
+              exported_at,
+              mod_count,
+              item_count,
+              recipe_count,
+              tag_count,
+              imported_at,
+              is_success,
+              error_message
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [
+        data.importId,
+        data.sourceFilePath || '',
+        data.sourceKind || 'legacy_exporter',
+        '1.0',
+        '1.0',
+        serializeCapabilities(LEGACY_EXPORTER_CAPABILITIES),
+        null,
+        null,
+        0,
+        0,
+        0,
+        0,
+        data.importedAt,
+        0,
+        data.errorMessage,
+      ],
+    });
+  } catch {
+    // 失败审计不影响导入错误返回。
+  } finally {
+    if (client) {
+      try { await client.close(); } catch {}
+    }
+  }
 }
 
 function serializeCapabilities(capabilities: ProjectCapabilities): string {

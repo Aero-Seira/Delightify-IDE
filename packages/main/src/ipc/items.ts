@@ -26,7 +26,16 @@ export function registerItemsHandlers(): void {
   ): Promise<IpcResponse<ItemQueryResult>> => {
     const dbPath = appPaths.projectDb(projectPath);
     try {
-      const { search, searchField = 'all', modid, tagId, page = 1, pageSize = 50 } = params;
+      const {
+        search,
+        lang = 'zh_cn',
+        searchField = 'all',
+        modid,
+        tagId,
+        page = 1,
+        pageSize = 50,
+      } = params;
+      const fallbackLang = 'en_us';
       
       const db = createProjectDbClient(dbPath);
       
@@ -48,10 +57,10 @@ export function registerItemsHandlers(): void {
             break;
             
           case 'name':
-            // 仅搜索翻译名（需要JOIN item_resources）
-            countConditions.push('items.item_id IN (SELECT item_id FROM item_resources WHERE resource_type = \'lang_name\' AND content LIKE ?)');
-            queryConditions.push('ir.content LIKE ?');
-            args.push(searchPattern);
+            // 仅搜索翻译名
+            countConditions.push('items.translation_key IN (SELECT key FROM translations WHERE lang IN (?, ?) AND value LIKE ?)');
+            queryConditions.push('i.translation_key IN (SELECT key FROM translations WHERE lang IN (?, ?) AND value LIKE ?)');
+            args.push(lang, fallbackLang, searchPattern);
             break;
             
           case 'tag':
@@ -66,15 +75,15 @@ export function registerItemsHandlers(): void {
             // 搜索所有字段（ID OR 翻译名 OR 标签）
             countConditions.push(`(
               items.item_id LIKE ? OR 
-              items.item_id IN (SELECT item_id FROM item_resources WHERE resource_type = 'lang_name' AND content LIKE ?) OR
+              items.translation_key IN (SELECT key FROM translations WHERE lang IN (?, ?) AND value LIKE ?) OR
               items.item_id IN (SELECT item_id FROM item_tags WHERE tag_id LIKE ?)
             )`);
             queryConditions.push(`(
               i.item_id LIKE ? OR 
-              ir.content LIKE ? OR
+              i.translation_key IN (SELECT key FROM translations WHERE lang IN (?, ?) AND value LIKE ?) OR
               i.item_id IN (SELECT item_id FROM item_tags WHERE tag_id LIKE ?)
             )`);
-            args.push(searchPattern, searchPattern, searchPattern);
+            args.push(searchPattern, lang, fallbackLang, searchPattern, searchPattern);
             break;
         }
       }
@@ -103,15 +112,16 @@ export function registerItemsHandlers(): void {
       });
       const total = Number(countResult.rows[0]?.count || 0);
       
-      // 获取数据 - LEFT JOIN item_resources 获取中文名称
-      const queryArgs = [...args, pageSize, (page - 1) * pageSize];
+      // 获取数据 - LEFT JOIN translations 获取显示名，主语言缺失时回退 en_us
+      const queryArgs = [lang, fallbackLang, ...args, pageSize, (page - 1) * pageSize];
       const query = `
         SELECT 
           i.item_id,
           i.modid,
-          ir.content as display_name
+          COALESCE(tl.value, te.value) as display_name
         FROM items i
-        LEFT JOIN item_resources ir ON i.item_id = ir.item_id AND ir.resource_type = 'lang_name'
+        LEFT JOIN translations tl ON tl.key = i.translation_key AND tl.lang = ?
+        LEFT JOIN translations te ON te.key = i.translation_key AND te.lang = ?
         ${queryWhereClause}
         ORDER BY i.item_id
         LIMIT ? OFFSET ?
@@ -142,24 +152,27 @@ export function registerItemsHandlers(): void {
   ipcMain.handle(IPC_CHANNELS.ITEMS_GET_BY_MOD, async (
     _event,
     projectPath: string,
-    modid: string
+    modid: string,
+    lang = 'zh_cn'
   ): Promise<IpcResponse<Item[]>> => {
     const dbPath = appPaths.projectDb(projectPath);
     try {
       const db = createProjectDbClient(dbPath);
+      const fallbackLang = 'en_us';
       
       const result = await db.execute({
         sql: `
           SELECT 
             i.item_id,
             i.modid,
-            ir.content as display_name
+            COALESCE(tl.value, te.value) as display_name
           FROM items i
-          LEFT JOIN item_resources ir ON i.item_id = ir.item_id AND ir.resource_type = 'lang_name'
+          LEFT JOIN translations tl ON tl.key = i.translation_key AND tl.lang = ?
+          LEFT JOIN translations te ON te.key = i.translation_key AND te.lang = ?
           WHERE i.modid = ?
           ORDER BY i.item_id
         `,
-        args: [modid],
+        args: [lang, fallbackLang, modid],
       });
       
       const items: Item[] = result.rows.map((row: any) => ({
@@ -179,11 +192,13 @@ export function registerItemsHandlers(): void {
   ipcMain.handle(IPC_CHANNELS.ITEMS_GET_DETAIL, async (
     _event,
     projectPath: string,
-    itemId: string
+    itemId: string,
+    lang = 'zh_cn'
   ): Promise<IpcResponse<Item & { tags: string[] } | null>> => {
     const dbPath = appPaths.projectDb(projectPath);
     try {
       const db = createProjectDbClient(dbPath);
+      const fallbackLang = 'en_us';
       
       const [itemResult, tagsResult] = await Promise.all([
         db.execute({
@@ -191,12 +206,13 @@ export function registerItemsHandlers(): void {
             SELECT 
               i.item_id,
               i.modid,
-              ir.content as display_name
+              COALESCE(tl.value, te.value) as display_name
             FROM items i
-            LEFT JOIN item_resources ir ON i.item_id = ir.item_id AND ir.resource_type = 'lang_name'
+            LEFT JOIN translations tl ON tl.key = i.translation_key AND tl.lang = ?
+            LEFT JOIN translations te ON te.key = i.translation_key AND te.lang = ?
             WHERE i.item_id = ?
           `,
-          args: [itemId],
+          args: [lang, fallbackLang, itemId],
         }),
         db.execute({
           sql: 'SELECT tag_id FROM item_tags WHERE item_id = ?',
