@@ -129,6 +129,12 @@ ehthumbs.db
 Thumbs.db
 
 # ========================================
+# Packaged build artifacts
+# ========================================
+*.tgz
+*.tar.gz
+
+# ========================================
 # Optional
 # ========================================
 # Uncomment if you want to ignore these:

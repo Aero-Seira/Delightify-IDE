@@ -1,407 +1,213 @@
-> **⚠️ 方向与现状说明（2026-06）**
-> 本项目正式产品名为 **Delightify**；**ModPack IDE** 是产品定位/品类描述：面向整合包作者的"意图编译器"式桌面 IDE。
-> - 开发请**先读 [`CLAUDE.md`](./CLAUDE.md)**。产品方向与完整规格在规划库 `…/MC-Workbench/Projects/ModPack IDE/`（`设计/01` 为唯一真相源；目录名沿用规划期命名）。
-> - **本 README 及 `AGENTS.md`/`docs/` 多为「规划/意图」，大部分尚未实现——请以实际代码为准，勿把"路线图已完成"当真。**
-
----
-
 # 🎮 Delightify
 
-> 一站式可视化 Minecraft 配方魔改平台，支持模组数据库管理、可视化配方编辑与 AI 辅助转换
-> One-stop visual Minecraft recipe modification platform with mod database management, visual recipe editing, and AI-assisted conversion
+> 面向 Minecraft 整合包作者的 **ModPack IDE / 意图编译器**：声明目标，工具感知整合包、按语义分类、规划如何全包应用，并产出可审、可撤销的改包脚本。
+> A **ModPack IDE / "intent compiler"** for Minecraft modpack authors: state a goal, and the tool perceives the pack, classifies each case semantically, plans a pack-wide application, and emits reviewable, reversible scripts.
 
-[English](#english) | [中文](#中文)
+[中文](#中文) · [English](#english)
+
+> **现状（early-stage，以代码为准）**：MVP-0 后端主链路已落地并有可跑通的 smoke 验收——从 exporter 快照导入 → 浏览物品/配方 → unify 候选查询 → dry-run diff → 生成/撤销 KubeJS。浏览层打磨与更高阶 Agent 能力仍在推进。完整实现状态见 [`docs/current/mvp0-implementation-plan.md`](docs/current/mvp0-implementation-plan.md)。
 
 ---
 
 ## 中文
 
-### 🎯 项目简介
+### 这是什么
 
-整合包开发者在魔改配方时面临诸多痛点：需要手动翻阅文档才能找到物品 ID、手写 JSON 且无法直观预览效果、不同模组的配方格式各异难以统一、缺乏可视化工具来管理大量配方……
+Delightify 是一个 Electron 桌面应用（**Delightify 是产品名**；"ModPack IDE" 是品类描述）。作者陈述一个*目标*（如"把全包同名/等价物品统一"），Agent 负责两件事：**(a) 语义识别**——感知整合包、逐例分类；**(b) 执行规划**——规划如何在全包安全应用。**设计/平衡判断 (c) 始终归作者**。高置信 + 低风险 → 自动（可审）；不确定 / 影响面大 → 进搁置队列；过宽或主要属 (c) 的请求 → 引导式规划（只读决策支持）。
 
-**Delightify** 是专为整合包开发者打造的**可视化配方魔改工作台**。通过导入模组 JAR 文件，自动解析并建立物品、配方、材质、翻译的**本地知识数据库**；提供**可视化配方编辑器**，拖拽式操作，物品图标实时渲染，所见即所得；内置 **AI 辅助功能**（可选），针对批量迁移场景提供智能建议，但用户始终掌控最终决策。支持导出为 KubeJS、Datapack 等主流格式，未来规划扩展到附魔、战利品表等更多魔改类型。
+与传统改包工具不同，Delightify **不靠离线解析 mod JAR** 来取事实。脚本化整合包（KubeJS / CraftTweaker / datapack 覆盖 / 运行时 tag 合并）的**最终态本就是运行时产物**，离线无法健全求值。因此事实来源是游戏内运行时导出器。
 
-### ✨ 核心特性
+### 数据来源：运行时导出器（不是 JAR 解析）
 
-- 🗄️ **模组知识库**：导入模组 JAR，自动解析并持久化物品、配方、材质、翻译数据，建立本地数据库
-- 🎨 **可视化配方编辑器**：拖拽式操作，物品图标实时渲染，3×3 工作台/烹饪锅等多种配方类型可视化呈现
-- 🔍 **物品浏览器**：按模组/类别/标签筛选，材质图标展示，快速定位目标物品
-- 🤖 **AI 辅助转换**（可选功能）：对于批量迁移场景，支持 LLM 智能建议配方类型，提供置信度评分，人工审核确认
-- 📤 **多格式导出**：KubeJS Script/JSON、原版 Datapack，一键生成可用脚本
-- 🔧 **高度可扩展**：配方类型定义完全自定义，支持任意模组的任意配方格式
-- 💻 **桌面客户端**: 基于 Electron + React 的本地桌面应用，原生文件系统访问，无需浏览器
-- 📦 **原版数据内置**：预置 Minecraft 原版全部物品与配方数据，开箱即用
+`packages/exporter` 是并入本仓的 **NeoForge 1.21.1** mod。在游戏内执行 `/mpide_export dump`，它从运行时注册表 / RecipeManager / 已解析 tag 导出一份 SQLite 快照到 `<实例>/mpide-exporter/export.sqlite`，包含：mods、items（含组件/食物/耐久等确定性事实）、blocks、item_tags、结构化 `recipe_inputs`/`recipe_outputs`、translations 等。IDE 把这份快照导入项目库 `<整合包>/.delightify/project.db`，作为 `data:*` 确定性事实层。
 
-### 🚀 快速开始
+### MVP-0 端到端流程
 
-#### 安装
+1. **导入** exporter v1 SQLite 快照（按 schema 分流：`exporter_v1` 完整导入并启用 unify；legacy 旧快照仅浏览）。
+2. **浏览** 物品 / 配方（ItemBrowser / RecipeBrowser）。
+3. **查询** 同名 / 等价物品候选及其配方引用者（Unify 工作台）。
+4. **dry-run**：生成可审决策清单 + before/after diff，自动项与搁置项分流，每条带证据、置信度与风险理由。
+5. **导出** Delightify 独享的 KubeJS 文件 `kubejs/server_scripts/zzz_delightify_generated.js`（带生成标记，拒绝覆盖手写脚本）。
+6. **撤销**：删除该生成文件，幂等可逆。
 
-**通用安装（macOS/Linux/WSL）:**
+### 安全纪律（不可协商）
 
-```bash
-# 克隆仓库
-git clone https://github.com/Aero-Seira/Delightify-IDE.git
-cd Delightify-IDE
+先分类再行动 → 置信度 × 风险门控 → 不确定就搁置（绝不静默猜测）→ 透明决策账本 → dry-run / diff → 可逆。任何破坏世界状态的动作默认不自动执行；生成物归 Delightify 所有，不改作者手写脚本。
 
-# 安装依赖（需要 Node.js 18+ 和 pnpm）
-pnpm install
+### 输出后端
 
-# (推荐) 安装本地模型支持
-# 安装 ollama: https://ollama.ai
-ollama pull qwen2.5:7b
-```
+多后端 IR；**v1 = KubeJS emitter**。datapack / Almost Unified 等后端待后续。
 
-**Windows 安装:**
+### Monorepo 结构
 
-```powershell
-# 克隆仓库
-git clone https://github.com/Aero-Seira/Delightify-IDE.git
-cd Delightify-IDE
+| 包 | 职责 |
+|---|---|
+| `packages/shared` | 跨进程 TS 类型 + IPC 通道常量 |
+| `packages/main` | Electron 主进程：`ipc/` 处理器、`services/`（database / mod-data-importer / unify / export / llm / …）、`fs/` 路径 |
+| `packages/renderer` | React + Vite 渲染进程：8 个页面（Dashboard、ProjectManager、ModManager、ItemBrowser、RecipeBrowser、RecipeEditor、ConversionTool、DebugTools） |
+| `packages/exporter` | NeoForge 1.21.1 运行时数据导出器（Gradle / Java 21） |
 
-# 方式1：使用 PowerShell 自动设置脚本
-.\scripts\setup-windows.ps1
+IPC 经 `contextBridge`/preload（无 `nodeIntegration`），通道在 `packages/shared/src/constants/ipc.ts` 白名单，处理器返回 `{ success, data?, error? }`。
 
-# 方式2：手动安装
-pnpm install
-pnpm build
-```
-
-详见 [Windows 构建指南](./docs/guides/windows-build.md)
-
-#### 配置 LLM
-
-1. **使用 Ollama (推荐，本地运行)**
-   
-   确保 Ollama 已安装并运行：
-   ```bash
-   ollama serve
-   ```
-   
-   系统将自动使用本地 Ollama 模型（配置在 `config/llm_config.json`）
-
-2. **使用在线 API (可选)**
-   
-   如需使用 OpenAI 或 Anthropic，创建 `.env` 文件：
-   ```bash
-   OPENAI_API_KEY=sk-...
-   ANTHROPIC_API_KEY=sk-ant-...
-   ```
-   
-   编辑 `config/llm_config.json` 启用相应提供商
-
-#### 运行
+### 快速开始
 
 ```bash
-# 启动 Electron 开发模式（前端热重载 + 主进程监听）
-pnpm dev
+# 需要 Node.js >=18、pnpm >=9
+git clone https://github.com/Aero-Seira/Delightify-IDE.git
+cd Delightify-IDE
+pnpm install
 
-# 构建运行时数据导出器（NeoForge 1.21.1 / Java 21）
-pnpm exporter:build
+pnpm dev          # 构建并启动 Electron（最快预览）
+pnpm dev:full     # Vite HMR + Electron（前端开发）
 ```
 
-Electron 窗口将自动打开
+Windows 用户见 [Windows 构建指南](docs/guides/windows-build.md)（或 `scripts/setup-windows.ps1`）。
 
-### 📖 典型工作流
+### 构建运行时导出器（可选，需 Java 21 / Gradle）
 
-**第一步：导入模组 JAR**
-```
-→ 自动解析 farmersdelight-1.20.jar
-→ 识别到 127 个物品，89 个配方，341 张材质
-```
-
-**第二步：浏览物品库**
-在物品浏览器中搜索「tomato」，可以看到：
-- 番茄的 16×16 材质图标
-- 所有以番茄为材料的配方列表
-- 番茄所属的物品标签（forge:vegetables 等）
-
-**第三步：可视化编辑配方**
-打开「番茄沙拉」配方，在 3×3 格子中拖拽调整材料，实时预览生成的 KubeJS 代码：
-```javascript
-ServerEvents.recipes(event => {
-  event.custom({
-    type: 'farmersdelight:cooking',
-    ingredients: [
-      {item: 'farmersdelight:tomato'},
-      {item: 'minecraft:bowl'}
-    ],
-    result: {item: 'farmersdelight:tomato_soup'},
-    cookingtime: 200,
-    experience: 0.35
-  });
-});
+```bash
+pnpm exporter:build      # 构建 NeoForge 导出器 jar
+pnpm exporter:runClient  # 起集成端单人世界，便于游戏内 /mpide_export dump 实跑
 ```
 
-**第四步（可选）：AI 辅助批量转换**
-上传旧版整合包的配方 JSON → AI 建议转换为 farmersdelight:cooking → 逐条审核，一键确认
+默认 `pnpm build` 只走 TypeScript / Turborepo 构建，不触发 Gradle；导出器需显式构建。
 
-**第五步：导出**
-生成完整的 KubeJS 脚本，直接放入整合包的 kubejs/server_scripts/ 目录
+### 常用命令
 
-### 📚 文档链接
-
-- 📚 [文档索引](docs/README.md) - 当前决策、规格快照与历史归档
-- 🧭 [MVP-0 数据地基](docs/current/mvp0-data-foundation.md) - 当前 schema/importer/unify/KubeJS 实现依据
-- 📘 [旧系统架构设计](docs/archive/planning/architecture.md) - 已归档的历史参考
-- 📐 [旧技术栈决策](docs/archive/planning/tech-stack.md) - 已归档的历史 ADR
-- 🗂️ [旧项目结构规划](docs/archive/planning/project-structure.md) - 已归档，当前实现以代码为准
-
-### 🏗️ 项目架构
-
-```
-┌─────────────────────────────────────────────────┐
-│              Delightify（Electron）              │
-│                                                 │
-│  ┌───────────────────────────────────────────┐  │
-│  │           渲染进程（React UI）             │  │
-│  │  ModManager · ItemBrowser · RecipeEditor  │  │
-│  └────────────────┬──────────────────────────┘  │
-│                   │ IPC                         │
-│  ┌────────────────▼──────────────────────────┐  │
-│  │           主进程（Node.js）               │  │
-│  │  ┌─────────┐ ┌──────────────┐ ┌────────┐ │  │
-│  │  │模组管理  │ │  可视化编辑  │ │AI 辅助 │ │  │
-│  │  │JAR 解析  │ │  配方槽位   │ │LLM建议 │ │  │
-│  │  │材质提取  │ │  实时预览   │ │批量转换│ │  │
-│  │  └────┬────┘ └──────┬───────┘ └───┬────┘ │  │
-│  │       └─────────────┴─────────────┘      │  │
-│  │                     │                    │  │
-│  │                     ▼                    │  │
-│  │       ┌─────────────────────────┐        │  │
-│  │       │     本地知识数据库      │        │  │
-│  │       │ 物品·配方·材质·翻译    │        │  │
-│  │       └────────────┬────────────┘        │  │
-│  │                    │                     │  │
-│  │                    ▼                     │  │
-│  │       ┌─────────────────────────┐        │  │
-│  │       │       导出引擎          │        │  │
-│  │       │   KubeJS · Datapack    │        │  │
-│  │       └─────────────────────────┘        │  │
-│  └───────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────┘
+```bash
+pnpm build         # turbo run build（shared 先构建）
+pnpm typecheck     # turbo run typecheck —— CI 跑的就是这个
+pnpm smoke:mvp0    # MVP-0 端到端验收（import → unify → dry-run → KubeJS → revert）
+pnpm dist:mac | dist:win | dist:linux   # 打包
 ```
 
-运行时事实数据由 monorepo 内的 `packages/exporter` 提供。该子包是 NeoForge 1.21.1 mod，使用 Gradle/Java 21 构建；默认 `pnpm build` 不自动构建它，需显式运行 `pnpm exporter:build`。
+无单元测试命令；CI 仅跑 `pnpm typecheck`。改动用 `pnpm typecheck` + `pnpm smoke:mvp0` + 构建/实跑验证。
 
-### 🛣️ 开发路线图
+真实快照验收：
 
-- [x] **阶段 0**：项目规划与架构设计（技术选型、数据库设计、文档）
-- [ ] **阶段 1 — 基础骨架**（v0.1）
-  - [ ] pnpm + Turborepo monorepo 初始化
-  - [ ] 共享 TypeScript 类型定义（物品、配方、模组、材质）
-  - [ ] 数据库 Schema 设计（Drizzle ORM，7 张表）
-  - [ ] Electron 主进程 + IPC 框架搭建
-  - [ ] React + Vite 渲染进程脚手架
-- [ ] **阶段 2 — 数据入库**（v0.2）
-  - [ ] JAR 解析引擎（lang / textures / recipes / tags 三重策略）
-  - [ ] 材质提取与 jimp 处理
-  - [ ] Minecraft 原版种子数据内置
-  - [ ] 模组管理 API
-- [ ] **阶段 3 — 可视化 UI**（v0.3）
-  - [ ] 物品图标组件（ItemIcon）
-  - [ ] 配方槽位组件（RecipeSlot / RecipeGrid）
-  - [ ] ModManager 页面
-  - [ ] ItemBrowser 页面
-  - [ ] RecipeBrowser 页面 + 基础配方编辑器
-- [ ] **阶段 4 — AI 辅助**（v0.4）
-  - [ ] 多提供商 LLM 客户端（Ollama / OpenAI / Anthropic）
-  - [ ] 数据库驱动的 Prompt 构建（注入物品上下文）
-  - [ ] 批量转换工作流
-  - [ ] 交互审核界面 + 置信度可视化
-- [ ] **阶段 5 — 导出与完善**（v0.5）
-  - [ ] KubeJS / Datapack 导出引擎
-  - [ ] 转换历史记录
-  - [ ] 规则引擎雏形
-- [ ] **未来规划**：附魔魔改、战利品表编辑、标签管理、整合包版本管理
+```bash
+pnpm smoke:mvp0 -- --data-file /path/to/export.sqlite --query 铜锭 --target minecraft:copper_ingot
+```
 
-### 🎯 目标用户
+### LLM / Agent
 
-- 整合包开发者（主要用户）
-- 模组包作者，需要跨模组统一配方风格
-- 服务器管理员，需要快速调整游戏内配方平衡
-- 不熟悉代码但想进行配方魔改的玩家
+LLM provider 抽象（`packages/main/src/services/llm`）存在但**当前不在 v1 关键路径上**。MVP-0 的 unify 是确定性 / 启发式版本，不接 LLM。完整语义 Agent 主循环是后续目标。
 
-### 🤝 贡献指南
+### 文档
 
-欢迎贡献！请查看 [CONTRIBUTING.md](CONTRIBUTING.md)
+从 [`CLAUDE.md`](CLAUDE.md) 开始，再到 [`docs/README.md`](docs/README.md)。当前决策在 [`docs/current/`](docs/current/)：
 
-### 📄 许可证
+- [`mvp0-implementation-plan.md`](docs/current/mvp0-implementation-plan.md) —— MVP-0 可落地实现方案（代码事实 + 任务清单）
+- [`mvp0-data-foundation.md`](docs/current/mvp0-data-foundation.md) —— 数据地基决策
+- [`exporter-contract-v1.md`](docs/current/exporter-contract-v1.md) —— IDE ↔ 导出器 v1 契约
 
-MIT License - 详见 [LICENSE](LICENSE)
+完整产品规格快照在 [`docs/spec-snapshot/`](docs/spec-snapshot/)（`设计/01` 为真相源）。`docs/archive/` 内文档仅作历史背景，**不代表当前实现**。
+
+### 许可证
+
+MIT。
 
 ---
 
 ## English
 
-### 🎯 Overview
+### What it is
 
-Modpack developers face many pain points when modifying recipes: looking up item IDs in documentation, writing JSON blindly without visual preview, dealing with different recipe formats across mods, and lacking visual tools to manage large numbers of recipes.
+Delightify is an Electron desktop app (**Delightify is the product name**; "ModPack IDE" describes the category). The author states a *goal* (e.g. "unify same-named / equivalent items across the pack); the Agent does two things: **(a) semantic recognition** — perceive the pack, classify each case — and **(b) execution planning** — plan how to apply it pack-wide safely. **Design / balance judgement (c) always stays with the author.** High-confidence + low-risk → auto (reviewable); uncertain / high blast-radius → defer queue; over-broad or mostly-(c) requests → guided planning (read-only decision support).
 
-**Delightify** is a **visual recipe modification workbench** built for modpack developers. By importing mod JAR files, it automatically parses and builds a **local knowledge database** of items, recipes, textures, and translations. It provides a **visual recipe editor** with drag-and-drop operations, real-time item icon rendering, and WYSIWYG editing. Built-in **AI assistance** (optional) provides intelligent suggestions for bulk migration scenarios, while users always retain full control over final decisions. Supports export to KubeJS, Datapack, and other mainstream formats, with future plans to expand to enchantments, loot tables, and more.
+Unlike traditional tools, Delightify does **not** rely on offline JAR parsing for facts. The final state of a scripted modpack (KubeJS / CraftTweaker / datapack overrides / runtime tag merges) **is a runtime artifact** that can't be soundly evaluated offline. So the source of truth is an in-game runtime exporter.
 
-### ✨ Features
+### Data source: a runtime exporter (not JAR parsing)
 
-- 🗄️ **Mod Knowledge Base**: Import mod JARs, auto-parse and persist items/recipes/textures/translations into a local database
-- 🎨 **Visual Recipe Editor**: Drag-and-drop operation, real-time item icon rendering, visual presentation of 3×3 crafting table, cooking pot, and more
-- 🔍 **Item Browser**: Filter by mod/category/tag, display texture icons, quickly locate target items
-- 🤖 **AI-Assisted Conversion** (optional): For bulk migration scenarios, supports LLM recipe type suggestions with confidence scoring and manual review
-- 📤 **Multi-format Export**: KubeJS Script/JSON, vanilla Datapack, one-click script generation
-- 🔧 **Highly Extensible**: Recipe type definitions fully customizable, supports any mod's recipe format
-- 💻 **Desktop Client**: Electron + React native desktop application, direct filesystem access, no browser required
-- 📦 **Vanilla Data Built-in**: Pre-loaded Minecraft vanilla items and recipes, ready out of the box
+`packages/exporter` is a **NeoForge 1.21.1** mod vendored into this repo. Running `/mpide_export dump` in-game exports a SQLite snapshot to `<instance>/mpide-exporter/export.sqlite` from the runtime registries / RecipeManager / resolved tags: mods, items (with deterministic facts — components, food, durability), blocks, item_tags, structured `recipe_inputs`/`recipe_outputs`, translations, and more. The IDE imports that snapshot into the project db at `<modpack>/.delightify/project.db` as the `data:*` deterministic fact layer.
 
-### 🚀 Quick Start
+### MVP-0 end-to-end flow
+
+1. **Import** an exporter v1 SQLite snapshot (routed by schema: `exporter_v1` → full import + unify enabled; legacy snapshots → browse-only).
+2. **Browse** items / recipes (ItemBrowser / RecipeBrowser).
+3. **Query** same-named / equivalent item candidates and their recipe references (Unify workbench).
+4. **Dry-run**: produce a reviewable decision list + before/after diff, splitting auto vs deferred, each with evidence, confidence, and risk rationale.
+5. **Export** a Delightify-owned KubeJS file `kubejs/server_scripts/zzz_delightify_generated.js` (carries a generated marker; refuses to overwrite hand-written scripts).
+6. **Revert**: delete the generated file, idempotent and reversible.
+
+### Safety discipline (non-negotiable)
+
+Classify-then-act → confidence × risk gating → defer when unsure (never silently guess) → transparent decision ledger → dry-run / diff → reversible. World-mutating actions never run automatically; generated output is owned by Delightify and never edits the author's scripts.
+
+### Output backend
+
+Multi-backend IR; **v1 = KubeJS emitter**. Datapack / Almost Unified come later.
+
+### Monorepo layout
+
+| Package | Role |
+|---|---|
+| `packages/shared` | Cross-process TS types + IPC channel constants |
+| `packages/main` | Electron main: `ipc/` handlers, `services/` (database / mod-data-importer / unify / export / llm / …), `fs/` paths |
+| `packages/renderer` | React + Vite renderer: 8 pages (Dashboard, ProjectManager, ModManager, ItemBrowser, RecipeBrowser, RecipeEditor, ConversionTool, DebugTools) |
+| `packages/exporter` | NeoForge 1.21.1 runtime data exporter (Gradle / Java 21) |
+
+IPC goes through `contextBridge`/preload (no `nodeIntegration`); channels are whitelisted in `packages/shared/src/constants/ipc.ts`; handlers return `{ success, data?, error? }`.
+
+### Quick start
 
 ```bash
-# Clone repository
+# Requires Node.js >=18, pnpm >=9
 git clone https://github.com/Aero-Seira/Delightify-IDE.git
 cd Delightify-IDE
-
-# Install dependencies (requires Node.js 18+ and pnpm)
 pnpm install
 
-# (Recommended) Install local model support
-# Install Ollama: https://ollama.ai
-ollama pull qwen2.5:7b
-
-# Start Electron development mode (hot reload + main process watch)
-pnpm dev
+pnpm dev          # build all + launch Electron (fastest preview)
+pnpm dev:full     # Vite HMR + Electron (frontend dev)
 ```
 
-The Electron window will open automatically.
+Windows users: see the [Windows build guide](docs/guides/windows-build.md) (or `scripts/setup-windows.ps1`).
 
-### 📖 Typical Workflow
+### Build the runtime exporter (optional, needs Java 21 / Gradle)
 
-**Step 1: Import Mod JAR**
-```
-→ Auto-parse farmersdelight-1.20.jar
-→ Detected 127 items, 89 recipes, 341 textures
-```
-
-**Step 2: Browse Item Library**
-Search for "tomato" in the Item Browser to see:
-- 16×16 texture icon for tomato
-- All recipes that use tomato as an ingredient
-- Item tags for tomato (forge:vegetables, etc.)
-
-**Step 3: Visual Recipe Editing**
-Open the "Tomato Soup" recipe, drag and drop ingredients in the 3×3 grid, and preview the generated KubeJS code in real time:
-```javascript
-ServerEvents.recipes(event => {
-  event.custom({
-    type: 'farmersdelight:cooking',
-    ingredients: [
-      {item: 'farmersdelight:tomato'},
-      {item: 'minecraft:bowl'}
-    ],
-    result: {item: 'farmersdelight:tomato_soup'},
-    cookingtime: 200,
-    experience: 0.35
-  });
-});
+```bash
+pnpm exporter:build      # build the NeoForge exporter jar
+pnpm exporter:runClient  # launch an integrated single-player world to run /mpide_export dump
 ```
 
-**Step 4 (Optional): AI-Assisted Bulk Conversion**
-Upload legacy modpack recipe JSON → AI suggests conversion to farmersdelight:cooking → Review each entry and confirm with one click
+`pnpm build` only runs the TypeScript / Turborepo build and does not trigger Gradle; the exporter is built explicitly.
 
-**Step 5: Export**
-Generate a complete KubeJS script and place it directly in your modpack's kubejs/server_scripts/ directory
+### Common commands
 
-### 📚 Documentation
-
-- 📚 [Documentation Index](docs/README.md) - Current decisions, spec snapshot, and archive
-- 🧭 [MVP-0 Data Foundation](docs/current/mvp0-data-foundation.md) - Current schema/importer/unify/KubeJS implementation baseline
-- 📘 [Archived Architecture](docs/archive/planning/architecture.md) - Historical reference
-- 📐 [Archived Tech Stack Decisions](docs/archive/planning/tech-stack.md) - Historical ADRs
-- 🗂️ [Archived Project Structure](docs/archive/planning/project-structure.md) - Historical planning; code is current truth
-
-### 🏗️ Architecture
-
-```
-┌─────────────────────────────────────────────────┐
-│           Delightify (Electron)                 │
-│                                                 │
-│  ┌───────────────────────────────────────────┐  │
-│  │         Renderer Process (React UI)       │  │
-│  │  ModManager · ItemBrowser · RecipeEditor  │  │
-│  └────────────────┬──────────────────────────┘  │
-│                   │ IPC                         │
-│  ┌────────────────▼──────────────────────────┐  │
-│  │          Main Process (Node.js)           │  │
-│  │  ┌─────────┐ ┌──────────────┐ ┌────────┐ │  │
-│  │  │Mod Mgr  │ │Visual Editor │ │AI Asst.│ │  │
-│  │  │JAR Parse│ │Recipe Slots  │ │LLM Tips│ │  │
-│  │  │Textures │ │Live Preview  │ │Bulk Cvt│ │  │
-│  │  └────┬────┘ └──────┬───────┘ └───┬────┘ │  │
-│  │       └─────────────┴─────────────┘      │  │
-│  │                     │                    │  │
-│  │                     ▼                    │  │
-│  │       ┌─────────────────────────┐        │  │
-│  │       │  Local Knowledge DB    │        │  │
-│  │       │Items·Recipes·Textures  │        │  │
-│  │       └────────────┬────────────┘        │  │
-│  │                    │                     │  │
-│  │                    ▼                     │  │
-│  │       ┌─────────────────────────┐        │  │
-│  │       │      Export Engine     │        │  │
-│  │       │   KubeJS · Datapack    │        │  │
-│  │       └─────────────────────────┘        │  │
-│  └───────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────┘
+```bash
+pnpm build         # turbo run build (shared builds first)
+pnpm typecheck     # turbo run typecheck — this is what CI runs
+pnpm smoke:mvp0    # MVP-0 end-to-end check (import → unify → dry-run → KubeJS → revert)
+pnpm dist:mac | dist:win | dist:linux   # package
 ```
 
-### 🛣️ Roadmap
+There is no unit-test command; CI runs only `pnpm typecheck`. Verify changes with `pnpm typecheck` + `pnpm smoke:mvp0` + building/running the app.
 
-- [x] **Phase 0**: Project planning and architecture design (tech stack, database design, documentation)
-- [ ] **Phase 1 — Foundation** (v0.1)
-  - [ ] pnpm + Turborepo monorepo initialization
-  - [ ] Shared TypeScript type definitions (items, recipes, mods, textures)
-  - [ ] Database schema design (Drizzle ORM, 7 tables)
-  - [ ] Electron main process + IPC framework setup
-  - [ ] React + Vite renderer process scaffold
-- [ ] **Phase 2 — Data Ingestion** (v0.2)
-  - [ ] JAR parsing engine (lang / textures / recipes / tags triple strategy)
-  - [ ] Texture extraction and jimp processing
-  - [ ] Minecraft vanilla seed data built-in
-  - [ ] Mod management API
-- [ ] **Phase 3 — Visual UI** (v0.3)
-  - [ ] Item icon component (ItemIcon)
-  - [ ] Recipe slot component (RecipeSlot / RecipeGrid)
-  - [ ] ModManager page
-  - [ ] ItemBrowser page
-  - [ ] RecipeBrowser page + basic recipe editor
-- [ ] **Phase 4 — AI Assistance** (v0.4)
-  - [ ] Multi-provider LLM client (Ollama / OpenAI / Anthropic)
-  - [ ] Database-driven prompt construction (inject item context)
-  - [ ] Bulk conversion workflow
-  - [ ] Interactive review interface + confidence visualization
-- [ ] **Phase 5 — Export & Polish** (v0.5)
-  - [ ] KubeJS / Datapack export engine
-  - [ ] Conversion history
-  - [ ] Rule engine prototype
-- [ ] **Future**: Enchantment modding, loot table editing, tag management, modpack version management
+Real-snapshot check:
 
-### 🎯 Target Users
+```bash
+pnpm smoke:mvp0 -- --data-file /path/to/export.sqlite --query 铜锭 --target minecraft:copper_ingot
+```
 
-- Modpack developers (primary users)
-- Mod pack authors who need to unify recipe styles across mods
-- Server administrators who need to quickly adjust in-game recipe balance
-- Players who want to modify recipes without writing code
+### LLM / Agent
 
-### 🤝 Contributing
+An LLM provider abstraction (`packages/main/src/services/llm`) exists but is **not on the v1 critical path**. MVP-0 unify is deterministic / heuristic and does not call an LLM. A full semantic Agent loop is a later goal.
 
-Contributions welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md)
+### Docs
 
-### 📄 License
+Start at [`CLAUDE.md`](CLAUDE.md), then [`docs/README.md`](docs/README.md). Current decisions live in [`docs/current/`](docs/current/):
 
-MIT License - see [LICENSE](LICENSE)
+- [`mvp0-implementation-plan.md`](docs/current/mvp0-implementation-plan.md) — MVP-0 implementation plan (code facts + task list)
+- [`mvp0-data-foundation.md`](docs/current/mvp0-data-foundation.md) — data foundation decisions
+- [`exporter-contract-v1.md`](docs/current/exporter-contract-v1.md) — IDE ↔ exporter v1 contract
+
+The full product spec snapshot is in [`docs/spec-snapshot/`](docs/spec-snapshot/) (`设计/01` is the source of truth). Anything under `docs/archive/` is historical background only and does **not** reflect current implementation.
+
+### License
+
+MIT.
 
 ---
 
-## 📞 联系方式 / Contact
-
 - Issues: [GitHub Issues](https://github.com/Aero-Seira/Delightify-IDE/issues)
 - Discussions: [GitHub Discussions](https://github.com/Aero-Seira/Delightify-IDE/discussions)
-
-**Made with ❤️ for the Minecraft modding community**
