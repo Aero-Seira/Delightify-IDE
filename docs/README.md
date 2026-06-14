@@ -18,6 +18,7 @@
 
 - [`mvp0-data-foundation.md`](./current/mvp0-data-foundation.md)：MVP-0 数据地基方案，后续 schema/importer/unify/KubeJS 实现依据。
 - [`exporter-contract-v1.md`](./current/exporter-contract-v1.md)：Delightify Exporter v1 SQLite 契约草案。
+- [`session-handoff-2026-06-14.md`](./current/session-handoff-2026-06-14.md)：当前会话事实快照、APFS 迁移步骤和下一步 importer 目标。
 - [`现状审计.md`](./current/现状审计.md)：基于真实代码的现状审计。
 - [`启动清单-审计与MVP0.md`](./current/启动清单-审计与MVP0.md)：新会话审计清单。
 - [`进度.md`](./current/进度.md)：近期决策与进展记录。
