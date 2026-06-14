@@ -300,3 +300,46 @@ T4–T6 已实现并通过 `typecheck/build/smoke:mvp0/smoke:m2:blast-radius/smo
 ### 边界
 - 只做 rename + 两个前置；不碰 scale/hide/复合/UI/LLM；不重写 schema/importer/validator/unify/ConversionTool。
 - tag-replace `#` 前缀、replace confirm 通道留待 T10 前处理。
+
+> **T7 状态**：✅ 已完成并提交（`1c6f4f3`，含 T7-a 孤儿清理 + 可注入 generatedAt、T7-b rename/lang）。lang 加载机制按标准资源包 JSON + KubeJS 1.21 待核实 TODO。
+
+---
+
+## 13. 路线调整：输出层后置（2026-06-15 决定）
+
+**决定**：把「编辑与导出」这一**具体后端层**（KubeJS 精确发射、scale 重建签名、JEI 隐藏、datapack/AU、真正写盘的导出 UI，以及可能借用现有模组手段 / 更换后端）整体**收口为最后一个里程碑「输出层」，技术栈待进一步讨论后再实现**。引擎层（IR）继续推进。
+
+**为何不需要回退**：T1 定的 `ChangeOperation/ChangeSet` 就是**后端无关 IR**——引擎只把动作展开成 IR + dry-run/diff/blast/defer，emitter 只是 IR 的一个消费者。IR 即接缝，输出技术栈日后插入这个接缝即可。
+
+**冻结范围（用户确认）**：只冻结**不确定的发射**；**保留现有可用产物**——`replace_input / remove_recipe / retag / rename` 的现有 KubeJS 发射已测试可用，保留不动。
+
+### 重排后的两层结构
+
+| 层 | 内容 | 何时做 |
+|---|---|---|
+| **引擎层（IR，现在继续）** | 复合 T10–T12（IR 编排原语 + 产 deferred 建议）；T8 scale / T9 hide 的 **语义部分**（IR op + dry-run + blast + defer，发射留空）；replace confirm 通道补全 | 现阶段 |
+| **输出层（最后做，技术栈待定）** | scale 重建发射、JEI 隐藏发射、datapack/AU emitter、真正写盘的「导出/编辑」UI、tag-replace `#` 前缀、可能的后端换型/借现有模组 | 技术栈定案后 |
+
+- T8/T9 在引擎层只产 `scale_recipe_field` / `hide_in_jei` 的 IR + 风险/defer 判定；其 **KubeJS 发射**归输出层。
+- 复合层验收改为 **IR 级 smoke**（断言 operations / included-deferred / blast / deferred 建议），不依赖 emitted 文本——这样不与未定的后端耦合。能稳定发射的部分（retag/rename/replace input）可选附带发射断言。
+- **MVP-1 发布切片**定义顺延：因「真正导出」属输出层，MVP-1（可发布切片）在输出层定案后才成立；在此之前以「引擎层 IR + IR 级验收」为阶段性 DoD。
+
+### 下一阶段：复合动作（IR 层）
+
+#### 前置 · replace confirm 通道
+- `replace.ts`：`planReplace` 增 `confirmedOperationIds?`，对 deferred 的 input 替换支持显式确认翻转；**强风险（跨 mod/unparsed/block/output）仍不可被覆盖**（与 retag/remove 对齐）。复合编排 replace 时需要它。
+
+#### T10 `constrain_inputs`（输入集校正，IR 层）
+- 新增 `packages/main/src/services/engine/composites/constrain-inputs.ts`：`planConstrainInputs(db, req) → { operations, deferredSuggestions, blast }`，编排 `planReplace`(tag→精选 item 列表) 或 `planRetag`(调 tag 成员)；脂肪→荤油类「桥接」→ 产 `add_bridge_recipe` **deferred 建议**（M5，不执行）。
+- 验收 smoke `smoke:m2:constrain`：例02 油 fixture，IR 级断言展开的原语 op + deferred 建议；展开对作者透明（operations 可枚举）。
+
+#### T11 `differentiate`（区分+链整合，IR 层）
+- 新增 `composites/differentiate.ts`：编排 `planRetag`(拆子 tag) + `planRename`(变体名) + `planReplace`(链整合)；命名风格属作者判断 (c) → 默认给一套 + 产 `naming_style` deferred 建议；`create:marble` 等有功能用途者保功能引用、不删不合并。
+- 验收 smoke `smoke:m2:differentiate`：例05 大理石 fixture，IR 级断言多条 rename_lang(auto) + retag(defer) + deferred 建议；不出现删除/合并 op。
+
+#### T12 `harmonize`（离群对齐，IR 层）
+- 新增 `composites/harmonize.ts`：编排 `planReplace` 对齐离群配方；`change_recipe_type` 属 M5 → 产 deferred 建议不执行。
+- 验收 smoke `smoke:m2:harmonize`：例01 离群配方 fixture，IR 级断言 replace op + `change_recipe_type` deferred 建议。
+
+#### 复合层公共类型
+- `packages/shared/src/types/engine.ts` 增 `DeferredSuggestion { kind: 'change_recipe_type'|'add_bridge_recipe'|'naming_style'|'add_item'|'remove_item'; target?; reason; references? }` 与 `CompositeResult { operations: ChangeOperation[]; deferredSuggestions: DeferredSuggestion[]; blast?: ... }`。
