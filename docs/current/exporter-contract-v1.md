@@ -115,7 +115,7 @@ recipe_inputs(
   kind TEXT NOT NULL,                -- 'item' | 'tag' | 'custom'
   ref TEXT,                          -- item_id / tag_id；custom 时为 NULL（详情进 raw_json）
   count INTEGER NOT NULL DEFAULT 1,
-  PRIMARY KEY(recipe_id, slot, kind, ref)
+  PRIMARY KEY(recipe_id, slot, role, kind, ref)
 )
 
 recipe_outputs(
