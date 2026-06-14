@@ -262,3 +262,41 @@ T1–T3 已实现并通过 `typecheck/build/smoke:mvp0/smoke:m2:blast-radius`。
 ### 顺序与边界
 - 顺序 **T4 → T5 → T6**：T4 顺手把 `emitChangeSet` 扩成「分组多事件块 + 未知 kind 仍 throw」，T5/T6 复用。
 - 不碰 rename/scale/hide/复合/UI/LLM；不重写 schema/importer/validator/unify/ConversionTool；孤儿清理与字节幂等列 T7 前置、本批不实现（T4–T6 均单文件不触发）。
+
+---
+
+## 11. T4–T6 审查与 T7 前置（2026-06-15，基于提交 `eb83aa2`）
+
+T4–T6 已实现并通过 `typecheck/build/smoke:mvp0/smoke:m2:blast-radius/smoke:m2:retag/smoke:m2:remove/smoke:m2:replace`。审查结论：**通过，符合规格 §4 与七条不变量。**
+
+- **默认 deferred + confirm 翻转**（`retag.ts:74`、`remove.ts:278`）：`includedInChangeSet = requestedConfirm && !forceDeferred`，无 confirm 默认全 false。✅
+- **强风险不可被 confirm 覆盖**：retag 的 `forceDeferred = crossMod|relatedUnparsed|isBlock`；remove 的 `forceDeferred = 产物有下游 input 引用|关联 unparsed`（且排除被删配方自引用 `remove.ts:260`）。命中即 false 无视 confirm，smoke 已断言。✅
+- **emitter recipe-only 逐字节兼容**：`emitServerScriptsFile` 在无 retag op 时回退原 `emitRecipesFile`；retag smoke 用 `assertRecipeOnlyOutputUnchanged()` 精确比对钉死。✅
+- 提示（非回归）：T2 起任何非空导出都附带写 `kubejs/.delightify-generated.json` ledger（脚本 `.js` 内容仍逐字节一致，revert 清理）。
+
+### T7 前置（必须先做，再做 rename）
+1. **孤儿清理**：`exportKubeJs`（`kubejs-emitter.ts:280-299`）只写当前 fileset 并覆盖清单，**旧清单里这轮不再产出的 owned 文件不会被删**。单文件不触发，多 locale lang 必触发。→ 写入前 `diff(旧清单, 新 fileset)`，删旧清单中已不在新 fileset 的 owned 文件。
+2. **字节幂等**：`exportKubeJs` 内部用 `new Date().toISOString()`，产物非字节稳定。→ `exportKubeJs` 接受可选 `generatedAt`（`emitChangeSet` 已支持），smoke 注入固定值断言两次产物相同。
+
+### 低危 latent（不阻塞 T7，T10 复合前必处理）
+1. **tag-scoped replace 缺 `#` 前缀**：`planReplace` 对 `from.kind==='tag'` 取裸 tag id，emit 成 `replaceInput({id}, "forge:...", …)` 会被当物品。当前 smoke 仅 item→item 未暴露。**T10 `constrain_inputs`（tag→精选）必须修**。
+2. **replace 无 confirm 通道**：retag/remove 有 `confirmedOperationIds`，replace 是 auto-or-defer，deferred 的 input 替换无补救路径。T11/T12 编排 replace 前给 replace 也加 `confirmedOperationIds`（强风险仍不可覆盖）。
+3. **retag ADD 的 crossMod 漏计被加入项**：`computeBlastRadius({kind:'tag'})` 只统计现有成员 modid，不含正在 add 的新成员。危害低，记录即可。
+
+## 12. T7 细化（rename/lang + 两个前置）
+
+> 形态：rename 只改 lang 显示名、不动 id（规格 §3/§4 → 低风险可逆，可 auto，不强制 defer）。本任务首次真正启用 fileset 多文件路径，故先补 T7 前置-1/2。
+
+### T7-a 前置：fileset 孤儿清理 + 字节幂等
+- `kubejs-emitter.ts`：`exportKubeJs(projectPath, params, options?: { generatedAt?: string })`；写入前读旧清单，计算 `旧清单.files \ 新 fileset` 的 owned 文件并删除（走与 revert 相同的 owner 校验/白名单）；时间戳改用 `options.generatedAt ?? new Date().toISOString()`。
+- 同步 `KubeJsExportParams`/IPC/`renderer mock` 若签名变动（优先用 options 不破坏既有 IPC）。
+- smoke `scripts/smoke-m2-fileset.mjs`（`smoke:m2:fileset`）：先导出 A（含 lang en_us）→ 再导出 B（仅 lang zh_cn）→ 断言 en_us 被回收、zh_cn 存在；固定 `generatedAt` 两次导出产物逐字节相同。
+
+### T7-b rename 原语
+- 新增 `packages/main/src/services/engine/actions/rename.ts`：`planRename(db, req: { items: { item, locale, newName }[] }) → { operations, blast, risk }`；每项产 `rename_lang` op，`before:{ item, locale, oldName? }`、`after:{ item, locale, newName }`；rename 仅动 lang → 默认可 auto（`includedInChangeSet=true`），但 blast 仍列出该物品引用供审阅。
+- `kubejs-emitter.ts`：`emitChangeSet` 增 lang 落点——把同一 `locale` 的多条 `rename_lang` 聚合进 `kubejs/assets/<ns>/lang/<locale>.json`（`<ns>` 取自 item 的 modid 或固定 `delightify`，按 KubeJS 资源覆盖惯例；**核实 KubeJS 1.21 是否识别 `kubejs/assets/<ns>/lang/*.json` 覆盖，不确定就按标准资源包 lang json 生成并加 TODO，不猜专有 API**）。lang json owner 经清单登记（无内嵌 marker）。
+- smoke `scripts/smoke-m2-rename.mjs`（`smoke:m2:rename`）：dry-run 显示 before→after 显示名；导出 lang json 含新名 + 经清单 owner；revert 删该 json；多 locale 聚合正确；配合 T7-a 验证孤儿清理。
+
+### 边界
+- 只做 rename + 两个前置；不碰 scale/hide/复合/UI/LLM；不重写 schema/importer/validator/unify/ConversionTool。
+- tag-replace `#` 前缀、replace confirm 通道留待 T10 前处理。
