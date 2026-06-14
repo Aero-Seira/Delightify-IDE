@@ -77,13 +77,72 @@ function emitRecipeOperation(operation: ChangeOperation): string {
     // TODO: replaceOutput 语义/版本兼容未验证，MVP-0 不纳入 change set
     case 'replace_recipe_output_item':
       return `  event.replaceOutput(${recipeFilter(operation)}, ${jsString(itemRefFromBefore(operation))}, ${jsString(itemRefFromAfter(operation))})`;
+    case 'remove_recipe':
+      return `  event.remove(${recipeFilter(operation)})`;
     default:
       throw new Error(`KubeJS emitter 暂不支持操作类型: ${operation.kind}`);
   }
 }
 
 function isRecipeOperation(operation: ChangeOperation): boolean {
-  return operation.kind === 'replace_recipe_input_item' || operation.kind === 'replace_recipe_output_item';
+  return (
+    operation.kind === 'replace_recipe_input_item' ||
+    operation.kind === 'replace_recipe_output_item' ||
+    operation.kind === 'remove_recipe'
+  );
+}
+
+function isRetagOperation(operation: ChangeOperation): boolean {
+  return operation.kind === 'retag_add' || operation.kind === 'retag_remove';
+}
+
+function isServerScriptOperation(operation: ChangeOperation): boolean {
+  return isRecipeOperation(operation) || isRetagOperation(operation);
+}
+
+function tagRefFromBefore(operation: ChangeOperation): string {
+  const tag = optionalString(operation.before.tag);
+  if (!tag) {
+    throw new Error(`Change operation ${operation.operationId} 缺少 tag`);
+  }
+  return tag;
+}
+
+function retagItemFromBefore(operation: ChangeOperation): string {
+  const item = optionalString(operation.before.item) || optionalString(operation.before.ref) || optionalString(operation.before.itemId);
+  if (!item) {
+    throw new Error(`Change operation ${operation.operationId} 缺少 item`);
+  }
+  return item;
+}
+
+function emitRetagOperation(operation: ChangeOperation): string {
+  if (!operation.includedInChangeSet) {
+    throw new Error(`Change operation ${operation.operationId} 未被纳入 change set`);
+  }
+
+  switch (operation.kind) {
+    case 'retag_add':
+      return `  event.add(${jsString(tagRefFromBefore(operation))}, ${jsString(retagItemFromBefore(operation))})`;
+    case 'retag_remove':
+      return `  event.remove(${jsString(tagRefFromBefore(operation))}, ${jsString(retagItemFromBefore(operation))})`;
+    default:
+      throw new Error(`KubeJS emitter 暂不支持操作类型: ${operation.kind}`);
+  }
+}
+
+function compareRetagOperation(left: ChangeOperation, right: ChangeOperation): number {
+  const tagDiff = tagRefFromBefore(left).localeCompare(tagRefFromBefore(right));
+  if (tagDiff !== 0) {
+    return tagDiff;
+  }
+
+  const itemDiff = retagItemFromBefore(left).localeCompare(retagItemFromBefore(right));
+  if (itemDiff !== 0) {
+    return itemDiff;
+  }
+
+  return left.kind.localeCompare(right.kind);
 }
 
 function emitRecipesFile(recipeOperations: ChangeOperation[], generatedAt: string): GeneratedFile {
@@ -104,23 +163,63 @@ function emitRecipesFile(recipeOperations: ChangeOperation[], generatedAt: strin
   };
 }
 
+function emitServerScriptsFile(
+  recipeOperations: ChangeOperation[],
+  retagOperations: ChangeOperation[],
+  generatedAt: string
+): GeneratedFile {
+  if (retagOperations.length === 0) {
+    return emitRecipesFile(recipeOperations, generatedAt);
+  }
+
+  const lines = [
+    `// ${GENERATED_MARKER}`,
+    '// Do not edit by hand. Regenerate from Delightify.',
+    `// Generated at: ${generatedAt}`,
+    '',
+  ];
+
+  if (recipeOperations.length > 0) {
+    lines.push(
+      'ServerEvents.recipes(event => {',
+      ...recipeOperations.map(emitRecipeOperation),
+      '})',
+      ''
+    );
+  }
+
+  lines.push(
+    "ServerEvents.tags('item', event => {",
+    ...[...retagOperations].sort(compareRetagOperation).map(emitRetagOperation),
+    '})',
+    ''
+  );
+
+  return {
+    relativePath: RECIPES_RELATIVE_PATH,
+    marker: GENERATED_MARKER,
+    content: lines.join('\n'),
+  };
+}
+
 export function emitChangeSet(changeSet: ChangeOperation[], generatedAt = new Date().toISOString()): GeneratedFile[] {
   if (changeSet.length === 0) {
     return [];
   }
 
-  const unsupportedOperations = changeSet.filter(operation => !isRecipeOperation(operation));
+  const unsupportedOperations = changeSet.filter(operation => !isServerScriptOperation(operation));
   if (unsupportedOperations.length > 0) {
     const kinds = Array.from(new Set(unsupportedOperations.map(operation => operation.kind))).join(', ');
     throw new Error(`KubeJS emitter 暂不支持操作类型: ${kinds}`);
   }
 
   const recipeOperations = changeSet.filter(isRecipeOperation);
-  if (recipeOperations.length === 0) {
+  const retagOperations = changeSet.filter(isRetagOperation);
+  if (recipeOperations.length === 0 && retagOperations.length === 0) {
     return [];
   }
 
-  return [emitRecipesFile(recipeOperations, generatedAt)];
+  return [emitServerScriptsFile(recipeOperations, retagOperations, generatedAt)];
 }
 
 export function generateKubeJs(changeSet: ChangeOperation[], generatedAt = new Date().toISOString()): string {
@@ -128,7 +227,12 @@ export function generateKubeJs(changeSet: ChangeOperation[], generatedAt = new D
     throw new Error('change set 为空，没有可导出的 KubeJS 操作');
   }
 
-  return emitRecipesFile(changeSet, generatedAt).content;
+  const files = emitChangeSet(changeSet, generatedAt);
+  const recipesFile = files.find(file => file.relativePath === RECIPES_RELATIVE_PATH);
+  if (!recipesFile) {
+    throw new Error('change set 没有可导出的 KubeJS server script 操作');
+  }
+  return recipesFile.content;
 }
 
 async function readExistingFile(filePath: string): Promise<string | null> {
@@ -166,7 +270,7 @@ interface GeneratedManifest {
 
 function fileOperationCount(relativePath: string, changeSet: ChangeOperation[]): number {
   if (relativePath === RECIPES_RELATIVE_PATH) {
-    return changeSet.filter(isRecipeOperation).length;
+    return changeSet.filter(isServerScriptOperation).length;
   }
 
   return 0;
