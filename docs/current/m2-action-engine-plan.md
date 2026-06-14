@@ -221,3 +221,44 @@ T1(IR) ─┬─> T2(fileset emitter) ─┬─> T7(rename/lang)
 3. 所有动作遵守 §3 七条不变量；删除/改 tag/跨 mod/世界已放置一律 defer + 完整引用清单。
 4. `pnpm typecheck && pnpm build && pnpm smoke:mvp0 && pnpm smoke:m2` 全绿。
 5. 未触动 M1 已交付组件的既有行为（unify/ItemBrowser/RecipeBrowser/导入回归不破坏）。
+
+---
+
+## 9. T1–T3 地基审查（2026-06-15，基于提交 `3bce0ad`）
+
+T1–T3 已实现并通过 `typecheck/build/smoke:mvp0/smoke:m2:blast-radius`。审查结论：**合格，符合本规划与 §3 七条不变量，可在其上做 T4–T6。**
+
+- **T1 IR**（`packages/shared/src/types/engine.ts` / `packages/main/src/services/engine/ir.ts`）：`ChangeOperationKind` 为超集；用 `AssertAssignable<…, ChangeOperation>` 两条类型断言**编译期**钉死 unify op 可赋值性（比规划更稳）；unify 运行时零改动。
+- **T2 fileset emitter**（`kubejs-emitter.ts`）：owner 双轨识别正确（脚本类文件内 marker / lang json 用旁置清单 `kubejs/.delightify-generated.json` + 路径白名单）；revert 强制纳入 legacy recipes 路径、幂等；空 changeSet 不写文件；仅 recipes 时产物与现状一致。
+- **T3 blast-radius**（`blast-radius.ts`）：item/tag 双路径覆盖直接 input / output / tag 连带 / `raw_json LIKE` 未结构化关联；`classifyRisk` 规则与不变量②③对齐。
+
+### 做 T4 前需注意的 3 个点
+
+1. **`emitChangeSet` 对未知 kind 是 `throw` 非 defer**（`kubejs-emitter.ts`）：T4 把 `retag_add` 放进 changeSet 前**必须先扩 `emitChangeSet`**（硬依赖，已计入 T4）。
+2. **多文件导出无「孤儿清理」**：重生成只覆盖当前 fileset 并以之覆盖清单，旧 fileset 不再产出的文件（如 T7 换 locale 的旧 lang json）会变孤儿、revert 漏删，违反幂等。**T4–T6 不触发**（均落单文件），但**列为 T7 前置**：导出时 diff(旧清单, 新 fileset) 删孤儿。
+3. **`classifyRisk` 把「改 tag」无条件判 `mustDefer`**：符合规格 §4，因此 **retag/remove 形态 = 探测→搁置→确认→才进 changeSet→才 emit**，非直接 auto。下列 T4/T5 据此设计。
+
+> 另记（非阻塞）：emitter 用 `new Date().toISOString()` 写时间戳 → 产物非字节级幂等。owner/revert 不受影响；smoke 比对需忽略时间戳行。列为 T7 前置一并处理。
+
+## 10. T4–T6 细化（小步可验证）
+
+**贯穿决策（规格 §4）**：删除/改 tag → 即便高置信也 defer。故 retag(T4)、remove(T5) 形态为：dry-run 产 **deferred** 决策 + 完整受影响引用清单（`includedInChangeSet=false`）→ 显式 `confirmedOperationIds` 确认 → 翻转进 changeSet → 导出才 emit。replace(T6) 的 input 替换可 auto（复用 unify 判据），output 恒 deferred。smoke 必须同时覆盖「默认 deferred」与「确认后 emit」两条路径。
+
+### T4 `retag`
+- 新增 `packages/main/src/services/engine/actions/retag.ts`：`planRetag(db, { items, tag, op:'add'|'remove', confirmedOperationIds? }) → { operations, blast, risk }`；每 item 产 `retag_${op}` op，`before:{tag,item,op}`；调 `computeBlastRadius({kind:'tag',ref:tag})` + `classifyRisk({action:'retag'})`；默认全 deferred，`confirmedOperationIds` 翻转；跨 mod/unparsed/isBlock 不可被 confirm 覆盖。
+- `kubejs-emitter.ts`：`emitChangeSet` 分组——recipe 类 → `ServerEvents.recipes` 块；retag 类 → 同文件追加 `ServerEvents.tags('item', e => e.add/remove(tag,item))` 块；**无 retag op 时产物逐字节同现状**；op 按 `tag,item` 排序保幂等。
+- smoke `scripts/smoke-m2-retag.mjs`（`smoke:m2:retag`）：默认 deferred + 引用清单非空；confirm 后导出含 `ServerEvents.tags`；revert 幂等；回归 recipes-only 产物。
+
+### T5 `remove_recipe`
+- 新增 `packages/main/src/services/engine/actions/remove.ts`：`planRemoveRecipe(db, { recipeIds, confirmedOperationIds? }) → { operations, downstream, risk }`；每 recipe 产 `remove_recipe`（`recipeId` 必填）；下游半径 = 读该配方 `recipe_outputs`，对每个 output item 调 `computeBlastRadius({kind:'item'})` 汇总下游 input 引用；任一下游引用/unparsed → 强制保留 deferred（§5）；仅 `remove_recipe` 强度（hide→T9、remove_item→M5 不做）。
+- `kubejs-emitter.ts`：`emitRecipeOperation` 增 `remove_recipe` → `event.remove(recipeFilter)`，落 `ServerEvents.recipes` 块（复用 `recipeFilter`）。
+- smoke `scripts/smoke-m2-remove.mjs`（`smoke:m2:remove`）：无下游引用可 confirm → 含 `event.remove({id})`；有下游引用即便 confirm 仍 deferred + 完整清单；revert 幂等。
+
+### T6 `replace_ingredient`（从 unify 解耦，不改 unify）
+- 新增 `packages/main/src/services/engine/actions/replace.ts`：`planReplace(db, { from, to, scope:'input'|'output'|'both', filter? }) → { operations, blast, risk }`；input 用 `computeBlastRadius(from)` 取 `recipeRefsAsInput` 逐条产 `replace_recipe_input_item`，auto 判据复用 unify 标准（低风险∧无 output 引用∧无 unparsed∧非 isBlock）；output 产 `replace_recipe_output_item` 但**恒 `includedInChangeSet=false`+reason**（呼应保守 TODO）。
+- emitter：input 已支持无需改；output 休眠。
+- smoke `scripts/smoke-m2-replace.mjs`（`smoke:m2:replace`）：input 低风险进 changeSet 含 `replaceInput`；`scope:'output'` op 不入 changeSet、不导出；跨 mod/unparsed 时 input 也降级 deferred。
+
+### 顺序与边界
+- 顺序 **T4 → T5 → T6**：T4 顺手把 `emitChangeSet` 扩成「分组多事件块 + 未知 kind 仍 throw」，T5/T6 复用。
+- 不碰 rename/scale/hide/复合/UI/LLM；不重写 schema/importer/validator/unify/ConversionTool；孤儿清理与字节幂等列 T7 前置、本批不实现（T4–T6 均单文件不触发）。
