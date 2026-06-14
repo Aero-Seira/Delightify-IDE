@@ -18,6 +18,7 @@ export interface ReplacePlanRequest {
     typeId?: string;
     modid?: string;
   };
+  confirmedOperationIds?: string[];
 }
 
 export interface ReplacePlanResult {
@@ -89,6 +90,43 @@ function canAutoInput(risk: BlastRiskClassification, blast: BlastRadius): boolea
   );
 }
 
+function forceDeferredReasons(blast: BlastRadius): string[] {
+  const reasons: string[] = [];
+
+  if (blast.crossMod) {
+    reasons.push('引用横跨多个 mod，确认不能覆盖。');
+  }
+
+  if (blast.relatedUnparsed.length > 0) {
+    reasons.push('存在相关未结构化配方，确认不能覆盖。');
+  }
+
+  if (blast.isBlock) {
+    reasons.push('目标包含可放置方块，确认不能覆盖。');
+  }
+
+  return reasons;
+}
+
+function inputOperationReason(
+  includedInChangeSet: boolean,
+  requestedConfirm: boolean,
+  risk: BlastRiskClassification,
+  blast: BlastRadius,
+  forcedReasons: string[]
+): string | undefined {
+  if (includedInChangeSet) {
+    return undefined;
+  }
+
+  if (forcedReasons.length > 0) {
+    const prefix = requestedConfirm ? '已请求确认，但存在强风险项：' : '存在强风险项：';
+    return `${prefix}${forcedReasons.join('；')}`;
+  }
+
+  return inputAutoReason(risk, blast);
+}
+
 function replaceOperationId(
   scope: 'input' | 'output',
   from: BlastRadiusTarget,
@@ -139,8 +177,13 @@ function inputOperation(
 function outputOperation(
   from: BlastRadiusTarget,
   to: BlastRadiusTarget,
-  reference: BlastRecipeReference
+  reference: BlastRecipeReference,
+  requestedConfirm: boolean
 ): ChangeOperation {
+  const reason = requestedConfirm
+    ? '已请求确认，但输出替换需要人工审阅，确认不能覆盖。'
+    : '输出替换需要人工审阅，未验证 replaceOutput 语义';
+
   return {
     operationId: replaceOperationId('output', from, to, reference),
     decisionId: `replace:output:${from.kind}:${from.ref}->${to.kind}:${to.ref}`,
@@ -162,28 +205,42 @@ function outputOperation(
       componentsJson: reference.componentsJson,
     },
     includedInChangeSet: false,
-    reason: '输出替换需要人工审阅，未验证 replaceOutput 语义',
+    reason,
   };
 }
 
 export async function planReplace(db: Client, req: ReplacePlanRequest): Promise<ReplacePlanResult> {
   const blast = await computeBlastRadius(db, req.from);
   const risk = classifyRisk(blast, { action: 'replace' });
+  const confirmed = new Set(req.confirmedOperationIds ?? []);
+  const forcedReasons = forceDeferredReasons(blast);
+  const forceDeferredInput = forcedReasons.length > 0;
   const operations: ChangeOperation[] = [];
   const includeInput = req.scope === 'input' || req.scope === 'both';
   const includeOutput = req.scope === 'output' || req.scope === 'both';
   const autoInput = canAutoInput(risk, blast);
-  const deferredInputReason = autoInput ? undefined : inputAutoReason(risk, blast);
 
   if (includeInput) {
     for (const reference of blast.recipeRefsAsInput.filter(reference => matchesFilter(reference, req.filter))) {
-      operations.push(inputOperation(req.from, req.to, reference, autoInput, deferredInputReason));
+      const operationId = replaceOperationId('input', req.from, req.to, reference);
+      const requestedConfirm = confirmed.has(operationId);
+      const includedInChangeSet = autoInput || (requestedConfirm && !forceDeferredInput);
+      const reason = inputOperationReason(
+        includedInChangeSet,
+        requestedConfirm,
+        risk,
+        blast,
+        forcedReasons
+      );
+
+      operations.push(inputOperation(req.from, req.to, reference, includedInChangeSet, reason));
     }
   }
 
   if (includeOutput) {
     for (const reference of blast.recipeRefsAsOutput.filter(reference => matchesFilter(reference, req.filter))) {
-      operations.push(outputOperation(req.from, req.to, reference));
+      const operationId = replaceOperationId('output', req.from, req.to, reference);
+      operations.push(outputOperation(req.from, req.to, reference, confirmed.has(operationId)));
     }
   }
 

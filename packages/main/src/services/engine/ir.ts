@@ -2,8 +2,10 @@ import type {
   ActionRequest,
   ChangeOperation,
   ChangeOperationKind,
+  CompositeResult,
   ChangeSet,
   DecisionStatus,
+  DeferredSuggestion,
   UnifyDiffOperation as SharedUnifyDiffOperation,
 } from '@delightify/shared';
 import type { UnifyDiffOperation as DryRunUnifyDiffOperation } from '../unify/dry-run-service';
@@ -12,8 +14,10 @@ export type {
   ActionRequest,
   ChangeOperation,
   ChangeOperationKind,
+  CompositeResult,
   ChangeSet,
   DecisionStatus,
+  DeferredSuggestion,
 };
 
 type AssertAssignable<T extends U, U> = true;

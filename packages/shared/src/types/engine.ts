@@ -30,6 +30,19 @@ export interface ChangeOperation {
 
 export type ChangeSet = ChangeOperation[];
 
+export interface DeferredSuggestion {
+  kind: 'change_recipe_type' | 'add_bridge_recipe' | 'naming_style' | 'add_item' | 'remove_item';
+  target?: Record<string, unknown>;
+  reason: string;
+  references?: unknown[];
+}
+
+export interface CompositeResult {
+  operations: ChangeOperation[];
+  deferredSuggestions: DeferredSuggestion[];
+  blast?: unknown;
+}
+
 export type DecisionStatus = 'target' | 'auto' | 'deferred';
 
 export type ActionRequestAction =
