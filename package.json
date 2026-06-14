@@ -16,6 +16,7 @@
     "build": "turbo run build",
     "typecheck": "turbo run typecheck",
     "smoke:mvp0": "pnpm build && node scripts/smoke-mvp0-unify.mjs",
+    "smoke:m2:blast-radius": "pnpm build && node scripts/smoke-m2-blast-radius.mjs",
     "exporter:build": "node scripts/run-gradle.mjs packages/exporter build",
     "exporter:compile": "node scripts/run-gradle.mjs packages/exporter compileJava",
     "exporter:runClient": "node scripts/run-gradle.mjs packages/exporter runClient",

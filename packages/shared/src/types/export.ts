@@ -2,10 +2,15 @@
  * Export backend types - MVP-0
  */
 
-import type { UnifyDiffOperation } from './unify';
+import type { ChangeSet } from './engine';
 
 export interface KubeJsExportParams {
-  changeSet: UnifyDiffOperation[];
+  changeSet: ChangeSet;
+}
+
+export interface KubeJsExportFileResult {
+  filePath: string;
+  operationCount: number;
 }
 
 export interface KubeJsExportResult {
@@ -13,6 +18,7 @@ export interface KubeJsExportResult {
   operationCount: number;
   generatedCode: string;
   writtenAt: string;
+  files: KubeJsExportFileResult[];
 }
 
 export interface KubeJsRevertResult {

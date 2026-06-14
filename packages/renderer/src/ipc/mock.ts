@@ -569,21 +569,32 @@ export const mockElectronAPI = {
     params: KubeJsExportParams
   ): Promise<{ success: boolean; data: KubeJsExportResult }> => {
     const writtenAt = new Date().toISOString();
+    const filePath = `${projectPath}/kubejs/server_scripts/zzz_delightify_generated.js`;
+    const generatedCode = params.changeSet.length === 0
+      ? ''
+      : [
+        '// @delightify-generated',
+        '// Do not edit by hand. Regenerate from Delightify.',
+        `// Generated at: ${writtenAt}`,
+        '',
+        'ServerEvents.recipes(event => {',
+        '}',
+        '',
+      ].join('\n');
+
     return {
       success: true,
       data: {
-        filePath: `${projectPath}/kubejs/server_scripts/zzz_delightify_generated.js`,
+        filePath,
         operationCount: params.changeSet.length,
-        generatedCode: [
-          '// @delightify-generated',
-          '// Do not edit by hand. Regenerate from Delightify.',
-          `// Generated at: ${writtenAt}`,
-          '',
-          'ServerEvents.recipes(event => {',
-          '})',
-          '',
-        ].join('\n'),
+        generatedCode,
         writtenAt,
+        files: params.changeSet.length === 0 ? [] : [
+          {
+            filePath,
+            operationCount: params.changeSet.length,
+          },
+        ],
       },
     };
   },
