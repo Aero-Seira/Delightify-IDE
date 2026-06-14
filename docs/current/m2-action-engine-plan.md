@@ -343,3 +343,38 @@ T4–T6 已实现并通过 `typecheck/build/smoke:mvp0/smoke:m2:blast-radius/smo
 
 #### 复合层公共类型
 - `packages/shared/src/types/engine.ts` 增 `DeferredSuggestion { kind: 'change_recipe_type'|'add_bridge_recipe'|'naming_style'|'add_item'|'remove_item'; target?; reason; references? }` 与 `CompositeResult { operations: ChangeOperation[]; deferredSuggestions: DeferredSuggestion[]; blast?: ... }`。
+
+> **复合层状态**：✅ 已完成并提交（`01ae6f9`）：replace confirm 通道 + T10 constrain_inputs / T11 differentiate / T12 harmonize（IR 层），10 个 smoke 全绿。
+
+---
+
+## 14. T8/T9：scale / hide 的 IR 语义（发射留空）
+
+> 决定（2026-06-15）：输出层具体实现暂留空，先推进 IR 语义。T8/T9 只做 IR：算 before/after、识别守恒、blast、defer 分类；**KubeJS 发射（scale 重建、JEI client_script）归输出层**，本批不碰 emitter。
+
+**契约不变量（重要）**：scale/hide 的 op **本批一律 `includedInChangeSet=false`**——能发射它们的输出层尚未建，谎称 `included=true` 会违背「`includedInChangeSet` = 会被导出的集合」的契约。语义分类放进 action 返回的 `classifications`/结构化字段，**不是** op 的 `included`。因此 `makeChangeSet([...scale/hide ops])===[]`，`emitChangeSet` 永远看不到这两类 kind → 零 emitter 改动、无 mixed-export throw 风险。等输出层落地时，再由那一批决定 included 翻转。
+
+### 数据来源（已核对结构表）
+`recipe_inputs(count)` / `recipe_outputs(count)` 提供结构化数量字段；`time/energy/<custom>` 仅在 `recipes.raw_json`（需配方类型解析）→ 本批归 defer。
+
+### T8 `scale`（IR 语义）
+- 新增 `packages/main/src/services/engine/actions/scale.ts`：
+  `planScale(db, req: { recipeIds: string[]; field: 'input_count'|'output_count'|'time'|'energy'|string; factor?: number; delta?: number; clamp?: { min?; max? }; round?: 'floor'|'round'|'ceil' }) => Promise<ScalePlanResult>`
+  - `ScalePlanResult { operations: ChangeOperation[]; classifications: { operationId; recipeId; field; decision: 'emission_pending'|'conservation_skip'|'type_defer'|'no_baseline'; baseline?; computed?; reason }[]; blast: BlastRadius[]; risk }`
+  - `output_count`/`input_count`：从结构表逐 slot 读 `baseline`，`computed = clamp(round(baseline*factor 或 baseline+delta))`（默认 `round`）。decision=`emission_pending`（语义可缩放、发射待输出层）。
+  - **守恒 1:1**（规格 §5）：单输入+单输出、同 item、等量 → `conservation_skip`，跳过不缩放。
+  - `time/energy/<custom>`：`type_defer`（字段仅存 raw_json，需类型解析）。配方/字段缺失：`no_baseline`。
+  - **幂等**：baseline 每次从结构表新读、以原始基线计算，同请求重跑 computed 一致。
+  - op：`kind:'scale_recipe_field'`、`before:{ field, recipeId, slot?, value: baseline }`、`after:{ field, value: computed }`、`includedInChangeSet:false`、reason 表明分类。
+- smoke `scripts/smoke-m2-scale.mjs`（`smoke:m2:scale`）：fixture 含 smelting output_count、守恒 1:1 配方、time(仅 raw_json)；IR 级断言 baseline/computed 数学、conservation_skip、type_defer；断言所有 op `included=false` 且 `makeChangeSet→[]`；断言两次 plan computed 相同（幂等）。
+
+### T9 `hide_in_jei`（IR 语义）
+- 新增 `packages/main/src/services/engine/actions/hide.ts`：
+  `planHide(db, req: { items: string[] }) => Promise<HidePlanResult>`，`HidePlanResult { operations; blast: BlastRadius[]; risk }`。
+  - 每 item 产 `kind:'hide_in_jei'`、`before:{ item }`、`includedInChangeSet:false`，reason=「JEI 隐藏发射属输出层，且 KubeJS 1.21 JEI 事件待核实」。
+  - `computeBlastRadius(item)` 列出其在 JEI 中会受影响的使用点供作者审阅。hide 弱且可逆，无强制 defer，但发射待建 → included=false。
+- smoke `scripts/smoke-m2-hide.mjs`（`smoke:m2:hide`）：断言 hide_in_jei op 带 item 引用 + blast 使用清单；included=false + reason；`makeChangeSet→[]`。
+
+### 边界
+- 不碰 emitter 发射 / 不实现 scale 重建 / JEI client_script / tag-replace `#` 前缀（全归输出层）。
+- 不重写 schema/importer/validator/unify/ConversionTool；不接 LLM；不动 exporter Java。
