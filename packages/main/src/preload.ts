@@ -17,6 +17,7 @@ const IPC_CHANNELS = {
   PROJECT_UPDATE: 'project:update',
   PROJECT_DELETE: 'project:delete',
   PROJECT_SELECT_DIRECTORY: 'project:select-directory',
+  PROJECT_SELECT_DATA_FILE: 'project:select-data-file',
   PROJECT_GET_STATS: 'project:get-stats',
 
   // Mod data
@@ -64,6 +65,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke(IPC_CHANNELS.PROJECT_UPDATE, projectId, data),
   projectDelete: (projectId: string) => ipcRenderer.invoke(IPC_CHANNELS.PROJECT_DELETE, projectId),
   selectDirectory: () => ipcRenderer.invoke(IPC_CHANNELS.PROJECT_SELECT_DIRECTORY),
+  selectDataFile: () => ipcRenderer.invoke(IPC_CHANNELS.PROJECT_SELECT_DATA_FILE),
   projectGetStats: (projectPath: string) => ipcRenderer.invoke(IPC_CHANNELS.PROJECT_GET_STATS, projectPath),
 
   // ========== 物品纹理 ==========

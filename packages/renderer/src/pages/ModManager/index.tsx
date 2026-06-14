@@ -177,6 +177,7 @@ export default function DataImportPage(): React.ReactElement {
     importResult,
     importError,
     detectDataFile,
+    selectDataFile,
     validateDataFile,
     startImport,
     resetState,
@@ -220,6 +221,21 @@ export default function DataImportPage(): React.ReactElement {
       console.log('[DataImport] File not found');
     }
   }, [currentProject, detectDataFile, validateDataFile, resetState]);
+
+  // 手动选择 SQLite 数据文件
+  const handleSelectDataFile = useCallback(async () => {
+    resetState();
+
+    const filePath = await selectDataFile();
+    if (!filePath) {
+      return;
+    }
+
+    const result = await validateDataFile(filePath);
+    if (result?.valid) {
+      setCurrentStep(1);
+    }
+  }, [selectDataFile, validateDataFile, resetState]);
 
   // 开始导入
   const handleImport = useCallback(async () => {
@@ -302,14 +318,20 @@ export default function DataImportPage(): React.ReactElement {
               <DatabaseIcon />
               <h3>检测数据文件</h3>
               <p>
-                点击下方按钮检测整合包目录中的数据文件。
+                检测整合包目录中的数据文件，或直接选择 exporter 生成的 SQLite 文件。
                 <br />
                 预期路径：<code>delightify/export.sqlite</code> 或 <code>delightify-exporter/export.sqlite</code>
               </p>
-              <button className={styles.primaryButton} onClick={handleDetect}>
-                <RefreshIcon />
-                开始检测
-              </button>
+              <div className={styles.detectActions}>
+                <button className={styles.primaryButton} onClick={handleDetect}>
+                  <RefreshIcon />
+                  开始检测
+                </button>
+                <button className={styles.secondaryButton} onClick={handleSelectDataFile}>
+                  <DatabaseIcon />
+                  选择 SQLite 文件
+                </button>
+              </div>
             </div>
           )}
 
@@ -345,6 +367,12 @@ export default function DataImportPage(): React.ReactElement {
             
             {/* 元信息 */}
             <div className={styles.metaInfo}>
+              {detectedFilePath && (
+                <div className={`${styles.metaItem} ${styles.metaItemFull}`}>
+                  <span className={styles.metaLabel}>数据文件</span>
+                  <span className={styles.metaValuePath}>{detectedFilePath}</span>
+                </div>
+              )}
               {validationResult.minecraftVersion && (
                 <div className={styles.metaItem}>
                   <span className={styles.metaLabel}>Minecraft 版本</span>

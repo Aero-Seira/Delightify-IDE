@@ -272,6 +272,18 @@
   border-color: var(--text-tertiary);
 }
 
+.secondaryButton svg {
+  width: 18px;
+  height: 18px;
+}
+
+.detectActions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 /* 加载状态 */
 .loadingState {
   display: flex;
@@ -379,6 +391,10 @@
   gap: 4px;
 }
 
+.metaItemFull {
+  grid-column: 1 / -1;
+}
+
 .metaLabel {
   font-size: 12px;
   color: var(--text-tertiary);
@@ -390,6 +406,13 @@
   font-size: 14px;
   font-weight: 500;
   color: var(--text-primary);
+}
+
+.metaValuePath {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  color: var(--text-primary);
+  word-break: break-all;
 }
 
 /* 预览卡片 */

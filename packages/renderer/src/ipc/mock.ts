@@ -275,6 +275,11 @@ export const mockElectronAPI = {
     filePaths: ['/mock/path/to/modpack'],
   }),
 
+  selectDataFile: async () => ({
+    canceled: false,
+    filePaths: ['/mock/path/to/export.sqlite'],
+  }),
+
   // ========== Mod数据导入 ==========
   modDataDetect: async () => ({
     success: true,

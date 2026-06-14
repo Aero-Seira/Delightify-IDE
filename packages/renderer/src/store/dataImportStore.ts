@@ -36,6 +36,7 @@ interface DataImportState {
 
   // ========== Actions ==========
   detectDataFile: (projectPath: string) => Promise<string | null>;
+  selectDataFile: () => Promise<string | null>;
   validateDataFile: (filePath: string) => Promise<ValidationResult | null>;
   startImport: (projectPath: string, filePath?: string) => Promise<boolean>;
   loadImportHistory: (projectPath: string) => Promise<void>;
@@ -101,6 +102,41 @@ export const useDataImportStore = create<DataImportState>((set, get) => ({
       set({ 
         detectionError: error instanceof Error ? error.message : '检测数据文件失败',
         isDetecting: false 
+      });
+      return null;
+    }
+  },
+
+  /**
+   * 手动选择 SQLite 数据文件
+   */
+  selectDataFile: async () => {
+    set({
+      isDetecting: true,
+      detectionError: null,
+      detectedFilePath: null,
+      validationResult: null,
+      validationError: null,
+    });
+
+    try {
+      const result = await electronAPI().selectDataFile();
+      const filePath = result.filePaths?.[0] ?? null;
+
+      if (result.canceled || !filePath) {
+        set({ isDetecting: false });
+        return null;
+      }
+
+      set({
+        detectedFilePath: filePath,
+        isDetecting: false,
+      });
+      return filePath;
+    } catch (error) {
+      set({
+        detectionError: error instanceof Error ? error.message : '选择数据文件失败',
+        isDetecting: false,
       });
       return null;
     }

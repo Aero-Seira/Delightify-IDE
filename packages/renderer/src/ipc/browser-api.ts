@@ -45,6 +45,8 @@ export const browserElectronAPI = {
     return { canceled: true };
   },
 
+  selectDataFile: async () => ({ canceled: true }),
+
   projectGetStats: async () => ({
     success: true,
     data: { modCount: 0, itemCount: 0, recipeCount: 0, tagCount: 0, needsReimport: true },

@@ -457,4 +457,21 @@ export function registerProjectHandlers(): void {
       filePaths: result.filePaths,
     };
   });
+
+  // PROJECT_SELECT_DATA_FILE: 选择 SQLite 数据文件
+  ipcMain.handle(IPC_CHANNELS.PROJECT_SELECT_DATA_FILE, async (): Promise<{ canceled: boolean; filePaths?: string[] }> => {
+    const result = await dialog.showOpenDialog({
+      properties: ['openFile'],
+      title: '选择 Delightify SQLite 数据文件',
+      filters: [
+        { name: 'SQLite 数据库', extensions: ['sqlite', 'sqlite3', 'db'] },
+        { name: '所有文件', extensions: ['*'] },
+      ],
+    });
+
+    return {
+      canceled: result.canceled,
+      filePaths: result.filePaths,
+    };
+  });
 }
