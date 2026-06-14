@@ -20,6 +20,8 @@
     "smoke:m2:retag": "pnpm build && node scripts/smoke-m2-retag.mjs",
     "smoke:m2:remove": "pnpm build && node scripts/smoke-m2-remove.mjs",
     "smoke:m2:replace": "pnpm build && node scripts/smoke-m2-replace.mjs",
+    "smoke:m2:fileset": "pnpm build && node scripts/smoke-m2-fileset.mjs",
+    "smoke:m2:rename": "pnpm build && node scripts/smoke-m2-rename.mjs",
     "exporter:build": "node scripts/run-gradle.mjs packages/exporter build",
     "exporter:compile": "node scripts/run-gradle.mjs packages/exporter compileJava",
     "exporter:runClient": "node scripts/run-gradle.mjs packages/exporter runClient",

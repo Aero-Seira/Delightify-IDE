@@ -19,6 +19,10 @@ export interface GeneratedFile {
   marker: string;
 }
 
+export interface KubeJsExportOptions {
+  generatedAt?: string;
+}
+
 const GENERATED_MARKER = '@delightify-generated';
 const RECIPES_RELATIVE_PATH = 'kubejs/server_scripts/zzz_delightify_generated.js';
 const GENERATED_MANIFEST_RELATIVE_PATH = 'kubejs/.delightify-generated.json';
@@ -98,6 +102,10 @@ function isRetagOperation(operation: ChangeOperation): boolean {
 
 function isServerScriptOperation(operation: ChangeOperation): boolean {
   return isRecipeOperation(operation) || isRetagOperation(operation);
+}
+
+function isRenameOperation(operation: ChangeOperation): boolean {
+  return operation.kind === 'rename_lang';
 }
 
 function tagRefFromBefore(operation: ChangeOperation): string {
@@ -202,12 +210,133 @@ function emitServerScriptsFile(
   };
 }
 
+function renameItemFromOperation(operation: ChangeOperation): string {
+  const item = optionalString(operation.before.item) || optionalString(operation.after?.item);
+  if (!item) {
+    throw new Error(`Change operation ${operation.operationId} 缺少 rename item`);
+  }
+  return item;
+}
+
+function renameLocaleFromOperation(operation: ChangeOperation): string {
+  const locale = optionalString(operation.after?.locale) || optionalString(operation.before.locale);
+  if (!locale) {
+    throw new Error(`Change operation ${operation.operationId} 缺少 rename locale`);
+  }
+  return locale;
+}
+
+function renameNewNameFromOperation(operation: ChangeOperation): string {
+  const newName = optionalString(operation.after?.newName);
+  if (!newName) {
+    throw new Error(`Change operation ${operation.operationId} 缺少 rename newName`);
+  }
+  return newName;
+}
+
+function resourcePart(value: string, label: string): string {
+  if (!/^[a-z0-9_.-]+$/.test(value)) {
+    throw new Error(`Change operation 生成了非法 ${label}: ${value}`);
+  }
+  return value;
+}
+
+function splitItemId(itemId: string): { namespace: string; path: string } {
+  const separatorIndex = itemId.indexOf(':');
+  if (separatorIndex <= 0) {
+    return { namespace: 'delightify', path: itemId };
+  }
+  return {
+    namespace: itemId.slice(0, separatorIndex),
+    path: itemId.slice(separatorIndex + 1),
+  };
+}
+
+function langKeyFromOperation(operation: ChangeOperation): string {
+  const explicitKey = optionalString(operation.after?.langKey) ||
+    optionalString(operation.before.langKey) ||
+    optionalString(operation.before.translationKey);
+  if (explicitKey) {
+    return explicitKey;
+  }
+
+  const item = renameItemFromOperation(operation);
+  const { namespace, path: itemPath } = splitItemId(item);
+  return `item.${namespace}.${itemPath.replaceAll('/', '.')}`;
+}
+
+function langRelativePathFromOperation(operation: ChangeOperation): string {
+  const { namespace } = splitItemId(renameItemFromOperation(operation));
+  const safeNamespace = resourcePart(namespace, 'namespace');
+  const safeLocale = resourcePart(renameLocaleFromOperation(operation), 'locale');
+  return `kubejs/assets/${safeNamespace}/lang/${safeLocale}.json`;
+}
+
+function compareRenameOperation(left: ChangeOperation, right: ChangeOperation): number {
+  const pathDiff = langRelativePathFromOperation(left).localeCompare(langRelativePathFromOperation(right));
+  if (pathDiff !== 0) {
+    return pathDiff;
+  }
+
+  const keyDiff = langKeyFromOperation(left).localeCompare(langKeyFromOperation(right));
+  if (keyDiff !== 0) {
+    return keyDiff;
+  }
+
+  return left.operationId.localeCompare(right.operationId);
+}
+
+function emitLangFile(relativePath: string, operations: ChangeOperation[]): GeneratedFile {
+  const entries = new Map<string, string>();
+  for (const operation of [...operations].sort(compareRenameOperation)) {
+    if (!operation.includedInChangeSet) {
+      throw new Error(`Change operation ${operation.operationId} 未被纳入 change set`);
+    }
+
+    const key = langKeyFromOperation(operation);
+    const newName = renameNewNameFromOperation(operation);
+    const existing = entries.get(key);
+    if (existing !== undefined && existing !== newName) {
+      throw new Error(`rename_lang 对 ${key} 生成了冲突的新名称`);
+    }
+    entries.set(key, newName);
+  }
+
+  // TODO: 核实 KubeJS 1.21 对 kubejs/assets/<ns>/lang/*.json 的加载机制；当前按标准资源包 lang json 生成。
+  const content = `${JSON.stringify(Object.fromEntries([...entries].sort(([left], [right]) => (
+    left.localeCompare(right)
+  ))), null, 2)}\n`;
+
+  return {
+    relativePath,
+    marker: GENERATED_MARKER,
+    content,
+  };
+}
+
+function emitLangFiles(renameOperations: ChangeOperation[]): GeneratedFile[] {
+  const grouped = new Map<string, ChangeOperation[]>();
+
+  for (const operation of renameOperations) {
+    const relativePath = langRelativePathFromOperation(operation);
+    const operations = grouped.get(relativePath) ?? [];
+    operations.push(operation);
+    grouped.set(relativePath, operations);
+  }
+
+  return [...grouped.entries()]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([relativePath, operations]) => emitLangFile(relativePath, operations));
+}
+
 export function emitChangeSet(changeSet: ChangeOperation[], generatedAt = new Date().toISOString()): GeneratedFile[] {
   if (changeSet.length === 0) {
     return [];
   }
 
-  const unsupportedOperations = changeSet.filter(operation => !isServerScriptOperation(operation));
+  const unsupportedOperations = changeSet.filter(operation => (
+    !isServerScriptOperation(operation) && !isRenameOperation(operation)
+  ));
   if (unsupportedOperations.length > 0) {
     const kinds = Array.from(new Set(unsupportedOperations.map(operation => operation.kind))).join(', ');
     throw new Error(`KubeJS emitter 暂不支持操作类型: ${kinds}`);
@@ -215,11 +344,18 @@ export function emitChangeSet(changeSet: ChangeOperation[], generatedAt = new Da
 
   const recipeOperations = changeSet.filter(isRecipeOperation);
   const retagOperations = changeSet.filter(isRetagOperation);
-  if (recipeOperations.length === 0 && retagOperations.length === 0) {
+  const renameOperations = changeSet.filter(isRenameOperation);
+  if (recipeOperations.length === 0 && retagOperations.length === 0 && renameOperations.length === 0) {
     return [];
   }
 
-  return [emitServerScriptsFile(recipeOperations, retagOperations, generatedAt)];
+  const files: GeneratedFile[] = [];
+  if (recipeOperations.length > 0 || retagOperations.length > 0) {
+    files.push(emitServerScriptsFile(recipeOperations, retagOperations, generatedAt));
+  }
+
+  files.push(...emitLangFiles(renameOperations));
+  return files;
 }
 
 export function generateKubeJs(changeSet: ChangeOperation[], generatedAt = new Date().toISOString()): string {
@@ -271,6 +407,12 @@ interface GeneratedManifest {
 function fileOperationCount(relativePath: string, changeSet: ChangeOperation[]): number {
   if (relativePath === RECIPES_RELATIVE_PATH) {
     return changeSet.filter(isServerScriptOperation).length;
+  }
+
+  if (relativePath.startsWith('kubejs/assets/') && relativePath.includes('/lang/')) {
+    return changeSet.filter(operation => (
+      isRenameOperation(operation) && langRelativePathFromOperation(operation) === relativePath
+    )).length;
   }
 
   return 0;
@@ -375,22 +517,85 @@ async function deleteOwnedFile(
   return true;
 }
 
+function isManifestListed(manifest: GeneratedManifest | null, relativePath: string): boolean {
+  return Boolean(manifest?.files.some(file => file.relativePath === relativePath));
+}
+
+async function assertGeneratedFileCanBeWritten(
+  projectPath: string,
+  file: GeneratedFile,
+  manifest: GeneratedManifest | null
+): Promise<void> {
+  if (!isAllowedGeneratedRelativePath(file.relativePath)) {
+    throw new Error(`拒绝写入不在 Delightify 生成路径白名单内的文件: ${file.relativePath}`);
+  }
+
+  const filePath = absoluteGeneratedPath(projectPath, file.relativePath);
+  const existing = await readExistingFile(filePath);
+  if (existing === null || existing.includes(file.marker)) {
+    return;
+  }
+
+  if (isManifestListed(manifest, file.relativePath) && canUseManifestOwnership(file.relativePath)) {
+    return;
+  }
+
+  throw new Error(`拒绝覆盖非 Delightify 生成文件: ${filePath}`);
+}
+
+async function deleteOrphanGeneratedFiles(
+  projectPath: string,
+  manifest: GeneratedManifest | null,
+  files: GeneratedFile[]
+): Promise<void> {
+  if (!manifest) {
+    return;
+  }
+
+  const nextRelativePaths = new Set(files.map(file => file.relativePath));
+  const orphanEntries = manifest.files
+    .filter(entry => !nextRelativePaths.has(entry.relativePath))
+    .sort((left, right) => left.relativePath.localeCompare(right.relativePath));
+
+  for (const entry of orphanEntries) {
+    await deleteOwnedFile(projectPath, entry, true);
+  }
+}
+
+async function deleteGeneratedManifest(projectPath: string): Promise<void> {
+  const manifestPath = generatedManifestPath(projectPath);
+  const manifestContentText = await readExistingFile(manifestPath);
+  if (manifestContentText === null) {
+    return;
+  }
+
+  if (!manifestContentText.includes(GENERATED_MARKER)) {
+    throw new Error(`拒绝删除非 Delightify 生成清单: ${manifestPath}`);
+  }
+
+  await fs.unlink(manifestPath);
+}
+
 export async function exportKubeJs(
   projectPath: string,
-  params: KubeJsExportParams
+  params: KubeJsExportParams,
+  options: KubeJsExportOptions = {}
 ): Promise<KubeJsExportResult> {
   const filePath = generatedFilePath(projectPath);
-  const writtenAt = new Date().toISOString();
+  const writtenAt = options.generatedAt ?? new Date().toISOString();
   const files = emitChangeSet(params.changeSet, writtenAt);
   const recipesFile = files.find(file => file.relativePath === RECIPES_RELATIVE_PATH);
+  const manifest = await readGeneratedManifest(projectPath);
 
   for (const file of files) {
-    await assertGeneratedFileIsOwned(absoluteGeneratedPath(projectPath, file.relativePath), file.marker);
+    await assertGeneratedFileCanBeWritten(projectPath, file, manifest);
   }
 
   if (files.length > 0) {
     await assertGeneratedFileIsOwned(generatedManifestPath(projectPath), GENERATED_MARKER);
   }
+
+  await deleteOrphanGeneratedFiles(projectPath, manifest, files);
 
   for (const file of files) {
     const targetPath = absoluteGeneratedPath(projectPath, file.relativePath);
@@ -400,6 +605,8 @@ export async function exportKubeJs(
 
   if (files.length > 0) {
     await writeGeneratedManifest(projectPath, files, writtenAt);
+  } else {
+    await deleteGeneratedManifest(projectPath);
   }
 
   return {
