@@ -11,5 +11,7 @@
 推荐命令：
 
 ```bash
-pnpm smoke:mvp0 -- --data-file examples/export-snapshots/export.sqlite --query 铜锭 --target minecraft:copper_ingot
+pnpm smoke:mvp0 --data-file examples/export-snapshots/export.sqlite --query 冷杉木板 --target biomesoplenty:fir_planks
 ```
+
+说明：`pnpm` 在本仓脚本里不需要额外的 `--` 分隔符。当前 Labpack 快照没有精确的 `zh_cn = 铜锭` 条目，`冷杉木板` 可命中 `biomesoplenty:fir_planks` 与 `biomeswevegone:fir_planks`。
