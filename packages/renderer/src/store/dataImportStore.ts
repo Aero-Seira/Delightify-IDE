@@ -8,7 +8,6 @@ import { create } from 'zustand';
 import type { 
   ModDataImportProgress, 
   ModDataImportResult,
-  DataImportHistory,
   ValidationResult,
 } from '@delightify/shared';
 
@@ -30,16 +29,11 @@ interface DataImportState {
   importError: string | null;
   unsubscribeProgress: (() => void) | null;
 
-  // ========== 导入历史 ==========
-  importHistory: DataImportHistory[];
-  isLoadingHistory: boolean;
-
   // ========== Actions ==========
   detectDataFile: (projectPath: string) => Promise<string | null>;
   selectDataFile: () => Promise<string | null>;
   validateDataFile: (filePath: string) => Promise<ValidationResult | null>;
   startImport: (projectPath: string, filePath?: string) => Promise<boolean>;
-  loadImportHistory: (projectPath: string) => Promise<void>;
   resetState: () => void;
   clearErrors: () => void;
 }
@@ -66,9 +60,6 @@ export const useDataImportStore = create<DataImportState>((set, get) => ({
   importResult: null,
   importError: null,
   unsubscribeProgress: null,
-
-  importHistory: [],
-  isLoadingHistory: false,
 
   // ========== Actions ==========
 
@@ -224,26 +215,6 @@ export const useDataImportStore = create<DataImportState>((set, get) => ({
         isImporting: false 
       });
       return false;
-    }
-  },
-
-  /**
-   * 加载导入历史
-   */
-  loadImportHistory: async (projectPath: string) => {
-    set({ isLoadingHistory: true });
-    
-    try {
-      const result = await electronAPI().modDataGetImportHistory(projectPath);
-      
-      if (result.success && result.data) {
-        set({ importHistory: result.data, isLoadingHistory: false });
-      } else {
-        set({ isLoadingHistory: false });
-      }
-    } catch (error) {
-      console.error('加载导入历史失败:', error);
-      set({ isLoadingHistory: false });
     }
   },
 

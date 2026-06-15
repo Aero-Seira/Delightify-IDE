@@ -38,10 +38,6 @@ interface ProjectState {
   // ========== 操作状态 ==========
   /** 是否正在创建项目 */
   isCreating: boolean;
-  /** 是否正在更新项目 */
-  isUpdating: boolean;
-  /** 是否正在删除项目 */
-  isDeleting: boolean;
   /** 创建项目的错误信息 */
   createError: string | null;
 
@@ -54,16 +50,12 @@ interface ProjectState {
   openProject: (projectId: string) => Promise<void>;
   /** 打开目录选择对话框 */
   openDirectoryDialog: () => Promise<string | null>;
-  /** 关闭当前项目 */
-  closeProject: () => void;
   /** 更新项目 */
   updateProject: (projectId: string, data: UpdateProjectData) => Promise<void>;
   /** 删除项目 */
   deleteProject: (projectId: string) => Promise<void>;
   /** 设置收藏状态 */
   setFavorite: (projectId: string, isFavorite: boolean) => Promise<void>;
-  /** 获取当前项目 */
-  refreshCurrentProject: () => Promise<void>;
   /** 设置列表查询参数 */
   setListParams: (params: Partial<ProjectListParams>) => void;
   /** 清除错误 */
@@ -88,8 +80,6 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   },
   
   isCreating: false,
-  isUpdating: false,
-  isDeleting: false,
   createError: null,
 
   // ========== Actions ==========
@@ -245,22 +235,9 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   },
 
   /**
-   * 关闭当前项目
-   */
-  closeProject: () => {
-    set({ 
-      currentProject: null,
-      projectStatus: 'closed',
-      projectError: null 
-    });
-  },
-
-  /**
    * 更新项目
    */
   updateProject: async (projectId: string, data: UpdateProjectData) => {
-    set({ isUpdating: true });
-    
     try {
       const result = await electronAPI().projectUpdate(projectId, data);
       
@@ -276,13 +253,11 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
           set({ currentProject: { ...currentProject, ...result.data } });
         }
         
-        set({ projects, isUpdating: false });
+        set({ projects });
       } else {
-        set({ isUpdating: false });
         throw new Error(result.error || '更新项目失败');
       }
     } catch (error) {
-      set({ isUpdating: false });
       throw error;
     }
   },
@@ -291,8 +266,6 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
    * 删除项目
    */
   deleteProject: async (projectId: string) => {
-    set({ isDeleting: true });
-    
     try {
       const result = await electronAPI().projectDelete(projectId);
       
@@ -308,13 +281,11 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
           });
         }
         
-        set({ projects, isDeleting: false });
+        set({ projects });
       } else {
-        set({ isDeleting: false });
         throw new Error(result.error || '删除项目失败');
       }
     } catch (error) {
-      set({ isDeleting: false });
       throw error;
     }
   },
@@ -324,24 +295,6 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
    */
   setFavorite: async (projectId: string, isFavorite: boolean) => {
     await get().updateProject(projectId, { isFavorite });
-  },
-
-  /**
-   * 刷新当前项目
-   */
-  refreshCurrentProject: async () => {
-    try {
-      const result = await electronAPI().projectGetCurrent();
-      
-      if (result.success) {
-        set({ 
-          currentProject: result.data || null,
-          projectStatus: result.data ? 'ready' : 'closed'
-        });
-      }
-    } catch (error) {
-      console.error('刷新当前项目失败:', error);
-    }
   },
 
   /**
