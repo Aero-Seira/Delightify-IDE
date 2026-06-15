@@ -3,6 +3,7 @@ package io.github.aeroseira.mpide_exporter.export;
 import com.mojang.logging.LogUtils;
 import io.github.aeroseira.mpide_exporter.ModpackIdeExporter;
 import io.github.aeroseira.mpide_exporter.db.SqliteDatabase;
+import io.github.aeroseira.mpide_exporter.source.ItemResourceCapture;
 import io.github.aeroseira.mpide_exporter.source.ItemRegistrySource;
 import io.github.aeroseira.mpide_exporter.source.ItemResourceSource;
 import io.github.aeroseira.mpide_exporter.source.ItemTagSource;
@@ -103,19 +104,26 @@ public final class ExporterService {
         // ── 阶段 2：worker 线程序列化 + 写库 ──────────────────────────
         progress.accept("序列化配方…");
         RecipeSource.Rows recipes = RecipeSource.materialize(snapshot.recipes());
+        ItemRegistrySource.Rows itemRegistryRows = ItemRegistrySource.materialize(snapshot.itemRegistry());
 
         progress.accept("读取语言资源…");
         List<TranslationSource.TranslationRow> translations = TranslationSource.capture(server);
 
         progress.accept("导出物品贴图…");
-        List<ItemResourceSource.ItemResourceRow> itemResources = ItemResourceSource.capture(server);
+        List<ItemResourceSource.ItemResourceRow> itemResources = ItemResourceCapture.capture(
+            server,
+            itemRegistryRows.items(),
+            outDir,
+            snapshot.manifest(),
+            progress
+        );
 
         progress.accept("写入数据库…");
         try (SqliteDatabase db = new SqliteDatabase(tmp)) {
             db.initializeSchema();
             db.writeManifest(snapshot.manifest());
             db.writeMods(snapshot.mods());
-            db.writeItemRegistry(ItemRegistrySource.materialize(snapshot.itemRegistry()));
+            db.writeItemRegistry(itemRegistryRows);
             db.writeItemTags(snapshot.itemTags());
             db.writeRecipes(recipes);
             db.writeTranslations(translations);

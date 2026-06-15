@@ -7,7 +7,8 @@
  *  - ItemTagSource        → item_tags（已解析的最终成员）
  *  - RecipeSource         → recipes + recipe_inputs + recipe_outputs（结构化，组件化）
  *  - TranslationSource    → translations
- *  - ItemResourceSource   → item_resources（物品贴图，离线提取）
+ *  - ItemResourceCapture  → item_resources（客户端最终态渲染，服务端回退离线提取）
+ *  - ItemResourceSource   → item_resources（离线贴图提取回退）
  *
  * 待实现：
  *  - RecipeViewSource     → recipe_views（客户端 / JEI，@OnlyIn(Dist.CLIENT)）

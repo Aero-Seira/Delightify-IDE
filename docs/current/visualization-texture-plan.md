@@ -1,6 +1,6 @@
 # 可视化渲染 · exporter 材质提取计划
 
-> 状态：规划（2026-06-15）。目标：补全 exporter 的物品/方块**材质（贴图）提取**，让 UI 里的 ItemIcon 显示真实图标。**按原设计来**（规格 `设计/06 §5` 材质策略 + `设计/01` "材质是第一语言"）。
+> 状态：实施中（2026-06-15）。目标：补全 exporter 的物品/方块**材质（贴图）提取**，让 UI 里的 ItemIcon 显示真实图标。**按原设计来**（规格 `设计/06 §5` 材质策略 + `设计/01` "材质是第一语言"）。
 > 依据：代码审计（提交 `640e399` 基线）。代码事实优先。
 
 ## 1. 现状（审计结论）
@@ -59,9 +59,26 @@
 ## 4. 契约与边界
 
 - **裸 base64**，`resource_type='texture'`，列严格对齐下游（item_id/namespace/path/content）。
-- **本期范围**：物品平面图标（layer0/约定路径）。
-- **推迟/不做**：GPU 批量渲染复杂 3D 方块图标（规格 §5 回退项）；`recipe_views`/`recipe_view_backgrounds`（客户端渲染，`@OnlyIn(Dist.CLIENT)`，另立）；vanilla 在专用服缺客户端 assets 的补齐（建议从客户端跑 dump）。
+- **本期范围**：物理客户端 / 集成服导出物品最终态图标；专用服导出保留 layer0/约定路径离线降级。
+- **推迟/不做**：PBO 异步 readback 优化；`recipe_views`/`recipe_view_backgrounds`（客户端渲染，`@OnlyIn(Dist.CLIENT)`，另立）；vanilla 在专用服缺客户端 assets 的补齐（建议从客户端跑 dump）。
 - **不改** TS 下游（schema/importer/IPC/renderer 已就绪）；不改其它 Source；不改导出命令/触发机制。
+
+## 4.1 客户端最终态渲染决策
+
+补充决策（2026-06-15）：**不做"简单物品 / 复杂物品"分类**。该分类天然不完备，mod 可通过模型 override、tint、组件、BEWLR 或自定义客户端渲染改变最终图标，任何启发式都会漏。
+
+新的正确性路径：
+
+- 物理客户端 / 集成服导出：`ItemResourceCapture` 反射进入 client bridge，统一复用游戏客户端 `GuiGraphics.renderItem(...)` 渲染最终态图标。
+- 专用服导出：没有客户端渲染上下文，回退到 `ItemResourceSource` 离线贴图提取；缺失仍跳过，IDE 显示占位。
+- 下游契约不变：仍写 `item_resources(resource_type='texture')`，`content` 仍为最终 PNG 的裸 base64。
+
+性能路径：
+
+- 客户端渲染结果落盘缓存到 `<world>/mpide-exporter/icon-cache/v1/`，cache key 包含 `item_id`、默认组件 JSON、`modlist_hash`、MC 版本、客户端资源包列表、图标尺寸和 renderer 版本。
+- cache miss 进入 `ClientIconRenderQueue`。队列在 `ClientTickEvent.Post` 分帧处理，每批使用 `1024x1024` 离屏 atlas，一次渲染最多 `16x16` 个 64px 图标，再一次 readback 后切成单 PNG。64px 是当前默认，主要为降低方块 3D 图标在 IDE 缩放时的模糊感。
+- 离屏 atlas 必须复用 vanilla GUI 投影与 ModelView：`setOrtho(..., 1000, ClientHooks.getGuiFarPlane())`，并把 ModelView 平移到 `10000 - ClientHooks.getGuiFarPlane()`；否则 `GuiGraphics.renderItem` 的 z=150 会被裁剪，导出 PNG 表现为全透明。
+- 后续如需进一步优化，可在该队列内部替换 readback 为 PBO；不影响 DB 契约和 Source 边界。
 
 ## 5. 完成定义（DoD）
 
