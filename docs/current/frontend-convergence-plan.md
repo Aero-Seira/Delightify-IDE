@@ -1,11 +1,47 @@
 # 前端收敛与重构 · 执行计划
 
-> 状态：计划（2026-06-16）。上游：`docs/current/frontend-convergence-brief.md`（种子简报）。
+> 状态：已完成（2026-06-16）。上游：`docs/current/frontend-convergence-brief.md`（种子简报）。
 > 角色：**Claude = 审计 + 计划 + 出 Codex prompt + 审计产出**；**Codex = 落实代码**。响应中文。
 > 目标：**收敛 + 重构「旧代码已实现的前端」**——修漂移/半接/失效/不一致，不加新功能。
 > 基线提交：`1e436f3`。本计划基于本会话 A 阶段四路并行审计（pages×2 / IPC 契约 / 横切层）的分类问题清单。
+> 完成提交区间：`1e436f3..895271e`（最新：`895271e fix(renderer): align remaining modules with global theme colors`）。
 
 ---
+
+## 实施状态（2026-06-16）
+
+本计划按批次完成并已推送到 `origin/main`。所有批次均以代码为准执行，保守增量、未引入新依赖、未重写页面结构或数据流。
+
+| 任务 | 状态 | 结果摘要 |
+| --- | --- | --- |
+| FC-T1 | ✅ 已完成 | preload IPC 常量单源化，孤儿/保留通道按计划分类处置。 |
+| FC-T2 | ✅ 已完成 | mock 与 ElectronAPI 接口对齐，删除 renderer 端 browser-* 死代码与未用 recipeTypes 声明。 |
+| FC-T3 | ✅ 已完成 | ItemBrowser key 稳定化，category 无效联动降为纯图例。 |
+| FC-T4 | ✅ 已完成 | ModManager 无数据文件检测不再静默，调试 console 清理。 |
+| FC-T5 | ✅ 已完成 | ProjectManager 降级入口统一，编辑入口诚实置灰。 |
+| FC-T6 | ✅ 已完成 | 新增公共 `StateViews`，建立 Loading / Empty / Error 状态组件与全局 spin 基础。 |
+| FC-T7 | ✅ 已完成 | ItemBrowser / ProjectManager / ModManager / RecipeBrowser 分批迁移公共状态组件。 |
+| FC-T8 | ✅ 已完成 | RecipeBrowser、RecipeCard、DebugTools、ItemIcon、SearchableSelect 等改走全局 CSS 变量。 |
+| FC-T9 | ✅ 已完成 | 补 `nav.debug`、语言持久化、清死 key，ModManager 接通现有 dataImport key。 |
+| FC-T10 | ✅ 已完成 | 删除 BlockRenderer / LanguageSwitcher / ThemeToggle，清 dataImportStore 历史链和 projectStore 未用 action/state。 |
+| FC-T11 | ✅ 已完成 | 根级 ErrorBoundary 接入；Dashboard 统计改真实数据/诚实占位，移除 `#` 死链。 |
+| 主题补修 | ✅ 已完成 | 补齐 ItemBrowser、ItemCard、CategoryLegend、ModManager、ConversionTool、CreateProjectDialog、ErrorBoundary 的全局亮暗主题跟随。 |
+
+### 实际验证
+
+- `pnpm typecheck && pnpm build` 多轮通过。
+- `pnpm dev` 真实 Electron 启动验证。
+- 手动/脚本实跑覆盖：
+  - Dashboard 有/无当前项目两态。
+  - 根级 ErrorBoundary 临时抛错兜底。
+  - zh/en 语言切换与重启持久化。
+  - light/dark 主题切换下 ItemBrowser、CategoryLegend、CreateProjectDialog 等 computed style 随 `data-theme` 变化。
+
+### 偏离与保留项
+
+- `projectStore.isCreating` 原计划候选删除，但 `CreateProjectDialog` 仍实际消费，用于禁用态和“创建中...”显示，因此保留。
+- ProjectManager 中遮罩/叠加类 rgba 与 ItemCard 分类色属于非主题表面色/语义分类色，未强行变量化。
+- RecipeEditor 仍为后续功能范围，本轮未实现；Quick Start 第三步已改往只读 `/recipes`。
 
 ## 0. 已锁定决策（本会话 B 阶段，AskUserQuestion）
 
