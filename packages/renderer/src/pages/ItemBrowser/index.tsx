@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { Item, SearchField } from '@delightify/shared';
-import type { ItemCategory } from '../../components/CategoryLegend';
 import ItemCard, { ItemListRow, ItemCompactRow, ItemDetailCard } from '../../components/ItemCard';
 import CategoryLegend from '../../components/CategoryLegend';
 import SearchableSelect from '../../components/SearchableSelect';
@@ -12,7 +11,6 @@ import styles from './style.module.css';
 interface QueryFilters {
   search: string;
   searchField: SearchField;
-  category: string;
   modId: string;
   tag: string;
 }
@@ -45,7 +43,6 @@ export default function ItemBrowser(): React.ReactElement {
   const [filters, setFilters] = useState<QueryFilters>({
     search: '',
     searchField: 'all',
-    category: '',
     modId: '',
     tag: '',
   });
@@ -260,7 +257,6 @@ export default function ItemBrowser(): React.ReactElement {
     setFilters({
       search: '',
       searchField: 'all',
-      category: '',
       modId: '',
       tag: '',
     });
@@ -344,7 +340,7 @@ export default function ItemBrowser(): React.ReactElement {
   // 渲染物品卡片
   const renderItem = (item: Item) => {
     // 使用 itemId 作为唯一标识
-    const itemKey = item.itemId || `item-${Math.random()}`;
+    const itemKey = item.itemId;
     const isSingleSelected = selectedItem?.itemId === item.itemId;
     const isMultiSelected = selectedItems.has(item.itemId);
     
@@ -429,7 +425,7 @@ export default function ItemBrowser(): React.ReactElement {
   };
 
   // 检查是否有过滤条件
-  const hasFilters = filters.search || filters.modId || filters.category || filters.tag;
+  const hasFilters = filters.search || filters.modId || filters.tag;
 
   // 如果没有项目，显示提示
   if (!currentProject) {
@@ -624,11 +620,7 @@ export default function ItemBrowser(): React.ReactElement {
           </div>
 
           {/* 类别图例 */}
-          <CategoryLegend
-            compact
-            selectedCategory={filters.category as ItemCategory || null}
-            onCategoryClick={(cat) => updateFilter('category', cat || '')}
-          />
+          <CategoryLegend compact />
           
           {/* 多选模式切换 */}
           <button

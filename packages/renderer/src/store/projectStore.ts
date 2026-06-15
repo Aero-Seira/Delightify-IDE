@@ -11,6 +11,7 @@ import type {
   ProjectListParams,
   ModLoader
 } from '@delightify/shared';
+import { electronAPI } from '../ipc';
 
 /**
  * 项目状态接口
@@ -68,14 +69,6 @@ interface ProjectState {
   /** 清除错误 */
   clearErrors: () => void;
 }
-
-// IPC API 引用 - 安全获取
-const electronAPI = () => {
-  if (typeof window === 'undefined' || !window.electronAPI) {
-    throw new Error('Electron API not available');
-  }
-  return window.electronAPI;
-};
 
 /**
  * 项目 Store

@@ -225,7 +225,11 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
             </button>
             {showMenu && (
               <div className={styles.dropdownMenu}>
-                <button onClick={() => { onEdit(project); setShowMenu(false); }}>
+                <button
+                  disabled
+                  title="编辑功能开发中"
+                  onClick={() => { onEdit(project); setShowMenu(false); }}
+                >
                   <EditIcon />
                   {t('common.edit')}
                 </button>
@@ -321,7 +325,11 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
           </button>
           {showMenu && (
             <div className={styles.dropdownMenu}>
-              <button onClick={() => { onEdit(project); setShowMenu(false); }}>
+              <button
+                disabled
+                title="编辑功能开发中"
+                onClick={() => { onEdit(project); setShowMenu(false); }}
+              >
                 <EditIcon />
                 {t('common.edit')}
               </button>
@@ -414,9 +422,7 @@ export default function ProjectManagerPage(): React.ReactElement {
   };
 
   // 处理编辑项目
-  const handleEditProject = (project: Project) => {
-    console.log('编辑项目:', project);
-  };
+  const handleEditProject = () => {};
 
   // 处理导入数据 - 导航到数据导入页面
   const handleImportData = (project: Project) => {

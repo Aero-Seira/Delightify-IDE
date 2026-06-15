@@ -198,27 +198,19 @@ export default function DataImportPage(): React.ReactElement {
 
   // 检测数据文件
   const handleDetect = useCallback(async () => {
-    console.log('[DataImport] handleDetect called, currentProject:', currentProject?.path);
     if (!currentProject) {
-      console.log('[DataImport] No current project, returning');
       return;
     }
     
     resetState();
-    console.log('[DataImport] Calling detectDataFile...');
     const filePath = await detectDataFile(currentProject.path);
-    console.log('[DataImport] detectDataFile result:', filePath);
     
     if (filePath) {
       // 自动进入验证步骤
-      console.log('[DataImport] File found, validating...');
       const result = await validateDataFile(filePath);
-      console.log('[DataImport] validateDataFile result:', result);
       if (result?.valid) {
         setCurrentStep(1);
       }
-    } else {
-      console.log('[DataImport] File not found');
     }
   }, [currentProject, detectDataFile, validateDataFile, resetState]);
 
