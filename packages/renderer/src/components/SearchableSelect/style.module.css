@@ -16,8 +16,8 @@
   align-items: center;
   gap: 6px;
   padding: 8px 10px;
-  background: white;
-  border: 1px solid #dee2e6;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -26,17 +26,17 @@
 }
 
 .trigger:hover {
-  border-color: #adb5bd;
+  border-color: var(--border-hover);
 }
 
 .container.open .trigger {
-  border-color: #4dabf7;
-  box-shadow: 0 0 0 3px rgba(77, 171, 247, 0.15);
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px var(--accent-light);
 }
 
 .trigger:focus-visible {
-  border-color: #4dabf7;
-  box-shadow: 0 0 0 3px rgba(77, 171, 247, 0.15);
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px var(--accent-light);
 }
 
 /* 前缀图标 */
@@ -46,7 +46,7 @@
   justify-content: center;
   flex-shrink: 0;
   font-size: 14px;
-  color: #868e96;
+  color: var(--text-secondary);
 }
 
 /* 选中的标签文本 */
@@ -57,11 +57,11 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 13px;
-  color: #212529;
+  color: var(--text-primary);
 }
 
 .selectedLabel.placeholder {
-  color: #868e96;
+  color: var(--text-secondary);
 }
 
 /* 搜索输入框 */
@@ -72,12 +72,12 @@
   background: none;
   font-size: 13px;
   outline: none;
-  color: #212529;
+  color: var(--text-primary);
   padding: 0;
 }
 
 .searchInput::placeholder {
-  color: #adb5bd;
+  color: var(--text-tertiary);
 }
 
 /* 清除按钮 */
@@ -88,10 +88,10 @@
   width: 16px;
   height: 16px;
   border: none;
-  background: #e9ecef;
+  background: var(--bg-active);
   border-radius: 50%;
   cursor: pointer;
-  color: #868e96;
+  color: var(--text-secondary);
   font-size: 11px;
   line-height: 1;
   padding: 0;
@@ -100,14 +100,14 @@
 }
 
 .clearBtn:hover {
-  background: #fa5252;
-  color: white;
+  background: var(--error);
+  color: var(--text-inverse);
 }
 
 /* 下拉箭头 */
 .arrow {
   flex-shrink: 0;
-  color: #868e96;
+  color: var(--text-secondary);
   transition: transform 0.2s ease;
 }
 
@@ -122,8 +122,8 @@
   left: 0;
   width: 280px;
   max-height: 360px;
-  background: white;
-  border: 1px solid #dee2e6;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   overflow: hidden;
@@ -138,9 +138,9 @@
   justify-content: space-between;
   padding: 8px 12px;
   font-size: 11px;
-  color: #868e96;
-  background: #f8f9fa;
-  border-bottom: 1px solid #e9ecef;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
 }
 
 .countInfo {
@@ -150,12 +150,12 @@
 }
 
 .countHidden {
-  color: #adb5bd;
+  color: var(--text-tertiary);
 }
 
 .toggleEmptyBtn {
   font-size: 10px;
-  color: #4dabf7;
+  color: var(--accent-primary);
   background: transparent;
   border: none;
   cursor: pointer;
@@ -165,7 +165,7 @@
 }
 
 .toggleEmptyBtn:hover {
-  background: #e7f5ff;
+  background: var(--accent-light);
 }
 
 /* 选项列表 */
@@ -189,11 +189,11 @@
 
 .option:hover,
 .option.highlighted {
-  background: #e7f5ff;
+  background: var(--accent-light);
 }
 
 .option.selected {
-  color: #1971c2;
+  color: var(--accent-hover);
 }
 
 .optionLabel {
@@ -208,15 +208,15 @@
 .optionDescription {
   flex-shrink: 0;
   font-size: 11px;
-  color: #868e96;
-  background: #f1f3f5;
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
   padding: 2px 6px;
   border-radius: 4px;
 }
 
 .option.selected .optionDescription {
-  background: rgba(25, 113, 194, 0.1);
-  color: #1971c2;
+  background: var(--accent-light);
+  color: var(--accent-hover);
 }
 
 /* 数量标记 */
@@ -224,8 +224,8 @@
   flex-shrink: 0;
   font-size: 11px;
   font-weight: 600;
-  color: #495057;
-  background: #e9ecef;
+  color: var(--text-secondary);
+  background: var(--bg-active);
   padding: 2px 8px;
   border-radius: 10px;
   min-width: 24px;
@@ -233,13 +233,13 @@
 }
 
 .optionCount.zero {
-  color: #adb5bd;
-  background: #f1f3f5;
+  color: var(--text-tertiary);
+  background: var(--bg-tertiary);
 }
 
 .option.selected .optionCount {
-  background: rgba(25, 113, 194, 0.15);
-  color: #1971c2;
+  background: var(--accent-light);
+  color: var(--accent-hover);
 }
 
 /* 无结果选项（灰显） */
@@ -248,13 +248,13 @@
 }
 
 .option.emptyOption .optionLabel {
-  color: #adb5bd;
+  color: var(--text-tertiary);
 }
 
 /* 选中标记 */
 .checkmark {
   flex-shrink: 0;
-  color: #1971c2;
+  color: var(--accent-hover);
 }
 
 /* 空状态 */
@@ -262,85 +262,15 @@
   padding: 24px 16px;
   text-align: center;
   font-size: 13px;
-  color: #868e96;
+  color: var(--text-secondary);
 }
 
-/* 暗色主题适配 */
-[data-theme='dark'] .trigger {
-  background: #2a2a2a;
-  border-color: #404040;
-}
-
-[data-theme='dark'] .trigger:hover {
-  border-color: #505050;
-}
-
-[data-theme='dark'] .container.open .trigger,
-[data-theme='dark'] .trigger:focus-visible {
-  border-color: #4dabf7;
-  box-shadow: 0 0 0 3px rgba(77, 171, 247, 0.2);
-}
-
-[data-theme='dark'] .selectedLabel {
-  color: #e0e0e0;
-}
-
-[data-theme='dark'] .searchInput {
-  color: #e0e0e0;
-}
-
-[data-theme='dark'] .dropdown {
-  background: #2a2a2a;
-  border-color: #404040;
+/* 暗色主题中下拉浮层需要更重的阴影。 */
+[data-theme="dark"] .dropdown {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-[data-theme='dark'] .count {
-  background: #333;
-  border-bottom-color: #404040;
-  color: #999;
-}
-
-[data-theme='dark'] .countHidden {
-  color: #666;
-}
-
-[data-theme='dark'] .toggleEmptyBtn {
-  color: #74c0fc;
-}
-
-[data-theme='dark'] .toggleEmptyBtn:hover {
-  background: rgba(77, 171, 247, 0.2);
-}
-
-[data-theme='dark'] .option:hover,
-[data-theme='dark'] .option.highlighted {
-  background: rgba(77, 171, 247, 0.2);
-}
-
-[data-theme='dark'] .option.emptyOption {
+/* 暗色主题中空选项需要更弱的可见度。 */
+[data-theme="dark"] .option.emptyOption {
   opacity: 0.5;
-}
-
-[data-theme='dark'] .option.emptyOption .optionLabel {
-  color: #666;
-}
-
-[data-theme='dark'] .optionDescription {
-  background: #404040;
-  color: #999;
-}
-
-[data-theme='dark'] .optionCount {
-  background: #404040;
-  color: #ccc;
-}
-
-[data-theme='dark'] .optionCount.zero {
-  color: #666;
-  background: #333;
-}
-
-[data-theme='dark'] .empty {
-  color: #868e96;
 }

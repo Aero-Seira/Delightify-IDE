@@ -8,7 +8,7 @@
   font-size: 1.75rem;
   font-weight: 600;
   margin: 0 0 24px;
-  color: var(--text-primary, #111827);
+  color: var(--text-primary);
 }
 
 .message {
@@ -43,7 +43,7 @@
   font-size: 1.125rem;
   font-weight: 600;
   margin: 0 0 16px;
-  color: var(--text-primary, #111827);
+  color: var(--text-primary);
 }
 
 /* 路径列表 */
@@ -96,7 +96,7 @@
 
 .tableName {
   font-weight: 500;
-  color: var(--text-primary, #111827);
+  color: var(--text-primary);
   font-family: ui-monospace, monospace;
   font-size: 0.875rem;
 }
@@ -123,13 +123,13 @@
 
 .cacheLabel {
   font-size: 0.875rem;
-  color: var(--text-secondary, #6b7280);
+  color: var(--text-secondary);
 }
 
 .cacheValue {
   font-size: 1.125rem;
   font-weight: 600;
-  color: var(--text-primary, #111827);
+  color: var(--text-primary);
 }
 
 /* 查询工具 */
@@ -161,7 +161,7 @@
   align-self: flex-start;
   padding: 10px 20px;
   background: var(--primary-color);
-  color: white;
+  color: var(--text-inverse);
   border: none;
   border-radius: 8px;
   font-size: 0.875rem;
@@ -186,7 +186,7 @@
 .resultBox h3 {
   font-size: 0.875rem;
   font-weight: 600;
-  color: var(--text-secondary, #6b7280);
+  color: var(--text-secondary);
   margin: 0 0 8px;
 }
 
@@ -218,7 +218,7 @@
 .clearBtn {
   padding: 12px 24px;
   background: var(--error);
-  color: white;
+  color: var(--text-inverse);
   border: none;
   border-radius: 8px;
   font-size: 0.875rem;
@@ -264,51 +264,12 @@
   cursor: not-allowed;
 }
 
-/* 深色模式适配 */
-[data-theme='dark'] .container {
-  color: var(--text-primary);
-}
-
-[data-theme='dark'] .title {
-  color: var(--text-primary);
-}
-
-[data-theme='dark'] .section {
+/* 深色模式中圆角计数徽标需要弱化底色层级。 */
+[data-theme="dark"] .tableCount {
   background: var(--bg-secondary);
-  border-color: var(--border-color);
 }
 
-[data-theme='dark'] .section h2 {
-  color: var(--text-primary);
-}
-
-[data-theme='dark'] .pathValue {
-  background: var(--bg-tertiary);
-  color: var(--text-secondary);
-}
-
-[data-theme='dark'] .tableCard {
-  background: var(--bg-tertiary);
-  border-color: var(--border-color);
-}
-
-[data-theme='dark'] .tableName {
-  color: var(--text-primary);
-}
-
-[data-theme='dark'] .tableCount {
+/* 深色模式中查询输入框跟随页面面板底色。 */
+[data-theme="dark"] .queryInput {
   background: var(--bg-secondary);
-  color: var(--text-secondary);
-}
-
-[data-theme='dark'] .queryInput {
-  background: var(--bg-secondary);
-  border-color: var(--border-color);
-  color: var(--text-primary);
-}
-
-[data-theme='dark'] .refreshBtn {
-  background: var(--bg-tertiary);
-  border-color: var(--border-color);
-  color: var(--text-primary);
 }
