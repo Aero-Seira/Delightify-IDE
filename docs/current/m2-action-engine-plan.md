@@ -207,7 +207,7 @@ T1(IR) ─┬─> T2(fileset emitter) ─┬─> T7(rename/lang)
 | Almost Unified emitter | v1.x | 同上；AU 仅能表达 unify 子集。 |
 | `add_item` 实际生成 | M5 + 单独立项 | 涉及注册/材质/模型，是另一条工程线；v1 仅探测建议。 |
 | `add_bridge_recipe` / `change_recipe_type` / `remove_item` 执行 | M5 探测+搁置 | 爆炸半径最高；M2 复合**只产出 deferred 建议**，不执行（例02 桥接、例05 被否的删除即此类）。 |
-| exporter 贴图导出（`item_resources.texture`） | exporter 侧未来项 | 已确认是 exporter 尚未写 item_resources，非 importer/renderer 漏接；图标空白可接受，不在 M2。 |
+| exporter 贴图导出（`item_resources.texture`） | 已完成，仍不属 M2 | exporter 已写入真实贴图资源；该能力属于 exporter 可视化链路，不影响 M2 动作引擎范围。 |
 | runtime reload 通道 | M6（条件） | 仅当离线缺口成真实瓶颈才启动。 |
 | 引导式规划模式 | M3 | 依赖 M2 动作齐备后才有意义。 |
 | 重写 unify / emitter / ConversionTool / schema / importer / validator | 不做 | 全部以增量扩展实现。 |

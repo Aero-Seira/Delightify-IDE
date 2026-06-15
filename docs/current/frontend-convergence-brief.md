@@ -8,14 +8,14 @@
 - `CLAUDE.md`：铁律。**docs 多为规划，以代码为准**；冲突时代码赢。响应用中文。
 - `docs/README.md`：文档地图。
 - `docs/current/m2-action-engine-plan.md`：引擎层 M2 + NA1/NA2 引擎 IPC + NA3/NA4(未做) 的完整轨迹与决策。
-- `docs/current/visualization-texture-plan.md`：exporter 材质提取（进行中）。
+- `docs/current/visualization-texture-plan.md`：exporter 材质提取（已完成）。
 - `git log --oneline -30`：近期落地轨迹（M2 引擎、engine:dry-run/blast IPC、exporter 贴图）。
 
 ## 1. 架构现状（已验证，代码为准）
 - 后端「非 Agent」能力大多已接通；引擎层 M2 全齐（actions/composites/blast-radius/IR）。
 - **NA1/NA2 已落地**：`engine:dry-run`（dispatch 9 个动作）、`engine:blast`（只读爆炸半径）IPC + preload + ElectronAPI + mock。
 - **NA3/NA4 未做**：动作工作台 UI、只读浏览强化——属**新建 UI**，不在「修旧前端」范围；但收敛应为它打好地基（先稳旧的，再建新的）。
-- exporter 贴图提取进行中；下游贴图通路（`item_resources`→`items:get-texture`→`useTexture`/`ItemIcon`）已就绪。
+- exporter 贴图提取已完成；下游贴图通路（`item_resources`→`items:get-texture`→`useTexture`/`ItemIcon`）已就绪并沿用同一契约。
 
 ## 2. 前端现状（本轮审计结论，新会话须复核）
 8 个页面均挂路由、可从 Sidebar 到达，无孤儿页：

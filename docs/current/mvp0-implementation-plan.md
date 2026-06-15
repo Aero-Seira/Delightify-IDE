@@ -1,6 +1,7 @@
 # Delightify MVP-0 可落地实现方案
 
 > 状态：实现设计（以 2026-06-14 仓库真实代码为准）。本文用于直接交给 Codex 执行。
+> 更新：2026-06-16 exporter 已实现真实贴图导出，本文中“exporter v1 不写 item_resources / 贴图为空”的描述仅代表 2026-06-14 基线事实；当前贴图状态以 `docs/current/visualization-texture-plan.md` 与代码为准。
 > 审计基线：`packages/main/src/{services,ipc,preload.ts}`、`packages/renderer/src/{ipc,pages}`、`packages/shared/src/{types,constants}`、`packages/exporter/`、`scripts/smoke-mvp0-unify.mjs`。
 > 关键结论（颠覆 `进度.md` 的"待办"描述，以代码为准）：**MVP-0 后端主链路已基本实现并有可跑通的 smoke 断言**。schema、importer（全 v1 表）、validator（分流 + capabilities）、unify query/dry-run、KubeJS emitter、全部 IPC、preload、renderer 接线、`pnpm smoke:mvp0` 均已存在。真正剩余的工程缺口集中在**浏览层显示名（v1 应走 `translations`，但 `items.ts` 仍查 `item_resources.lang_name`）**与几处打磨项。本方案优先修这些缺口，不做重写。
 
@@ -87,8 +88,8 @@
 - 命令：`/mpide_export dump`（OP，permission level 2）。
 - `Schema.java` 定义并 CREATE 全部 15 张表 DDL；`schema_version = 1`。
 - manifest 实际写入 key：`schema_version`、`exporter_version`(`0.1.0`)、`loader`(`neoforge`)、`mc_version`、`neo_version`、`environment`、`exported_at_utc`、`world_name`、`modlist_hash`（**真实 SHA-256**，非数量）。**未写 `mod_count`**。
-- 已写入数据的表：`mods`、`items`、`item_creative_tabs`、`blocks`、`item_tags`、`recipes`、`recipe_inputs`、`recipe_outputs`、`translations`。
-- **仅有 DDL、当前无数据写入**：`item_resources`、`recipe_views`、`recipe_view_backgrounds`（source 未实现，见 `source/package-info.java`）。
+- 已写入数据的表：`mods`、`items`、`item_creative_tabs`、`blocks`、`item_tags`、`recipes`、`recipe_inputs`、`recipe_outputs`、`translations`、`item_resources`（2026-06-16 起含 `resource_type='texture'` 贴图资源）。
+- **仅有 DDL、当前无数据写入**：`recipe_views`、`recipe_view_backgrounds`（source 未实现，见 `source/package-info.java`）。
 - recipes 容错：`unparsed = rawJson==null || isSpecial || !inputsStructured`；unparsed 配方 inputs/outputs 写空列表，`raw_json=NULL`。
 - 脚本：`exporter:build`=gradle `build`、`exporter:runClient`=`runClient`（集成端单人世界，便于实跑 dump）。
 
@@ -127,9 +128,8 @@
 
 ### P2-1 物品贴图对 v1 数据为空
 
-- 问题：`items:get-texture`（`items.ts:230-282`）查 `item_resources.resource_type='texture'`；v1 不写 `item_resources`。
-- 影响：ItemBrowser/RecipeBrowser 图标空白（exporter 当前也未导出贴图，属预期）。
-- 修复策略：保持现状，确保无数据时优雅返回 `null`（已是如此）；前端继续用占位。不在本轮做离线贴图提取。
+- 状态更新（2026-06-16）：已由 exporter 真实贴图导出修复；`item_resources.resource_type='texture'` 现在可由 exporter 写入。
+- 当前策略：无贴图数据时仍优雅返回 `null`，前端继续回退占位；有贴图数据时走既有 `items:get-texture` / `ItemIcon` 链路显示。
 - 阻塞 MVP-0：**否**。
 
 ### P2-2 导入失败不记录 `data_imports` 行
@@ -419,8 +419,8 @@ IDE 侧需对齐的事实（来自 `packages/exporter/` 真实代码）：
 - 输出路径：`<serverDir>/mpide-exporter/export.sqlite`（原子改名）。IDE `EXPORTER_V1_DATA_FILE_PATHS` 已含 `mpide-exporter/export.sqlite` + `.mpide-exporter/export.sqlite`，**对齐**。
 - manifest keys：`schema_version`、`exporter_version`、`loader`、`mc_version`、`neo_version`、`environment`、`exported_at_utc`、`world_name`、`modlist_hash`。**未写 `mod_count`**（validator 已用 COUNT 兜底，OK）。
 - schema version：`1`。
-- 当前导出（有数据）的表：`mods`、`items`、`item_creative_tabs`、`blocks`、`item_tags`、`recipes`、`recipe_inputs`、`recipe_outputs`、`translations`。
-- 仍未导出（仅 DDL）：`item_resources`、`recipe_views`、`recipe_view_backgrounds`。
+- 当前导出（有数据）的表：`mods`、`items`、`item_creative_tabs`、`blocks`、`item_tags`、`recipes`、`recipe_inputs`、`recipe_outputs`、`translations`、`item_resources`（真实贴图）。
+- 仍未导出（仅 DDL）：`recipe_views`、`recipe_view_backgrounds`。
 - IDE importer **必须容忍缺失** `item_resources`/`recipe_views`/`recipe_view_backgrounds`（已通过 `tableExists()` 实现）。**这三张表不进 `EXPORTER_V1_REQUIRED_TABLES`，保持现状**。
 - `pnpm exporter:build`：gradle `build`（出 fat jar，sqlite-jdbc jarJar 内嵌）。`pnpm exporter:runClient`：起集成端单人世界，便于在游戏内 `/mpide_export dump` 实跑导出，产出真实 `export.sqlite` 供 IDE 验证。
 - 本轮**不改 exporter Java 代码**。
@@ -544,7 +544,7 @@ IDE 侧需对齐的事实（来自 `packages/exporter/` 真实代码）：
 你在 Delightify-IDE（Electron + React + TS，pnpm/turbo monorepo）上工作。产品名 Delightify，"ModPack IDE" 只是品类描述。MVP-0 后端主链路（schema/importer/validator/unify query+dry-run/KubeJS emitter/IPC/preload/renderer 接线/scripts/smoke-mvp0-unify.mjs）已实现并有可跑通的 smoke 断言。请勿重写已实现部分。代码事实优先于历史文档。
 
 目标：
-修复浏览层与 v1 数据的不一致，主要是 ItemBrowser 显示名/搜索应走 translations（而非 item_resources.lang_name，因为 exporter v1 不写 item_resources），并让 RecipeBrowser 使用已导入的结构化 recipe_inputs/recipe_outputs。仅做小而可验证的改动。
+修复浏览层与 v1 数据的不一致，主要是 ItemBrowser 显示名/搜索应走 translations（而非 item_resources.lang_name，因为 exporter v1 不写 lang_name 资源），并让 RecipeBrowser 使用已导入的结构化 recipe_inputs/recipe_outputs。仅做小而可验证的改动。
 
 要修改的文件（按任务）：
 1) packages/shared/src/types/item.ts；packages/main/src/ipc/items.ts —— ItemQueryParams 增 lang?；三处 ITEMS_* 查询把 item_resources lang_name 改为 LEFT JOIN translations(items.translation_key)，lang fallback zh_cn→en_us→前端 path 兜底；name 搜索改查 translations.value。
