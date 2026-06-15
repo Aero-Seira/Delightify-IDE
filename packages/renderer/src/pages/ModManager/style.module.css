@@ -284,37 +284,6 @@
   flex-wrap: wrap;
 }
 
-/* 加载状态 */
-.loadingState {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 20px;
-}
-
-.spinner {
-  width: 48px;
-  height: 48px;
-  border: 3px solid var(--border-color);
-  border-top-color: var(--accent-primary);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 20px;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.loadingState p {
-  font-size: 14px;
-  color: var(--text-secondary);
-  margin: 0;
-}
-
 /* 错误提示 */
 .errorAlert {
   display: flex;
@@ -645,36 +614,6 @@
 .resultStatLabel {
   font-size: 13px;
   color: var(--text-tertiary);
-}
-
-/* 空状态 */
-.emptyState {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 80px 20px;
-  text-align: center;
-}
-
-.emptyState > svg {
-  width: 80px;
-  height: 80px;
-  color: var(--text-tertiary);
-  margin-bottom: 24px;
-}
-
-.emptyState h2 {
-  font-size: 20px;
-  font-weight: 600;
-  margin: 0 0 12px 0;
-  color: var(--text-primary);
-}
-
-.emptyState p {
-  font-size: 14px;
-  color: var(--text-secondary);
-  margin: 0;
 }
 
 /* 响应式 */

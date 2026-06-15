@@ -10,6 +10,7 @@ import type { Recipe, RecipeDetail, RecipeTypeInfo, RecipeQueryParams } from '@d
 import RecipeCard, { RecipeListRow, RecipeDetailCard } from '../../components/RecipeCard';
 import SearchableSelect from '../../components/SearchableSelect';
 import ErrorBoundary from '../../components/ErrorBoundary';
+import { EmptyState, ErrorState, LoadingState } from '../../components/StateViews';
 import { electronAPI } from '../../ipc';
 import { useProjectStore } from '../../store/projectStore';
 import styles from './style.module.css';
@@ -261,13 +262,15 @@ export default function RecipeBrowserPage(): React.ReactElement {
   if (!currentProject) {
     return (
       <div className={styles.container}>
-        <div className={styles.empty}>
-          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">
-            <path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-6l-2-2H5a2 2 0 0 0-2 2z" />
-          </svg>
-          <p>请先打开一个项目</p>
-          <p className={styles.emptyHint}>需要先打开一个整合包项目才能浏览配方</p>
-        </div>
+        <EmptyState
+          icon={(
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">
+              <path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-6l-2-2H5a2 2 0 0 0-2 2z" />
+            </svg>
+          )}
+          title="请先打开一个项目"
+          description="需要先打开一个整合包项目才能浏览配方"
+        />
       </div>
     );
   }
@@ -412,44 +415,35 @@ export default function RecipeBrowserPage(): React.ReactElement {
         {/* 配方列表 */}
         <div className={`${styles.content} ${styles[viewMode]}`}>
           {isLoading ? (
-            <div className={styles.loading}>
-              <div className={styles.spinner} />
-              <p>加载中...</p>
-            </div>
+            <LoadingState label="加载中..." />
           ) : error ? (
-            <div className={styles.error}>
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="8" x2="12" y2="12" />
-                <line x1="12" y1="16" x2="12.01" y2="16" />
-              </svg>
-              <p>加载失败: {error}</p>
-              <button onClick={loadRecipes}>重试</button>
-            </div>
+            <ErrorState message={`加载失败: ${error}`} onRetry={loadRecipes} />
           ) : recipes.length === 0 ? (
-            <div className={styles.empty}>
-              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">
-                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-                <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-                <line x1="12" y1="22.08" x2="12" y2="12" />
-              </svg>
+            <EmptyState
+              icon={(
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">
+                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                  <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                  <line x1="12" y1="22.08" x2="12" y2="12" />
+                </svg>
+              )}
+            >
               {hasFilters ? (
-                <>
+                <div className={styles.emptyActions}>
                   <p>没有找到匹配的配方</p>
                   <button
-                    className={styles.clearFilters}
                     onClick={clearFilters}
                   >
                     清除过滤条件
                   </button>
-                </>
+                </div>
               ) : (
-                <>
+                <div className={styles.emptyActions}>
                   <p>该项目没有包含任何配方</p>
                   <p className={styles.emptyHint}>请先前往「数据导入」导入配方数据</p>
-                </>
+                </div>
               )}
-            </div>
+            </EmptyState>
           ) : (
             recipes.map(renderRecipe)
           )}

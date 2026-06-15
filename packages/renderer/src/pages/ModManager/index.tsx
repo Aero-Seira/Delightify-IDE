@@ -11,6 +11,7 @@ import { useI18n } from '../../i18n';
 import { useProjectStore } from '../../store/projectStore';
 import { useDataImportStore } from '../../store/dataImportStore';
 import type { ValidationResult } from '@delightify/shared';
+import { EmptyState, LoadingState } from '../../components/StateViews';
 import styles from './style.module.css';
 
 // Icons
@@ -252,11 +253,11 @@ export default function DataImportPage(): React.ReactElement {
   if (!currentProject) {
     return (
       <div className={styles.container}>
-        <div className={styles.emptyState}>
-          <FolderIcon />
-          <h2>请先选择一个项目</h2>
-          <p>数据导入需要在打开项目后进行。请先创建或选择一个整合包项目。</p>
-        </div>
+        <EmptyState
+          icon={<FolderIcon />}
+          title="请先选择一个项目"
+          description="数据导入需要在打开项目后进行。请先创建或选择一个整合包项目。"
+        />
       </div>
     );
   }
@@ -328,10 +329,7 @@ export default function DataImportPage(): React.ReactElement {
           )}
 
           {(isDetecting || isValidating) && (
-            <div className={styles.loadingState}>
-              <div className={styles.spinner} />
-              <p>{isDetecting ? '正在检测数据文件...' : '正在验证数据文件...'}</p>
-            </div>
+            <LoadingState label={isDetecting ? '正在检测数据文件...' : '正在验证数据文件...'} />
           )}
 
           {detectedFilePath && validationResult && !validationResult.valid && (
