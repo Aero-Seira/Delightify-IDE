@@ -170,6 +170,8 @@ public final class Schema {
         "INSERT OR REPLACE INTO item_tags (tag_id, item_id) VALUES (?, ?)";
     public static final String UPSERT_TRANSLATION =
         "INSERT OR REPLACE INTO translations (key, lang, value) VALUES (?, ?, ?)";
+    public static final String UPSERT_ITEM_RESOURCE =
+        "INSERT OR REPLACE INTO item_resources (item_id, resource_type, namespace, path, content) VALUES (?, ?, ?, ?, ?)";
     public static final String UPSERT_RECIPE = """
         INSERT OR REPLACE INTO recipes (
           recipe_id, type_id, modid, hash, raw_json, unparsed, "group"

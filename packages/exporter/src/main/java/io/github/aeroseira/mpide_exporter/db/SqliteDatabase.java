@@ -2,6 +2,7 @@ package io.github.aeroseira.mpide_exporter.db;
 
 import com.mojang.logging.LogUtils;
 import io.github.aeroseira.mpide_exporter.source.ItemRegistrySource;
+import io.github.aeroseira.mpide_exporter.source.ItemResourceSource;
 import io.github.aeroseira.mpide_exporter.source.ItemTagSource;
 import io.github.aeroseira.mpide_exporter.source.ModListSource;
 import io.github.aeroseira.mpide_exporter.source.RecipeSource;
@@ -146,6 +147,22 @@ public final class SqliteDatabase implements AutoCloseable {
                     ps.setString(1, row.key());
                     ps.setString(2, row.lang());
                     ps.setString(3, row.value());
+                    ps.addBatch();
+                }
+                ps.executeBatch();
+            }
+        });
+    }
+
+    public void writeItemResources(List<ItemResourceSource.ItemResourceRow> rows) throws SQLException {
+        inTransaction(() -> {
+            try (PreparedStatement ps = connection.prepareStatement(Schema.UPSERT_ITEM_RESOURCE)) {
+                for (ItemResourceSource.ItemResourceRow row : rows) {
+                    ps.setString(1, row.itemId());
+                    ps.setString(2, row.resourceType());
+                    ps.setString(3, row.namespace());
+                    ps.setString(4, row.path());
+                    ps.setString(5, row.content());
                     ps.addBatch();
                 }
                 ps.executeBatch();

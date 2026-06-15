@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import io.github.aeroseira.mpide_exporter.ModpackIdeExporter;
 import io.github.aeroseira.mpide_exporter.db.SqliteDatabase;
 import io.github.aeroseira.mpide_exporter.source.ItemRegistrySource;
+import io.github.aeroseira.mpide_exporter.source.ItemResourceSource;
 import io.github.aeroseira.mpide_exporter.source.ItemTagSource;
 import io.github.aeroseira.mpide_exporter.source.ModListSource;
 import io.github.aeroseira.mpide_exporter.source.RecipeSource;
@@ -96,7 +97,7 @@ public final class ExporterService {
                 RecipeSource.capture(server)
             );
         });
-        // TODO(契约 §7): resources/recipe_views。
+        // TODO(契约 §7): recipe_views。
         //   各 source 见 source/ 包，逐表对照 docs/exporter-contract-v1.md。
 
         // ── 阶段 2：worker 线程序列化 + 写库 ──────────────────────────
@@ -105,6 +106,9 @@ public final class ExporterService {
 
         progress.accept("读取语言资源…");
         List<TranslationSource.TranslationRow> translations = TranslationSource.capture(server);
+
+        progress.accept("导出物品贴图…");
+        List<ItemResourceSource.ItemResourceRow> itemResources = ItemResourceSource.capture(server);
 
         progress.accept("写入数据库…");
         try (SqliteDatabase db = new SqliteDatabase(tmp)) {
@@ -115,7 +119,8 @@ public final class ExporterService {
             db.writeItemTags(snapshot.itemTags());
             db.writeRecipes(recipes);
             db.writeTranslations(translations);
-            // TODO: db.writeItemResources(...) / writeRecipeViews(...)
+            db.writeItemResources(itemResources);
+            // TODO: writeRecipeViews(...)
         }
         deleteSqliteSidecars(tmp);
 

@@ -7,9 +7,9 @@
  *  - ItemTagSource        → item_tags（已解析的最终成员）
  *  - RecipeSource         → recipes + recipe_inputs + recipe_outputs（结构化，组件化）
  *  - TranslationSource    → translations
+ *  - ItemResourceSource   → item_resources（物品贴图，离线提取）
  *
  * 待实现：
- *  - ItemResourceSource   → item_resources（贴图首选导出路径，离线提取）
  *  - RecipeViewSource     → recipe_views（客户端 / JEI，@OnlyIn(Dist.CLIENT)）
  *
  * 纪律：采集只在 server thread 做最小快照；可浅引用已冻结/不可变的注册表上下文，
