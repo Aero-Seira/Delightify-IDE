@@ -378,3 +378,55 @@ T4–T6 已实现并通过 `typecheck/build/smoke:mvp0/smoke:m2:blast-radius/smo
 ### 边界
 - 不碰 emitter 发射 / 不实现 scale 重建 / JEI client_script / tag-replace `#` 前缀（全归输出层）。
 - 不重写 schema/importer/validator/unify/ConversionTool；不接 LLM；不动 exporter Java。
+
+> **T8/T9 状态**：✅ 已完成并提交（`c207ad6`）。至此引擎层 M2 动作语义全齐（5 原语 + scale/hide 语义 + 3 复合），全部停在后端无关 IR。
+
+---
+
+## 15. 非 Agent 完整化 · 阶段一：引擎可用化（2026-06-15 决定）
+
+> 方向（用户决定）：先完成项目的**非 Agent 功能**，再叠加 M4 Agent/LLM。范围 = 数据层（✅）+ 引擎层（✅ IR）+ **引擎可用化（接 IPC + 动作工作台 UI，本节）** + 输出层（等 UI 可用后再定技术栈）+ 只读浏览强化。RecipeEditor 编辑功能本轮**不做**（只强化只读查看）。LLM/向量检索排除。
+
+### 现状（审计 c207ad6，代码为准）
+- ✅ 已接通 UI↔IPC↔后端：项目管理 / 数据导入 / 物品浏览 / 配方浏览 / **Unify 工作台(ConversionTool)** / 调试。
+- ❌ 头号缺口：M2 引擎（6 原语 + 3 复合 + blast-radius）**全无 IPC、无 UI**，app 里点不到。
+- 🟡 死通道：`RECIPE_EDIT_*`、`EXPORT_DATAPACK`（有常量无 handler）。
+- ⛔ 输出层 tech-blocked：KubeJS emitter 现可发射 replace_input/remove/retag/rename 四种；scale/hide/datapack 待技术栈。
+- 🤖 排除：`services/llm/` 已实现但孤立（M4 才接）。
+
+### 集成事实（已核对）
+- IPC handler 吃 `projectPath`；`createProjectDbClient(path.join(projectPath,'.delightify','project.db'))` 返回带缓存的 libsql `Client`（`database/client.ts:31`），引擎 `plan*` 正好吃 `Client` → dispatch 直接桥接，零引擎改动。
+- ConversionTool 已有决策清单 + diff 渲染组件，可被动作工作台复用。
+
+### NA1：引擎 dispatch + `engine:dry-run` IPC（后端，可 smoke）
+- `packages/shared/src/types/engine.ts` 增 IPC 边界类型（避免把 main 的 BlastRadius 等泄到 renderer）：
+  - `EngineActionRequest { action: ActionRequestAction; params: Record<string, unknown> }`
+  - `EngineRiskSummary { severity: 'info'|'low'|'medium'|'high'; mustDefer: boolean; reasons: string[] }`
+  - `EngineBlastSummary { target?; inputRefs; outputRefs; tagConnected; relatedUnparsed; isBlock; crossMod }`（计数 + 必要清单，渲染够用即可）
+  - `EngineScaleClassification { operationId; recipeId; field; decision; baseline?; computed?; reason }`
+  - `EngineDryRunResult { action; operations: ChangeOperation[]; changeSetPreview: ChangeOperation[]; deferredSuggestions: DeferredSuggestion[]; scaleClassifications?: EngineScaleClassification[]; risk: EngineRiskSummary; blast: EngineBlastSummary[] }`
+- 新增 `packages/main/src/services/engine/dispatch.ts`：`planEngineAction(projectPath, req: EngineActionRequest): Promise<EngineDryRunResult>`；开 db→按 action 派发到对应 `plan*`→把 main 富类型**归一映射**为 shared summary；`changeSetPreview = operations.filter(includedInChangeSet)`。
+- 新增 `packages/main/src/ipc/engine.ts`：注册 `engine:dry-run`（吃 projectPath + EngineActionRequest），register 进 `ipc/index.ts`；`shared/constants/ipc.ts` 加 channel。
+- renderer `ipc/index.ts` 加 `engineDryRun(...)` + `mock.ts` 假实现。
+- 验收 smoke `scripts/smoke-engine-dispatch.mjs`（`smoke:engine-dispatch`）：fixture 上对 9 个 action 各跑一次 planEngineAction，断言归一结果形状（operations/risk/blast/changeSetPreview）。
+- 验证：`pnpm typecheck && pnpm build && pnpm smoke:engine-dispatch`。
+
+### NA2：`engine:blast` 只读 IPC（喂只读浏览强化）
+- `ipc/engine.ts` 加 `engine:blast`（吃 projectPath + `{kind:'item'|'tag'; ref}`）→ computeBlastRadius → EngineBlastSummary；channel + ElectronAPI + mock。
+- 验证：`pnpm typecheck && pnpm build`。
+
+### NA3：动作工作台 UI（增量，不重写 ConversionTool）
+- 新增 `packages/renderer/src/pages/ActionWorkbench/`（route + sidebar 入口）：action 选择器 + 各 action 参数表单（确定性 ActionRequest，复用 items/recipes/tags 查询做选择器）→ `engineDryRun` → 决策台账 + blast + diff（复用 ConversionTool 组件）→ 确认 deferred（confirmedOperationIds）→ 导出（复用 `export:kubejs`，仅 changeSetPreview 入文件）→ 撤销。
+- scale/hide 及未确认项在台账显示「输出层待定 / 需确认」，不进 changeSet。
+- 验证：`pnpm typecheck && pnpm build` + 手动跑 app（仓库无 UI 测试，按惯例 typecheck/build + 运行验证）。
+
+### NA4：只读浏览强化
+- RecipeBrowser / ItemBrowser 详情面板用 `engine:blast` 展示「该物品/配方被谁引用、tag 连带、是否方块、跨 mod」。RecipeEditor 不做编辑，仅可改为只读详情或保留占位。
+- 验证：`pnpm typecheck && pnpm build` + 手动跑 app。
+
+### NA5：验证 + 死通道收尾
+- 端到端跑通工作台；`RECIPE_EDIT_*`（编辑本轮不做）与 `EXPORT_DATAPACK`（输出层未定）→ 标注「reserved / 输出层」或移除，消除「声明未实现」。
+
+### 顺序与边界
+- 顺序：NA1→NA2（后端，smoke 验）→ NA3→NA4（UI，手动验）→ NA5。
+- 不重写 schema/importer/validator/unify/emitter 发射/ConversionTool（仅复用其组件）；不接 LLM；不碰输出层发射（scale/JEI/datapack）；不实现配方编辑。
