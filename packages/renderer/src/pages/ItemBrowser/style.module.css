@@ -564,100 +564,6 @@
   margin: 4px 0;
 }
 
-/* ========== 加载状态 ========== */
-
-.loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  padding: 60px;
-  color: #868e96;
-}
-
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid #e9ecef;
-  border-top-color: #4dabf7;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* ========== 错误状态 ========== */
-
-.error {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  padding: 60px;
-  color: #fa5252;
-}
-
-.error button {
-  padding: 8px 16px;
-  border: 1px solid currentColor;
-  background: transparent;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.error button:hover {
-  background: rgba(250, 82, 82, 0.1);
-}
-
-/* ========== 空状态 ========== */
-
-.empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  padding: 60px;
-  color: #868e96;
-}
-
-.empty svg {
-  opacity: 0.5;
-}
-
-.empty p {
-  margin: 0;
-  font-size: 14px;
-}
-
-.empty button {
-  padding: 8px 16px;
-  border: 1px solid #dee2e6;
-  background: white;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  color: #495057;
-}
-
-.empty button:hover {
-  border-color: #4dabf7;
-  color: #1971c2;
-}
-
-.emptyHint {
-  font-size: 13px;
-  color: #adb5bd;
-  margin-top: 8px;
-}
-
 /* ========== 分页 ========== */
 
 .pagination {
@@ -969,21 +875,6 @@
     background: #3d3d3d;
     border-color: #4d4d4d;
     color: #adb5bd;
-  }
-
-  .empty button {
-    background: #3d3d3d;
-    border-color: #4d4d4d;
-    color: #adb5bd;
-  }
-
-  .empty button:hover {
-    border-color: #4dabf7;
-    color: #74c0fc;
-  }
-
-  .emptyHint {
-    color: #868e96;
   }
 
   .content::-webkit-scrollbar-thumb {

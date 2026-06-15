@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { useI18n } from '../../i18n';
 import { useProjectStore } from '../../store/projectStore';
 import CreateProjectDialog from '../../components/CreateProjectDialog';
+import { EmptyState, LoadingState } from '../../components/StateViews';
 import type { Project, ModLoader } from '@delightify/shared';
 import styles from './style.module.css';
 
@@ -518,15 +519,13 @@ export default function ProjectManagerPage(): React.ReactElement {
       {/* 项目列表 */}
       <div className={viewMode === 'grid' ? styles.projectGrid : styles.projectList}>
         {isLoadingProjects ? (
-          <div className={styles.loadingState}>
-            <div className={styles.spinner} />
-            <p>{t('common.loading')}</p>
-          </div>
+          <LoadingState label={t('common.loading')} />
         ) : filteredProjects.length === 0 ? (
-          <div className={styles.emptyState}>
-            <FolderIcon />
-            <h3>{t('projectManager.noProjects')}</h3>
-            <p>{searchQuery ? t('projectManager.noSearchResults') : t('projectManager.createFirst')}</p>
+          <EmptyState
+            icon={<FolderIcon />}
+            title={t('projectManager.noProjects')}
+            description={searchQuery ? t('projectManager.noSearchResults') : t('projectManager.createFirst')}
+          >
             {!searchQuery && (
               <button 
                 className={styles.createButton}
@@ -536,7 +535,7 @@ export default function ProjectManagerPage(): React.ReactElement {
                 {t('projectManager.createProject')}
               </button>
             )}
-          </div>
+          </EmptyState>
         ) : (
           filteredProjects.map(project => (
             <ProjectCard
