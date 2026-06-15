@@ -5,7 +5,7 @@
   justify-content: center;
   gap: 16px;
   padding: 40px;
-  color: #fa5252;
+  color: var(--error);
   text-align: center;
   min-height: 300px;
 }
@@ -19,22 +19,22 @@
 .errorMessage {
   margin: 0;
   font-size: 14px;
-  color: #868e96;
+  color: var(--text-secondary);
   max-width: 400px;
   word-break: break-word;
 }
 
 .retryButton {
   padding: 10px 24px;
-  border: 1px solid #fa5252;
+  border: 1px solid var(--error);
   background: transparent;
   border-radius: 8px;
   cursor: pointer;
   font-size: 14px;
-  color: #fa5252;
+  color: var(--error);
   transition: all 0.2s ease;
 }
 
 .retryButton:hover {
-  background: rgba(250, 82, 82, 0.1);
+  background: var(--error-bg);
 }

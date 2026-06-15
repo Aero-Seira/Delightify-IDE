@@ -17,7 +17,7 @@
   justify-content: space-between;
   gap: 16px;
   padding: 12px 16px;
-  background: #f8f9fa;
+  background: var(--bg-secondary);
   border-radius: 10px;
   flex-shrink: 0;
 }
@@ -44,20 +44,20 @@
   width: 400px;
   min-width: 280px;
   max-width: 500px;
-  background: white;
-  border: 1px solid #dee2e6;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
   border-radius: 10px;
   transition: all 0.2s ease;
   overflow: hidden;
 }
 
 .searchBar:hover {
-  border-color: #adb5bd;
+  border-color: var(--text-tertiary);
 }
 
 .searchBar.focused {
-  border-color: #4dabf7;
-  box-shadow: 0 0 0 3px rgba(77, 171, 247, 0.15);
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px var(--accent-light);
 }
 
 /* 搜索字段选择器 */
@@ -68,9 +68,9 @@
 .searchFieldSelector select {
   padding: 9px 8px 9px 12px;
   border: none;
-  background: #f8f9fa;
+  background: var(--bg-secondary);
   font-size: 13px;
-  color: #495057;
+  color: var(--text-secondary);
   cursor: pointer;
   outline: none;
   appearance: none;
@@ -82,14 +82,14 @@
 }
 
 .searchFieldSelector select:hover {
-  background-color: #e9ecef;
+  background-color: var(--bg-tertiary);
 }
 
 /* 分隔线 */
 .searchDivider {
   width: 1px;
   height: 24px;
-  background: #dee2e6;
+  background: var(--border);
   flex-shrink: 0;
 }
 
@@ -104,7 +104,7 @@
 }
 
 .searchInputWrapper svg {
-  color: #868e96;
+  color: var(--text-secondary);
   flex-shrink: 0;
 }
 
@@ -115,12 +115,12 @@
   background: none;
   font-size: 14px;
   outline: none;
-  color: #212529;
+  color: var(--text-primary);
   padding: 9px 0;
 }
 
 .searchInputWrapper input::placeholder {
-  color: #adb5bd;
+  color: var(--text-tertiary);
 }
 
 .clearSearch {
@@ -130,10 +130,10 @@
   width: 18px;
   height: 18px;
   border: none;
-  background: #e9ecef;
+  background: var(--bg-tertiary);
   border-radius: 50%;
   cursor: pointer;
-  color: #868e96;
+  color: var(--text-secondary);
   font-size: 12px;
   line-height: 1;
   padding: 0;
@@ -141,8 +141,8 @@
 }
 
 .clearSearch:hover {
-  background: #dee2e6;
-  color: #495057;
+  background: var(--border);
+  color: var(--text-secondary);
 }
 
 /* 过滤下拉框 */
@@ -153,17 +153,17 @@
 .languageSelect {
   width: 112px;
   padding: 8px 28px 8px 12px;
-  border: 1px solid #dee2e6;
+  border: 1px solid var(--border);
   border-radius: 8px;
-  background: white;
-  color: #495057;
+  background: var(--bg-primary);
+  color: var(--text-secondary);
   font-size: 13px;
   cursor: pointer;
   outline: none;
 }
 
 .languageSelect:hover {
-  border-color: #adb5bd;
+  border-color: var(--text-tertiary);
 }
 
 /* 清除过滤按钮 */
@@ -172,19 +172,19 @@
   align-items: center;
   gap: 4px;
   padding: 8px 12px;
-  border: 1px solid #dee2e6;
-  background: white;
+  border: 1px solid var(--border);
+  background: var(--bg-primary);
   border-radius: 8px;
   cursor: pointer;
   font-size: 13px;
-  color: #868e96;
+  color: var(--text-secondary);
   white-space: nowrap;
 }
 
 .clearFiltersBtn:hover {
-  border-color: #fa5252;
-  color: #fa5252;
-  background: #fff5f5;
+  border-color: var(--error);
+  color: var(--error);
+  background: var(--error-bg);
 }
 
 /* 视图模式切换 */
@@ -192,8 +192,8 @@
   display: flex;
   gap: 2px;
   padding: 3px;
-  background: white;
-  border: 1px solid #dee2e6;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
   border-radius: 8px;
 }
 
@@ -203,7 +203,7 @@
   background: transparent;
   border-radius: 6px;
   cursor: pointer;
-  color: #868e96;
+  color: var(--text-secondary);
   transition: all 0.15s ease;
   display: flex;
   align-items: center;
@@ -211,13 +211,13 @@
 }
 
 .viewModeBtn:hover {
-  background: #f1f3f5;
-  color: #495057;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
 }
 
 .viewModeBtn.active {
-  background: #e7f5ff;
-  color: #1971c2;
+  background: var(--accent-light);
+  color: var(--accent-hover);
 }
 
 /* 图标大小切换 */
@@ -225,8 +225,8 @@
   display: flex;
   gap: 2px;
   padding: 3px;
-  background: white;
-  border: 1px solid #dee2e6;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
   border-radius: 8px;
 }
 
@@ -236,20 +236,20 @@
   background: transparent;
   border-radius: 6px;
   cursor: pointer;
-  color: #868e96;
+  color: var(--text-secondary);
   font-size: 12px;
   font-weight: 500;
   transition: all 0.15s ease;
 }
 
 .sizeBtn:hover {
-  background: #f1f3f5;
-  color: #495057;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
 }
 
 .sizeBtn.active {
-  background: #e7f5ff;
-  color: #1971c2;
+  background: var(--accent-light);
+  color: var(--accent-hover);
 }
 
 /* 多选模式按钮 */
@@ -259,23 +259,23 @@
   justify-content: center;
   gap: 4px;
   padding: 6px 10px;
-  border: 1px solid #dee2e6;
-  background: white;
+  border: 1px solid var(--border);
+  background: var(--bg-primary);
   border-radius: 8px;
   cursor: pointer;
-  color: #868e96;
+  color: var(--text-secondary);
   transition: all 0.15s ease;
 }
 
 .multiSelectBtn:hover {
-  border-color: #4dabf7;
-  color: #4dabf7;
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
 }
 
 .multiSelectBtn.active {
-  background: #e7f5ff;
-  border-color: #4dabf7;
-  color: #1971c2;
+  background: var(--accent-light);
+  border-color: var(--accent-primary);
+  color: var(--accent-hover);
 }
 
 .multiSelectBtn span {
@@ -283,8 +283,8 @@
   font-weight: 600;
   min-width: 16px;
   height: 16px;
-  background: #1971c2;
-  color: white;
+  background: var(--accent-hover);
+  color: var(--text-inverse);
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -299,7 +299,7 @@
   justify-content: space-between;
   gap: 16px;
   padding: 10px 16px;
-  background: #f8f9fa;
+  background: var(--bg-secondary);
   border-radius: 10px;
   margin: 8px 0;
   flex-shrink: 0;
@@ -314,12 +314,12 @@
 
 .selectedCount {
   font-size: 13px;
-  color: #495057;
+  color: var(--text-secondary);
   margin-right: 8px;
 }
 
 .selectedCount strong {
-  color: #1971c2;
+  color: var(--accent-hover);
   font-weight: 600;
 }
 
@@ -328,18 +328,18 @@
   align-items: center;
   gap: 4px;
   padding: 6px 12px;
-  border: 1px solid #dee2e6;
-  background: white;
+  border: 1px solid var(--border);
+  background: var(--bg-primary);
   border-radius: 6px;
   cursor: pointer;
   font-size: 12px;
-  color: #495057;
+  color: var(--text-secondary);
   transition: all 0.15s ease;
 }
 
 .actionBtn:hover:not(:disabled) {
-  border-color: #4dabf7;
-  color: #1971c2;
+  border-color: var(--accent-primary);
+  color: var(--accent-hover);
 }
 
 .actionBtn:disabled {
@@ -348,13 +348,13 @@
 }
 
 .actionBtn.primary {
-  background: #1971c2;
-  border-color: #1971c2;
-  color: white;
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  color: var(--text-inverse);
 }
 
 .actionBtn.primary:hover:not(:disabled) {
-  background: #1864ab;
+  background: var(--accent-hover);
 }
 
 /* 已选列表面板 */
@@ -364,10 +364,10 @@
   bottom: 80px;
   width: 320px;
   max-height: 400px;
-  background: white;
+  background: var(--bg-primary);
   border-radius: 12px;
-  border: 1px solid #dee2e6;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
   z-index: 100;
   display: flex;
   flex-direction: column;
@@ -379,15 +379,15 @@
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  border-bottom: 1px solid #e9ecef;
-  background: #f8f9fa;
+  border-bottom: 1px solid var(--bg-tertiary);
+  background: var(--bg-secondary);
 }
 
 .selectedPanelHeader h4 {
   margin: 0;
   font-size: 14px;
   font-weight: 600;
-  color: #495057;
+  color: var(--text-secondary);
 }
 
 .closePanelBtn {
@@ -397,7 +397,7 @@
   background: transparent;
   border-radius: 6px;
   cursor: pointer;
-  color: #868e96;
+  color: var(--text-secondary);
   font-size: 18px;
   line-height: 1;
   display: flex;
@@ -406,8 +406,8 @@
 }
 
 .closePanelBtn:hover {
-  background: #e9ecef;
-  color: #495057;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
 }
 
 .selectedList {
@@ -418,7 +418,7 @@
 
 .emptyText {
   text-align: center;
-  color: #868e96;
+  color: var(--text-secondary);
   font-size: 13px;
   padding: 20px;
 }
@@ -429,14 +429,14 @@
   justify-content: space-between;
   gap: 8px;
   padding: 8px 10px;
-  background: #f8f9fa;
+  background: var(--bg-secondary);
   border-radius: 6px;
   margin-bottom: 4px;
 }
 
 .selectedItem code {
   font-size: 11px;
-  color: #495057;
+  color: var(--text-secondary);
   font-family: 'SF Mono', Monaco, monospace;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -447,10 +447,10 @@
   width: 18px;
   height: 18px;
   border: none;
-  background: #e9ecef;
+  background: var(--bg-tertiary);
   border-radius: 4px;
   cursor: pointer;
-  color: #868e96;
+  color: var(--text-secondary);
   font-size: 12px;
   display: flex;
   align-items: center;
@@ -459,8 +459,8 @@
 }
 
 .removeItemBtn:hover {
-  background: #fa5252;
-  color: white;
+  background: var(--error);
+  color: var(--text-inverse);
 }
 
 /* ========== 统计信息 ========== */
@@ -472,13 +472,13 @@
   flex-wrap: wrap;
   padding: 8px 0;
   font-size: 13px;
-  color: #6c757d;
+  color: var(--text-secondary);
   flex-shrink: 0;
 }
 
 .count {
   font-weight: 500;
-  color: #495057;
+  color: var(--text-secondary);
 }
 
 .filterTag {
@@ -486,10 +486,10 @@
   align-items: center;
   gap: 6px;
   padding: 4px 10px;
-  background: #e7f5ff;
+  background: var(--accent-light);
   border-radius: 20px;
   font-size: 12px;
-  color: #1971c2;
+  color: var(--accent-hover);
 }
 
 .filterTag strong {
@@ -503,17 +503,17 @@
   width: 14px;
   height: 14px;
   border: none;
-  background: rgba(25, 113, 194, 0.15);
+  background: var(--accent-light);
   border-radius: 50%;
   cursor: pointer;
-  color: #1971c2;
+  color: var(--accent-hover);
   font-size: 10px;
   line-height: 1;
   padding: 0;
 }
 
 .filterTag button:hover {
-  background: rgba(25, 113, 194, 0.3);
+  background: var(--accent-light);
 }
 
 /* ========== 内容区域 ========== */
@@ -572,7 +572,7 @@
   justify-content: space-between;
   gap: 16px;
   padding: 12px 16px;
-  background: #f8f9fa;
+  background: var(--bg-secondary);
   border-radius: 10px;
   flex-shrink: 0;
   flex-wrap: wrap;
@@ -580,7 +580,7 @@
 
 .pageInfo {
   font-size: 14px;
-  color: #6c757d;
+  color: var(--text-secondary);
   white-space: nowrap;
 }
 
@@ -591,19 +591,19 @@
 
 .pageButtons button {
   padding: 8px 12px;
-  border: 1px solid #dee2e6;
-  background: white;
+  border: 1px solid var(--border);
+  background: var(--bg-primary);
   border-radius: 6px;
   cursor: pointer;
   font-size: 13px;
-  color: #495057;
+  color: var(--text-secondary);
   transition: all 0.15s ease;
   min-width: 36px;
 }
 
 .pageButtons button:hover:not(:disabled) {
-  border-color: #4dabf7;
-  color: #1971c2;
+  border-color: var(--accent-primary);
+  color: var(--accent-hover);
 }
 
 .pageButtons button:disabled {
@@ -612,18 +612,18 @@
 }
 
 .pageButtons button.activePage {
-  background: #4dabf7;
-  border-color: #4dabf7;
-  color: white;
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: var(--text-inverse);
 }
 
 .pageSizeSelect {
   padding: 8px 12px;
-  border: 1px solid #dee2e6;
+  border: 1px solid var(--border);
   border-radius: 8px;
-  background: white;
+  background: var(--bg-primary);
   font-size: 13px;
-  color: #495057;
+  color: var(--text-secondary);
   cursor: pointer;
 }
 
@@ -638,252 +638,12 @@
 }
 
 .content::-webkit-scrollbar-thumb {
-  background: #ced4da;
+  background: var(--border-dark);
   border-radius: 3px;
 }
 
 .content::-webkit-scrollbar-thumb:hover {
-  background: #adb5bd;
-}
-
-/* ========== 暗色主题适配 ========== */
-@media (prefers-color-scheme: dark) {
-  .container {
-    background: #1a1a1a;
-  }
-
-  .toolbar {
-    background: #2d2d2d;
-  }
-
-  .toolbarLeft,
-  .toolbarRight {
-    /* inherit */
-  }
-
-  .searchBox {
-    background: #3d3d3d;
-    border-color: #4d4d4d;
-  }
-
-  .searchBox:hover {
-    border-color: #5d5d5d;
-  }
-
-  .searchBox.focused {
-    border-color: #4dabf7;
-    box-shadow: 0 0 0 3px rgba(77, 171, 247, 0.2);
-  }
-
-  .searchBox input {
-    color: #f8f9fa;
-  }
-
-  .searchBox input::placeholder {
-    color: #868e96;
-  }
-
-  .clearSearch {
-    background: #4d4d4d;
-    color: #868e96;
-  }
-
-  .clearSearch:hover {
-    background: #5d5d5d;
-    color: #adb5bd;
-  }
-
-  .filterSelect,
-  .languageSelect {
-    background: #3d3d3d;
-    border-color: #4d4d4d;
-    color: #adb5bd;
-  }
-
-  .clearFiltersBtn {
-    background: #3d3d3d;
-    border-color: #4d4d4d;
-    color: #868e96;
-  }
-
-  .clearFiltersBtn:hover {
-    border-color: #fa5252;
-    color: #fa5252;
-    background: rgba(250, 82, 82, 0.1);
-  }
-
-  .viewModeToggle,
-  .sizeToggle {
-    background: #3d3d3d;
-    border-color: #4d4d4d;
-  }
-
-  .viewModeBtn:hover,
-  .sizeBtn:hover {
-    background: #4d4d4d;
-    color: #adb5bd;
-  }
-
-  .viewModeBtn.active,
-  .sizeBtn.active {
-    background: rgba(77, 171, 247, 0.2);
-    color: #74c0fc;
-  }
-
-  /* 多选暗色主题 */
-  .multiSelectBtn {
-    background: #3d3d3d;
-    border-color: #4d4d4d;
-    color: #adb5bd;
-  }
-
-  .multiSelectBtn:hover {
-    border-color: #4dabf7;
-    color: #74c0fc;
-  }
-
-  .multiSelectBtn.active {
-    background: rgba(77, 171, 247, 0.2);
-    border-color: #4dabf7;
-    color: #74c0fc;
-  }
-
-  .multiSelectToolbar {
-    background: #2d2d2d;
-    border: 1px solid #3d3d3d;
-  }
-
-  .selectedCount {
-    color: #ced4da;
-  }
-
-  .actionBtn {
-    background: #3d3d3d;
-    border-color: #4d4d4d;
-    color: #adb5bd;
-  }
-
-  .actionBtn:hover:not(:disabled) {
-    border-color: #4dabf7;
-    color: #74c0fc;
-  }
-
-  .actionBtn.primary {
-    background: #4dabf7;
-    border-color: #4dabf7;
-    color: #1a1a1a;
-  }
-
-  .actionBtn.primary:hover:not(:disabled) {
-    background: #74c0fc;
-  }
-
-  .selectedPanel {
-    background: #2d2d2d;
-    border-color: #4d4d4d;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-  }
-
-  .selectedPanelHeader {
-    background: #3d3d3d;
-    border-bottom-color: #4d4d4d;
-  }
-
-  .selectedPanelHeader h4 {
-    color: #ced4da;
-  }
-
-  .closePanelBtn {
-    color: #868e96;
-  }
-
-  .closePanelBtn:hover {
-    background: #4d4d4d;
-    color: #adb5bd;
-  }
-
-  .emptyText {
-    color: #868e96;
-  }
-
-  .selectedItem {
-    background: #3d3d3d;
-  }
-
-  .selectedItem code {
-    color: #adb5bd;
-  }
-
-  .removeItemBtn {
-    background: #4d4d4d;
-    color: #868e96;
-  }
-
-  .removeItemBtn:hover {
-    background: #fa5252;
-    color: white;
-  }
-
-  .stats {
-    color: #adb5bd;
-  }
-
-  .count {
-    color: #ced4da;
-  }
-
-  .filterTag {
-    background: rgba(77, 171, 247, 0.15);
-    color: #74c0fc;
-  }
-
-  .filterTag button {
-    background: rgba(77, 171, 247, 0.2);
-    color: #74c0fc;
-  }
-
-  .filterTag button:hover {
-    background: rgba(77, 171, 247, 0.3);
-  }
-
-  .pagination {
-    background: #2d2d2d;
-  }
-
-  .pageInfo {
-    color: #adb5bd;
-  }
-
-  .pageButtons button {
-    background: #3d3d3d;
-    border-color: #4d4d4d;
-    color: #adb5bd;
-  }
-
-  .pageButtons button:hover:not(:disabled) {
-    border-color: #4dabf7;
-    color: #74c0fc;
-  }
-
-  .pageButtons button.activePage {
-    background: #4dabf7;
-    border-color: #4dabf7;
-    color: white;
-  }
-
-  .pageSizeSelect {
-    background: #3d3d3d;
-    border-color: #4d4d4d;
-    color: #adb5bd;
-  }
-
-  .content::-webkit-scrollbar-thumb {
-    background: #4d4d4d;
-  }
-
-  .content::-webkit-scrollbar-thumb:hover {
-    background: #5d5d5d;
-  }
+  background: var(--text-tertiary);
 }
 
 /* ========== 移动端适配 ========== */
@@ -898,7 +658,7 @@
     flex-wrap: wrap;
   }
 
-  .searchBox {
+  .searchBar {
     width: 100%;
     max-width: none;
   }

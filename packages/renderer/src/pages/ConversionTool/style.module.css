@@ -616,8 +616,8 @@
   font-size: var(--font-size-sm);
 }
 
-[data-theme='dark'] .dangerButton:hover:not(:disabled) {
-  background: rgba(248, 113, 113, 0.18);
+[data-theme="dark"] .dangerButton:hover:not(:disabled) {
+  background: var(--error-bg);
 }
 
 @media (max-width: 1080px) {
