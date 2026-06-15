@@ -25,6 +25,8 @@
     "smoke:m2:constrain": "pnpm build && node scripts/smoke-m2-constrain.mjs",
     "smoke:m2:differentiate": "pnpm build && node scripts/smoke-m2-differentiate.mjs",
     "smoke:m2:harmonize": "pnpm build && node scripts/smoke-m2-harmonize.mjs",
+    "smoke:m2:scale": "pnpm build && node scripts/smoke-m2-scale.mjs",
+    "smoke:m2:hide": "pnpm build && node scripts/smoke-m2-hide.mjs",
     "exporter:build": "node scripts/run-gradle.mjs packages/exporter build",
     "exporter:compile": "node scripts/run-gradle.mjs packages/exporter compileJava",
     "exporter:runClient": "node scripts/run-gradle.mjs packages/exporter runClient",
