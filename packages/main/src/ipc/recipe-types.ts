@@ -11,7 +11,6 @@ import {
   getRecipeType,
   getRecipeTypesByMod,
   clearRecipeTypeCache,
-  getRecipeTypeStats,
 } from '../services/recipe-types/loader';
 
 export function registerRecipeTypesHandlers(): void {
@@ -65,17 +64,4 @@ export function registerRecipeTypesHandlers(): void {
     }
   });
 
-  // RECIPE_TYPES_GET_STATS: 获取统计信息
-  ipcMain.handle('recipe-types:get-stats', async (): Promise<IpcResponse<{
-    total: number;
-    byMod: Record<string, number>;
-  }>> => {
-    try {
-      const stats = await getRecipeTypeStats();
-      return { success: true, data: stats };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : '获取失败';
-      return { success: false, error: errorMessage };
-    }
-  });
 }

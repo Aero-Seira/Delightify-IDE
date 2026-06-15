@@ -243,7 +243,7 @@ export function registerItemsHandlers(): void {
   });
 
   // ITEMS_GET_TEXTURE: 获取物品纹理（base64）
-  ipcMain.handle('items:get-texture', async (
+  ipcMain.handle(IPC_CHANNELS.ITEMS_GET_TEXTURE, async (
     _event,
     projectPath: string,
     itemId: string

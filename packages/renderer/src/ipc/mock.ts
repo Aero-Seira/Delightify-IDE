@@ -5,8 +5,12 @@
 
 import type { 
   Project, Item, Recipe, RecipeDetail, ModDataImportProgress,
+  CreateProjectData,
+  UpdateProjectData,
   ItemQueryParams, ItemQueryResult,
   RecipeQueryParams,
+  ModDataImportResult,
+  ValidationResult,
   UnifyDryRunParams,
   UnifyDryRunResult,
   UnifyQueryParams,
@@ -19,6 +23,7 @@ import type {
   KubeJsExportResult,
   KubeJsRevertResult,
 } from '@delightify/shared';
+import type { ElectronAPI } from './index';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -237,7 +242,7 @@ export const mockElectronAPI = {
     return { success: true, data: currentProject, canceled: !projectId };
   },
 
-  projectCreate: async (data: any) => {
+  projectCreate: async (data: CreateProjectData) => {
     await delay(500);
     const newProject: Project = {
       id: `proj_${Date.now()}`,
@@ -265,7 +270,7 @@ export const mockElectronAPI = {
     data: currentProject,
   }),
 
-  projectUpdate: async (projectId: string, data: any) => {
+  projectUpdate: async (projectId: string, data: UpdateProjectData) => {
     const project = mockProjects.find(p => p.id === projectId);
     if (project) {
       Object.assign(project, data, { updatedAt: new Date().toISOString() });
@@ -310,23 +315,34 @@ export const mockElectronAPI = {
     data: { filePath: '/mock/export.sqlite', found: true },
   }),
 
-  modDataValidate: async () => ({
+  modDataValidate: async (): Promise<{ success: boolean; data: ValidationResult }> => ({
     success: true,
     data: {
       valid: true,
+      version: '2.0',
+      schemaVersion: '2.0',
+      sourceKind: 'exporter_v1',
+      capabilities: { browse: true, mvp0Unify: true },
+      loader: 'forge',
+      mcVersion: '1.20.1',
       minecraftVersion: '1.20.1',
       forgeVersion: '47.4.18',
       modCount: 3,
+      itemCount: 100,
+      recipeCount: 50,
+      tagCount: 20,
     },
   }),
 
-  modDataImport: async () => {
+  modDataImport: async (): Promise<{ success: boolean; data: ModDataImportResult }> => {
     await delay(2000);
     return {
       success: true,
       data: {
         success: true,
         importId: 'mock_import_1',
+        sourceKind: 'exporter_v1',
+        capabilities: { browse: true, mvp0Unify: true },
         stats: { modCount: 3, itemCount: 100, recipeCount: 50, tagCount: 20 },
       },
     };
@@ -385,8 +401,14 @@ export const mockElectronAPI = {
     data: {
       itemId,
       modid: 'minecraft',
+      displayName: itemId.split(':').pop()?.replace(/_/g, ' '),
       tags: ['forge:items', 'minecraft:items'],
     },
+  }),
+
+  itemsGetTexture: async (): Promise<IpcResponse<{ base64: string; mimeType: string } | null>> => ({
+    success: true,
+    data: null,
   }),
 
   // ========== 标签和模组查询 ==========
@@ -426,7 +448,7 @@ export const mockElectronAPI = {
     ],
   }),
 
-  recipesGetDetail: async (_projectPath: string, recipeId: string): Promise<{ success: boolean; data: RecipeDetail }> => ({
+  recipesGetDetail: async (_projectPath: string, recipeId: string): Promise<IpcResponse<RecipeDetail | null>> => ({
     success: true,
     data: {
       recipe: {
@@ -689,6 +711,6 @@ export const mockElectronAPI = {
     success: true,
     data: { cleared: true },
   }),
-};
+} satisfies ElectronAPI;
 
 export const browserElectronAPI = mockElectronAPI;

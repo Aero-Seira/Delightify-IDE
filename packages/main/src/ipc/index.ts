@@ -5,6 +5,7 @@
  */
 
 import { ipcMain, shell } from 'electron';
+import { IPC_CHANNELS } from '@delightify/shared';
 import { registerProjectHandlers } from './project';
 import { registerModDataHandlers } from './mod-data';
 import { registerItemsHandlers } from './items';
@@ -27,7 +28,7 @@ export function registerAllHandlers(): void {
   registerDebugHandlers();
   
   // 通用工具处理器
-  ipcMain.handle('shell:open-external', async (_event, url: string) => {
+  ipcMain.handle(IPC_CHANNELS.SHELL_OPEN_EXTERNAL, async (_event, url: string) => {
     await shell.openExternal(url);
   });
   

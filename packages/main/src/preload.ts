@@ -5,11 +5,12 @@
  */
 
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
+import type { IPC_CHANNELS as SharedIpcChannels } from '@delightify/shared';
 
 console.log('[Preload] v2.1 starting...');
 
 const IPC_CHANNELS = {
-  // Project
+  // Project management
   PROJECT_LIST: 'project:list',
   PROJECT_OPEN: 'project:open',
   PROJECT_CREATE: 'project:create',
@@ -20,44 +21,65 @@ const IPC_CHANNELS = {
   PROJECT_SELECT_DATA_FILE: 'project:select-data-file',
   PROJECT_GET_STATS: 'project:get-stats',
 
-  // Mod data
+  // Mod data import
   MOD_DATA_DETECT: 'mod-data:detect',
   MOD_DATA_VALIDATE: 'mod-data:validate',
   MOD_DATA_IMPORT: 'mod-data:import',
   MOD_DATA_IMPORT_PROGRESS: 'mod-data:import:progress',
   MOD_DATA_GET_IMPORT_HISTORY: 'mod-data:get-import-history',
 
-  // Items
+  // Item queries
   ITEMS_QUERY: 'items:query',
   ITEMS_GET_BY_MOD: 'items:get-by-mod',
   ITEMS_GET_DETAIL: 'items:get-detail',
+  ITEMS_GET_TEXTURE: 'items:get-texture',
 
-  // Tags & Mods
+  // Tag & Mod queries
   TAGS_QUERY: 'tags:query',
   MODS_QUERY: 'mods:query',
 
-  // Recipes
+  // Recipe queries
   RECIPES_QUERY: 'recipes:query',
   RECIPES_GET_TYPES: 'recipes:get-types',
   RECIPES_GET_DETAIL: 'recipes:get-detail',
 
-  // Unify
+  // Unify queries
   UNIFY_QUERY: 'unify:query',
   UNIFY_DRY_RUN: 'unify:dry-run',
 
-  // Engine
+  // Engine queries
   ENGINE_DRY_RUN: 'engine:dry-run',
   ENGINE_BLAST: 'engine:blast',
+
+  // Recipe editing
+  // reserved：配方编辑二期
+  RECIPE_EDIT_CREATE: 'recipe-edit:create',
+  // reserved：配方编辑二期
+  RECIPE_EDIT_UPDATE: 'recipe-edit:update',
+  // reserved：配方编辑二期
+  RECIPE_EDIT_DELETE: 'recipe-edit:delete',
+  // reserved：配方编辑二期
+  RECIPE_EDIT_LIST: 'recipe-edit:list',
+
+  // Export
+  EXPORT_KUBEJS: 'export:kubejs',
+  EXPORT_KUBEJS_REVERT: 'export:kubejs:revert',
+  // reserved：输出层
+  EXPORT_DATAPACK: 'export:datapack',
+
+  // Shell
+  SHELL_OPEN_EXTERNAL: 'shell:open-external',
 
   // Debug
   DEBUG_DB_TABLES: 'debug:db-tables',
   DEBUG_DB_QUERY: 'debug:db-query',
   DEBUG_CLEAR_DATA: 'debug:clear-data',
-
-  // Export
-  EXPORT_KUBEJS: 'export:kubejs',
-  EXPORT_KUBEJS_REVERT: 'export:kubejs:revert',
 } as const;
+
+type AssertEqual<A, B> = [A] extends [B] ? ([B] extends [A] ? true : never) : never;
+// preload 本地 IPC_CHANNELS 必须与 @delightify/shared 双向全等，漂移即编译失败
+const _assertChannelsInSync: AssertEqual<typeof IPC_CHANNELS, typeof SharedIpcChannels> = true;
+void _assertChannelsInSync;
 
 contextBridge.exposeInMainWorld('electronAPI', {
   // ========== 项目管理 ==========
@@ -74,7 +96,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // ========== 物品纹理 ==========
   itemsGetTexture: (projectPath: string, itemId: string) => 
-    ipcRenderer.invoke('items:get-texture', projectPath, itemId),
+    ipcRenderer.invoke(IPC_CHANNELS.ITEMS_GET_TEXTURE, projectPath, itemId),
 
   // ========== Mod数据导入 ==========
   modDataDetect: (projectPath: string) => ipcRenderer.invoke(IPC_CHANNELS.MOD_DATA_DETECT, projectPath),
@@ -127,7 +149,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke(IPC_CHANNELS.EXPORT_KUBEJS_REVERT, projectPath),
 
   // ========== 通用工具 ==========
-  openExternal: (url: string) => ipcRenderer.invoke('shell:open-external', url),
+  openExternal: (url: string) => ipcRenderer.invoke(IPC_CHANNELS.SHELL_OPEN_EXTERNAL, url),
 
   // ========== 调试 ==========
   debugDbTables: (projectPath: string) => ipcRenderer.invoke(IPC_CHANNELS.DEBUG_DB_TABLES, projectPath),

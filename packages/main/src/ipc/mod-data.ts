@@ -11,7 +11,6 @@ import type {
   ModDataImportResult, 
   ModDataImportProgress,
   DataImportHistory,
-  ManifestEntry,
   ValidationResult,
 } from '@delightify/shared';
 import { appPaths } from '../services/paths';
@@ -190,25 +189,4 @@ export function registerModDataHandlers(): void {
     }
   });
 
-  // MOD_DATA_GET_MANIFEST: 获取清单数据
-  ipcMain.handle('mod-data:get-manifest', async (
-    _event,
-    projectPath: string
-  ): Promise<IpcResponse<ManifestEntry[]>> => {
-    try {
-      const dbPath = appPaths.projectDb(projectPath);
-      const client = createProjectDbClient(dbPath);
-
-      const result = await client.execute('SELECT * FROM manifest');
-      const manifest: ManifestEntry[] = result.rows.map((row: any) => ({
-        key: row.key,
-        value: row.value,
-      }));
-
-      return { success: true, data: manifest };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : '获取清单失败';
-      return { success: false, error: errorMessage };
-    }
-  });
 }

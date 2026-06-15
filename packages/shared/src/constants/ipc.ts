@@ -24,6 +24,7 @@ export const IPC_CHANNELS = {
   ITEMS_QUERY: 'items:query',
   ITEMS_GET_BY_MOD: 'items:get-by-mod',
   ITEMS_GET_DETAIL: 'items:get-detail',
+  ITEMS_GET_TEXTURE: 'items:get-texture',
 
   // Tag & Mod queries
   TAGS_QUERY: 'tags:query',
@@ -43,15 +44,23 @@ export const IPC_CHANNELS = {
   ENGINE_BLAST: 'engine:blast',
 
   // Recipe editing
+  // reserved：配方编辑二期
   RECIPE_EDIT_CREATE: 'recipe-edit:create',
+  // reserved：配方编辑二期
   RECIPE_EDIT_UPDATE: 'recipe-edit:update',
+  // reserved：配方编辑二期
   RECIPE_EDIT_DELETE: 'recipe-edit:delete',
+  // reserved：配方编辑二期
   RECIPE_EDIT_LIST: 'recipe-edit:list',
 
   // Export
   EXPORT_KUBEJS: 'export:kubejs',
   EXPORT_KUBEJS_REVERT: 'export:kubejs:revert',
+  // reserved：输出层
   EXPORT_DATAPACK: 'export:datapack',
+
+  // Shell
+  SHELL_OPEN_EXTERNAL: 'shell:open-external',
 
   // Debug
   DEBUG_DB_TABLES: 'debug:db-tables',
