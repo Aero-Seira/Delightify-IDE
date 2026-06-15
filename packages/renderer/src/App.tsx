@@ -38,7 +38,7 @@ function AppContent(): React.ReactElement {
       case '/convert':
         return t('nav.conversionTool');
       case '/debug':
-        return '数据库管理';
+        return t('nav.debug');
       default:
         return t('common.appName');
     }

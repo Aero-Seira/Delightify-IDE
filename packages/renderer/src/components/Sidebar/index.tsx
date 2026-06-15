@@ -106,7 +106,7 @@ export default function Sidebar({ collapsed, onToggleCollapse }: SidebarProps): 
     { to: '/recipes', icon: RecipeBrowserIcon, label: t('nav.recipeBrowser'), exact: false },
     { to: '/editor', icon: RecipeEditorIcon, label: t('nav.recipeEditor'), exact: false },
     { to: '/convert', icon: ConversionToolIcon, label: t('nav.conversionTool'), exact: false },
-    { to: '/debug', icon: DebugIcon, label: '数据库管理', exact: false },
+    { to: '/debug', icon: DebugIcon, label: t('nav.debug'), exact: false },
   ];
 
   const isActive = (to: string, exact: boolean): boolean => {

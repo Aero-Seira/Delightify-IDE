@@ -267,9 +267,9 @@ export default function DataImportPage(): React.ReactElement {
       {/* 页面头部 */}
       <div className={styles.pageHeader}>
         <div>
-          <h1 className={styles.title}>数据导入</h1>
+          <h1 className={styles.title}>{t('dataImport.title')}</h1>
           <p className={styles.description}>
-            从附属Mod导出的数据文件导入到项目中
+            {t('dataImport.description')}
           </p>
         </div>
       </div>
@@ -309,7 +309,7 @@ export default function DataImportPage(): React.ReactElement {
           {!isDetecting && !isValidating && !detectedFilePath && (
             <div className={styles.detectPrompt}>
               <DatabaseIcon />
-              <h3>检测数据文件</h3>
+              <h3>{t('dataImport.detectDataFile')}</h3>
               <p>
                 检测整合包目录中的数据文件，或直接选择 exporter 生成的 SQLite 文件。
                 <br />
@@ -318,7 +318,7 @@ export default function DataImportPage(): React.ReactElement {
               <div className={styles.detectActions}>
                 <button className={styles.primaryButton} onClick={handleDetect}>
                   <RefreshIcon />
-                  开始检测
+                  {t('dataImport.autoDetect')}
                 </button>
                 <button className={styles.secondaryButton} onClick={handleSelectDataFile}>
                   <DatabaseIcon />
@@ -335,7 +335,7 @@ export default function DataImportPage(): React.ReactElement {
           {detectedFilePath && validationResult && !validationResult.valid && (
             <div className={styles.detectPrompt}>
               <AlertIcon />
-              <h3>数据文件验证失败</h3>
+              <h3>{t('dataImport.validationFailed')}</h3>
               <p>{validationResult.error || '数据文件格式不正确或已损坏'}</p>
               <button className={styles.primaryButton} onClick={handleDetect}>
                 <RefreshIcon />
@@ -411,19 +411,19 @@ export default function DataImportPage(): React.ReactElement {
             <div className={styles.previewCards}>
               <DataPreviewCard
                 icon={<PackageIcon />}
-                title="模组"
+                title={t('dataImport.stats.mods')}
                 count={validationResult.modCount || 0}
                 color="blue"
               />
               <DataPreviewCard
                 icon={<CubeIcon />}
-                title="物品"
+                title={t('dataImport.stats.items')}
                 count={validationResult.itemCount || 0}
                 color="green"
               />
               <DataPreviewCard
                 icon={<DatabaseIcon />}
-                title="配方"
+                title={t('dataImport.stats.recipes')}
                 count={validationResult.recipeCount || 0}
                 color="orange"
               />
@@ -441,7 +441,7 @@ export default function DataImportPage(): React.ReactElement {
                 重新检测
               </button>
               <button className={styles.primaryButton} onClick={handleImport}>
-                开始导入
+                {t('dataImport.startImport')}
                 <ChevronRightIcon />
               </button>
             </div>
@@ -455,7 +455,7 @@ export default function DataImportPage(): React.ReactElement {
           {isImporting && (
             <div className={styles.importingState}>
               <DatabaseIcon />
-              <h3>正在导入数据...</h3>
+              <h3>{t('dataImport.importing')}</h3>
               <ProgressBar progress={importProgress} />
             </div>
           )}
@@ -467,33 +467,33 @@ export default function DataImportPage(): React.ReactElement {
                   <div className={styles.successIcon}>
                     <CheckIcon />
                   </div>
-                  <h3>导入成功！</h3>
+                  <h3>{t('dataImport.importSuccess')}</h3>
                   <p>数据已成功导入到项目中</p>
                   
                   {importResult.stats && (
                     <div className={styles.resultStats}>
                       <div className={styles.resultStat}>
                         <span className={styles.resultStatValue}>{importResult.stats.modCount}</span>
-                        <span className={styles.resultStatLabel}>模组</span>
+                        <span className={styles.resultStatLabel}>{t('dataImport.stats.mods')}</span>
                       </div>
                       <div className={styles.resultStat}>
                         <span className={styles.resultStatValue}>{importResult.stats.itemCount}</span>
-                        <span className={styles.resultStatLabel}>物品</span>
+                        <span className={styles.resultStatLabel}>{t('dataImport.stats.items')}</span>
                       </div>
                       <div className={styles.resultStat}>
                         <span className={styles.resultStatValue}>{importResult.stats.recipeCount}</span>
-                        <span className={styles.resultStatLabel}>配方</span>
+                        <span className={styles.resultStatLabel}>{t('dataImport.stats.recipes')}</span>
                       </div>
                       <div className={styles.resultStat}>
                         <span className={styles.resultStatValue}>{importResult.stats.tagCount}</span>
-                        <span className={styles.resultStatLabel}>标签</span>
+                        <span className={styles.resultStatLabel}>{t('dataImport.stats.tags')}</span>
                       </div>
                     </div>
                   )}
 
                   <button className={styles.primaryButton} onClick={handleReset}>
                     <RefreshIcon />
-                    再次导入
+                    {t('dataImport.reimport')}
                   </button>
                 </>
               ) : (
@@ -501,7 +501,7 @@ export default function DataImportPage(): React.ReactElement {
                   <div className={`${styles.successIcon} ${styles.errorIcon}`}>
                     <AlertIcon />
                   </div>
-                  <h3>导入失败</h3>
+                  <h3>{t('dataImport.importFailed')}</h3>
                   <p>{importResult.error || '未知错误'}</p>
                   <button className={styles.primaryButton} onClick={handleImport}>
                     重试
