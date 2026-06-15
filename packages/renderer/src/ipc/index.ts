@@ -26,6 +26,10 @@ import type {
   UnifyDryRunResult,
   UnifyQueryParams,
   UnifyQueryResult,
+  IpcResponse,
+  EngineActionRequest,
+  EngineBlastSummary,
+  EngineDryRunResult,
   KubeJsExportParams,
   KubeJsExportResult,
   KubeJsRevertResult,
@@ -69,6 +73,13 @@ export interface ElectronAPI {
   // ========== Unify 查询 ==========
   unifyQuery: (projectPath: string, params: UnifyQueryParams) => Promise<{ success: boolean; data?: UnifyQueryResult; error?: string }>;
   unifyDryRun: (projectPath: string, params: UnifyDryRunParams) => Promise<{ success: boolean; data?: UnifyDryRunResult; error?: string }>;
+
+  // ========== Engine 查询 ==========
+  engineDryRun: (projectPath: string, req: EngineActionRequest) => Promise<IpcResponse<EngineDryRunResult>>;
+  engineBlast: (
+    projectPath: string,
+    target: { kind: 'item' | 'tag'; ref: string }
+  ) => Promise<IpcResponse<EngineBlastSummary>>;
 
   // ========== 导出 ==========
   exportKubeJs: (projectPath: string, params: KubeJsExportParams) => Promise<{ success: boolean; data?: KubeJsExportResult; error?: string }>;

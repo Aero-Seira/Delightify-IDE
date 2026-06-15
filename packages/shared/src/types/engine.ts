@@ -51,6 +51,7 @@ export type ActionRequestAction =
   | 'remove'
   | 'rename'
   | 'scale'
+  | 'hide'
   | 'unify'
   | 'differentiate'
   | 'harmonize'
@@ -60,4 +61,72 @@ export interface ActionRequest {
   action: ActionRequestAction;
   params: Record<string, unknown>;
   scope?: Record<string, unknown>;
+}
+
+export interface EngineActionRequest {
+  action: ActionRequestAction;
+  params: Record<string, unknown>;
+}
+
+export interface EngineRiskSummary {
+  severity: 'info' | 'low' | 'medium' | 'high';
+  mustDefer: boolean;
+  reasons: string[];
+}
+
+export interface EngineBlastSummary {
+  target?: {
+    kind: 'item' | 'tag';
+    ref: string;
+  };
+  inputRefs: {
+    recipeId: string;
+    typeId: string;
+    modid: string;
+    slot?: number;
+  }[];
+  outputRefs: {
+    recipeId: string;
+    typeId: string;
+    modid: string;
+    slot?: number;
+  }[];
+  tagConnected: {
+    recipeId: string;
+    typeId: string;
+    modid: string;
+  }[];
+  relatedUnparsed: {
+    recipeId: string;
+    typeId: string;
+    modid: string;
+  }[];
+  isBlock: boolean;
+  crossMod: boolean;
+  counts: {
+    inputRefs: number;
+    outputRefs: number;
+    tagConnected: number;
+    relatedUnparsed: number;
+  };
+}
+
+export interface EngineScaleClassification {
+  operationId: string;
+  recipeId: string;
+  field: string;
+  decision: string;
+  baseline?: number;
+  computed?: number;
+  reason: string;
+}
+
+export interface EngineDryRunResult {
+  action: ActionRequestAction;
+  operations: ChangeOperation[];
+  changeSetPreview: ChangeOperation[];
+  deferredSuggestions: DeferredSuggestion[];
+  scaleClassifications?: EngineScaleClassification[];
+  risk: EngineRiskSummary;
+  blast: EngineBlastSummary[];
 }

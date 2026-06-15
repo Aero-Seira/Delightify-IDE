@@ -45,6 +45,10 @@ const IPC_CHANNELS = {
   UNIFY_QUERY: 'unify:query',
   UNIFY_DRY_RUN: 'unify:dry-run',
 
+  // Engine
+  ENGINE_DRY_RUN: 'engine:dry-run',
+  ENGINE_BLAST: 'engine:blast',
+
   // Debug
   DEBUG_DB_TABLES: 'debug:db-tables',
   DEBUG_DB_QUERY: 'debug:db-query',
@@ -109,6 +113,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke(IPC_CHANNELS.UNIFY_QUERY, projectPath, params),
   unifyDryRun: (projectPath: string, params: unknown) =>
     ipcRenderer.invoke(IPC_CHANNELS.UNIFY_DRY_RUN, projectPath, params),
+
+  // ========== Engine 查询 ==========
+  engineDryRun: (projectPath: string, req: unknown) =>
+    ipcRenderer.invoke(IPC_CHANNELS.ENGINE_DRY_RUN, projectPath, req),
+  engineBlast: (projectPath: string, target: unknown) =>
+    ipcRenderer.invoke(IPC_CHANNELS.ENGINE_BLAST, projectPath, target),
 
   // ========== 导出 ==========
   exportKubeJs: (projectPath: string, params: unknown) =>

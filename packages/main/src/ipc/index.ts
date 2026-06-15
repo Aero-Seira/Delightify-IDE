@@ -13,6 +13,7 @@ import { registerRecipeTypesHandlers } from './recipe-types';
 import { registerUnifyHandlers } from './unify';
 import { registerExportHandlers } from './export';
 import { registerDebugHandlers } from './debug';
+import { registerEngineHandlers } from './engine';
 
 export function registerAllHandlers(): void {
   registerProjectHandlers();
@@ -21,6 +22,7 @@ export function registerAllHandlers(): void {
   registerRecipesHandlers();
   registerRecipeTypesHandlers();
   registerUnifyHandlers();
+  registerEngineHandlers();
   registerExportHandlers();
   registerDebugHandlers();
   

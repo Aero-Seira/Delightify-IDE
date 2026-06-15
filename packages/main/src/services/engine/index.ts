@@ -1,4 +1,5 @@
 export * from './blast-radius';
+export * from './dispatch';
 export * from './ir';
 export * from './actions/hide';
 export * from './actions/retag';

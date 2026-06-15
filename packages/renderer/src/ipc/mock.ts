@@ -11,6 +11,10 @@ import type {
   UnifyDryRunResult,
   UnifyQueryParams,
   UnifyQueryResult,
+  IpcResponse,
+  EngineActionRequest,
+  EngineBlastSummary,
+  EngineDryRunResult,
   KubeJsExportParams,
   KubeJsExportResult,
   KubeJsRevertResult,
@@ -189,6 +193,26 @@ function generateMockUnifyCandidates(): UnifyQueryResult['candidates'] {
       riskLevel: 'high',
     },
   ];
+}
+
+function mockEngineBlastSummary(
+  target: { kind: 'item' | 'tag'; ref: string } = { kind: 'item', ref: 'minecraft:copper_ingot' }
+): EngineBlastSummary {
+  return {
+    target,
+    inputRefs: [],
+    outputRefs: [],
+    tagConnected: [],
+    relatedUnparsed: [],
+    isBlock: false,
+    crossMod: false,
+    counts: {
+      inputRefs: 0,
+      outputRefs: 0,
+      tagConnected: 0,
+      relatedUnparsed: 0,
+    },
+  };
 }
 
 /**
@@ -562,6 +586,37 @@ export const mockElectronAPI = {
       } satisfies UnifyDryRunResult,
     };
   },
+
+  // ========== Engine 查询 ==========
+  engineDryRun: async (
+    _projectPath: string,
+    req: EngineActionRequest
+  ): Promise<IpcResponse<EngineDryRunResult>> => {
+    const data: EngineDryRunResult = {
+      action: req.action,
+      operations: [],
+      changeSetPreview: [],
+      deferredSuggestions: [],
+      risk: {
+        severity: 'info',
+        mustDefer: false,
+        reasons: [],
+      },
+      blast: [],
+    };
+    if (req.action === 'scale') {
+      data.scaleClassifications = [];
+    }
+    return { success: true, data };
+  },
+
+  engineBlast: async (
+    _projectPath: string,
+    target: { kind: 'item' | 'tag'; ref: string }
+  ): Promise<IpcResponse<EngineBlastSummary>> => ({
+    success: true,
+    data: mockEngineBlastSummary(target),
+  }),
 
   // ========== 导出 ==========
   exportKubeJs: async (
