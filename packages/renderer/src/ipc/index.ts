@@ -7,6 +7,7 @@
 import type { 
   Project, 
   ProjectListResult,
+  ProjectStats,
   CreateProjectData,
   UpdateProjectData,
   Item,
@@ -46,7 +47,7 @@ export interface ElectronAPI {
   projectDelete: (projectId: string) => Promise<{ success: boolean; error?: string }>;
   selectDirectory: () => Promise<{ canceled: boolean; filePaths?: string[] }>;
   selectDataFile: () => Promise<{ canceled: boolean; filePaths?: string[] }>;
-  projectGetStats: (projectPath: string) => Promise<{ success: boolean; data?: { modCount: number; itemCount: number; recipeCount: number; tagCount: number; needsReimport: boolean }; error?: string }>;
+  projectGetStats: (projectPath: string) => Promise<{ success: boolean; data?: ProjectStats; error?: string }>;
 
   // ========== Mod数据导入 ==========
   modDataDetect: (projectPath: string) => Promise<{ success: boolean; data?: { filePath: string | null; found: boolean }; error?: string }>;

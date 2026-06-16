@@ -229,6 +229,7 @@ export default function RecipeBrowserPage(): React.ReactElement {
               <RecipeDetailCard
                 recipe={recipe}
                 detail={detail}
+                projectPath={currentProject?.path}
                 isLoading={isDetailLoading}
                 error={detailError}
               />
@@ -542,6 +543,7 @@ export default function RecipeBrowserPage(): React.ReactElement {
                   <RecipeDetailCard
                     recipe={detail?.recipe ?? selectedRecipe}
                     detail={detail}
+                    projectPath={currentProject?.path}
                     isLoading={isDetailLoading}
                     error={detailError}
                   />

@@ -10,7 +10,9 @@
  */
 
 import React, { useMemo, useState } from 'react';
-import type { Recipe, RecipeDetail, RecipeInputView } from '@delightify/shared';
+import type { EngineBlastSummary, Recipe, RecipeDetail, RecipeInputView } from '@delightify/shared';
+import { electronAPI } from '../../ipc';
+import BlastSummary from '../BlastSummary';
 import ItemIcon from '../ItemIcon';
 import styles from './style.module.css';
 
@@ -24,6 +26,7 @@ interface RecipeCardProps {
 interface RecipeDetailCardProps {
   recipe: Recipe;
   detail?: RecipeDetail | null;
+  projectPath?: string;
   isLoading?: boolean;
   error?: string | null;
 }
@@ -456,6 +459,7 @@ export function RecipeListRow({
 export function RecipeDetailCard({
   recipe,
   detail,
+  projectPath,
   isLoading = false,
   error = null,
 }: RecipeDetailCardProps): React.ReactElement {
@@ -491,6 +495,61 @@ export function RecipeDetailCard({
   const structuredOutputs = detail?.outputs ?? [];
   const inputCount = hasStructuredDetail ? structuredInputs.length : inputs.length;
   const outputCount = hasStructuredDetail ? structuredOutputs.length : (output ? 1 : 0);
+  const outputItemIds = useMemo(() => {
+    const detailOutputs = detail?.outputs ?? [];
+    const ids = hasStructuredDetail
+      ? detailOutputs.map(slot => slot.itemId)
+      : output?.item ? [output.item] : [];
+    return Array.from(new Set(ids.filter(Boolean))).sort();
+  }, [detail?.outputs, hasStructuredDetail, output?.item]);
+  const [outputBlast, setOutputBlast] = React.useState<EngineBlastSummary[]>([]);
+  const [isLoadingOutputBlast, setIsLoadingOutputBlast] = React.useState(false);
+  const [outputBlastError, setOutputBlastError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    let disposed = false;
+
+    async function loadOutputBlast(): Promise<void> {
+      if (!projectPath || outputItemIds.length === 0) {
+        setOutputBlast([]);
+        setOutputBlastError(null);
+        setIsLoadingOutputBlast(false);
+        return;
+      }
+
+      setIsLoadingOutputBlast(true);
+      setOutputBlastError(null);
+      try {
+        const results = await Promise.all(outputItemIds.map(itemId => (
+          electronAPI().engineBlast(projectPath, { kind: 'item', ref: itemId })
+        )));
+        if (disposed) {
+          return;
+        }
+        const failed = results.find(result => !result.success);
+        if (failed) {
+          setOutputBlast([]);
+          setOutputBlastError(failed.error || '输出影响范围查询失败');
+          return;
+        }
+        setOutputBlast(results.flatMap(result => result.data ? [result.data] : []));
+      } catch (err) {
+        if (!disposed) {
+          setOutputBlast([]);
+          setOutputBlastError(err instanceof Error ? err.message : '输出影响范围查询失败');
+        }
+      } finally {
+        if (!disposed) {
+          setIsLoadingOutputBlast(false);
+        }
+      }
+    }
+
+    void loadOutputBlast();
+    return () => {
+      disposed = true;
+    };
+  }, [outputItemIds, projectPath]);
 
   return (
     <div className={styles.detailCard}>
@@ -631,6 +690,14 @@ export function RecipeDetailCard({
       {showJson && formattedRawJson && (
         <pre className={styles.jsonViewer}>{formattedRawJson}</pre>
       )}
+
+      <BlastSummary
+        title="输出影响范围"
+        summaries={outputBlast}
+        isLoading={isLoadingOutputBlast}
+        error={outputBlastError}
+        emptyText="该配方输出未发现下游引用。"
+      />
     </div>
   );
 }

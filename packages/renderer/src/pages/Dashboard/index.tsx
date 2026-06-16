@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import type { ProjectStats } from '@delightify/shared';
 import { useI18n } from '../../i18n';
 import { electronAPI } from '../../ipc';
 import { useProjectStore } from '../../store/projectStore';
@@ -51,12 +52,6 @@ const ResourceCard: React.FC<ResourceCardProps> = ({ icon: Icon, title, descript
   );
 };
 
-type DashboardStats = {
-  modCount: number;
-  itemCount: number;
-  recipeCount: number;
-};
-
 export default function Dashboard(): React.ReactElement {
   const { t } = useI18n();
   const {
@@ -65,7 +60,7 @@ export default function Dashboard(): React.ReactElement {
     isLoadingProjects,
     loadProjects,
   } = useProjectStore();
-  const [projectStats, setProjectStats] = useState<DashboardStats | null>(null);
+  const [projectStats, setProjectStats] = useState<ProjectStats | null>(null);
   const hasRequestedProjects = useRef(false);
 
   useEffect(() => {
@@ -89,11 +84,7 @@ export default function Dashboard(): React.ReactElement {
       try {
         const result = await electronAPI().projectGetStats(currentProject.path);
         if (!canceled && result.success && result.data) {
-          setProjectStats({
-            modCount: result.data.modCount,
-            itemCount: result.data.itemCount,
-            recipeCount: result.data.recipeCount,
-          });
+          setProjectStats(result.data);
           return;
         }
       } catch (error) {
@@ -130,7 +121,7 @@ export default function Dashboard(): React.ReactElement {
       title: t('dashboard.step1.title'),
       description: t('dashboard.step1.description'),
       action: t('dashboard.step1.action'),
-      link: '/mods',
+      link: '/data-import',
     },
     {
       number: 2,
@@ -156,6 +147,58 @@ export default function Dashboard(): React.ReactElement {
       link: 'https://github.com/Aero-Seira/Delightify',
     },
   ];
+
+  const instance = projectStats?.instance;
+  const statusItems = currentProject && instance ? [
+    {
+      label: t('dashboard.instance.modsDir'),
+      value: instance.directories.mods ? t('dashboard.instance.present') : t('dashboard.instance.missing'),
+      tone: instance.directories.mods ? 'good' : 'warn',
+    },
+    {
+      label: t('dashboard.instance.modJars'),
+      value: instance.modJarCount.toLocaleString(),
+      tone: instance.modJarCount > 0 ? 'good' : 'warn',
+    },
+    {
+      label: t('dashboard.instance.exporterSnapshot'),
+      value: instance.exporterSnapshot.found
+        ? instance.exporterSnapshot.relativePath ?? t('dashboard.instance.present')
+        : t('dashboard.instance.missing'),
+      tone: instance.exporterSnapshot.found ? 'good' : 'warn',
+    },
+    {
+      label: t('dashboard.instance.kubejs'),
+      value: instance.directories.kubejs ? t('dashboard.instance.present') : t('dashboard.instance.willCreate'),
+      tone: instance.directories.kubejs ? 'good' : 'info',
+    },
+    {
+      label: t('dashboard.instance.git'),
+      value: !instance.git.isRepo
+        ? t('dashboard.instance.notRepo')
+        : instance.git.dirty
+          ? t('dashboard.instance.gitDirty', { count: String(instance.git.changedFiles ?? 0) })
+          : t('dashboard.instance.gitClean', { branch: instance.git.branch ?? '-' }),
+      tone: !instance.git.isRepo || instance.git.dirty ? 'warn' : 'good',
+    },
+    {
+      label: t('dashboard.instance.generatedFiles'),
+      value: instance.generated.managedFiles > 0
+        ? t('dashboard.instance.managedFiles', { count: String(instance.generated.managedFiles) })
+        : t('dashboard.instance.none'),
+      tone: instance.generated.managedFiles > 0 ? 'info' : 'neutral',
+    },
+  ] : [];
+
+  const statusClass = (tone: string): string => {
+    const classes: Record<string, string> = {
+      good: styles.healthGood,
+      warn: styles.healthWarn,
+      info: styles.healthInfo,
+      neutral: styles.healthNeutral,
+    };
+    return classes[tone] ?? styles.healthNeutral;
+  };
 
   return (
     <div className={styles.dashboard}>
@@ -192,6 +235,50 @@ export default function Dashboard(): React.ReactElement {
           </div>
         </div>
       </section>
+
+      {currentProject && (
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>{t('dashboard.instance.title')}</h2>
+          <div className={styles.instancePanel}>
+            <div className={styles.instanceHeader}>
+              <div>
+                <h3 className={styles.instanceName}>{currentProject.name}</h3>
+                <p className={styles.instancePath}>{currentProject.path}</p>
+              </div>
+              <span className={`${styles.healthPill} ${
+                instance && instance.warnings.length === 0 ? styles.healthGood : styles.healthWarn
+              }`}>
+                {instance && instance.warnings.length === 0
+                  ? t('dashboard.instance.ready')
+                  : t('dashboard.instance.needsAttention')}
+              </span>
+            </div>
+
+            {instance && (
+              <>
+                <div className={styles.healthGrid}>
+                  {statusItems.map(item => (
+                    <div key={item.label} className={styles.healthItem}>
+                      <span className={styles.healthLabel}>{item.label}</span>
+                      <span className={`${styles.healthValue} ${statusClass(item.tone)}`}>
+                        {item.value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {instance.warnings.length > 0 && (
+                  <div className={styles.warningList}>
+                    {instance.warnings.map(warning => (
+                      <div key={warning} className={styles.warningItem}>{warning}</div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* Quick Start Section */}
       <section className={styles.section}>

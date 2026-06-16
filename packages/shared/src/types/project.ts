@@ -67,6 +67,62 @@ export interface ProjectStats {
   lastImportedAt?: string;
   /** 是否需要重新导入 */
   needsReimport: boolean;
+  /** Minecraft 实例体检信息 */
+  instance?: ProjectInstanceHealth;
+}
+
+/** 项目实例目录状态 */
+export interface ProjectInstanceDirectories {
+  /** 是否存在 .minecraft 目录 */
+  minecraftRoot: boolean;
+  /** 是否存在 mods 目录 */
+  mods: boolean;
+  /** 是否存在 config 目录 */
+  config: boolean;
+  /** 是否存在 kubejs 目录 */
+  kubejs: boolean;
+  /** 是否存在 saves 目录 */
+  saves: boolean;
+  /** 是否存在 resourcepacks 目录 */
+  resourcepacks: boolean;
+  /** 是否存在 .delightify 目录 */
+  delightify: boolean;
+}
+
+/** exporter 快照状态 */
+export interface ProjectExporterSnapshotStatus {
+  found: boolean;
+  relativePath?: string;
+  filePath?: string;
+  size?: number;
+  modifiedAt?: string;
+}
+
+/** Git 工作区状态 */
+export interface ProjectGitStatus {
+  isRepo: boolean;
+  branch?: string;
+  dirty?: boolean;
+  changedFiles?: number;
+}
+
+/** Delightify 生成产物状态 */
+export interface ProjectGeneratedStatus {
+  manifestExists: boolean;
+  serverScriptExists: boolean;
+  managedFiles: number;
+}
+
+/** Minecraft 实例体检信息 */
+export interface ProjectInstanceHealth {
+  path: string;
+  pathExists: boolean;
+  directories: ProjectInstanceDirectories;
+  modJarCount: number;
+  exporterSnapshot: ProjectExporterSnapshotStatus;
+  git: ProjectGitStatus;
+  generated: ProjectGeneratedStatus;
+  warnings: string[];
 }
 
 /**

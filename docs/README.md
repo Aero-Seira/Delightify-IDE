@@ -17,6 +17,8 @@
 
 - [`mvp0-data-foundation.md`](./current/mvp0-data-foundation.md)：MVP-0 数据地基方案，后续 schema/importer/unify/KubeJS 实现依据。
 - [`exporter-contract-v1.md`](./current/exporter-contract-v1.md)：Delightify Exporter v1 SQLite 契约草案。
+- [`m2-usability-plan.md`](./current/m2-usability-plan.md)：M2 可用化路线，把项目推进为面向 Minecraft 实例的手动改包 IDE。
+- [`m2-action-engine-plan.md`](./current/m2-action-engine-plan.md)：M2 确定性动作引擎路线与已完成的后端 IR / IPC 记录。
 - [`进度.md`](./current/进度.md)：近期决策与进展记录。
 
 ### `spec-snapshot/`

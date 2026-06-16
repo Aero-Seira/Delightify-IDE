@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import type { Item, SearchField } from '@delightify/shared';
+import type { EngineBlastSummary, Item, SearchField } from '@delightify/shared';
 import ItemCard, { ItemListRow, ItemCompactRow, ItemDetailCard } from '../../components/ItemCard';
+import BlastSummary from '../../components/BlastSummary';
 import CategoryLegend from '../../components/CategoryLegend';
 import SearchableSelect from '../../components/SearchableSelect';
 import ErrorBoundary from '../../components/ErrorBoundary';
@@ -53,6 +54,9 @@ export default function ItemBrowser(): React.ReactElement {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [itemSize, setItemSize] = useState(64);
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
+  const [selectedItemBlast, setSelectedItemBlast] = useState<EngineBlastSummary | null>(null);
+  const [isLoadingBlast, setIsLoadingBlast] = useState(false);
+  const [blastError, setBlastError] = useState<string | null>(null);
   const [searchFocused, setSearchFocused] = useState(false);
   
   // 多选状态
@@ -244,6 +248,51 @@ export default function ItemBrowser(): React.ReactElement {
     localStorage.setItem('itemBrowser.itemSize', itemSize.toString());
   }, [itemSize]);
 
+  useEffect(() => {
+    let disposed = false;
+
+    async function loadBlast(): Promise<void> {
+      if (!currentProject || !selectedItem || viewMode !== 'detail') {
+        setSelectedItemBlast(null);
+        setBlastError(null);
+        setIsLoadingBlast(false);
+        return;
+      }
+
+      setIsLoadingBlast(true);
+      setBlastError(null);
+      try {
+        const result = await electronAPI().engineBlast(currentProject.path, {
+          kind: 'item',
+          ref: selectedItem.itemId,
+        });
+        if (disposed) {
+          return;
+        }
+        if (result.success && result.data) {
+          setSelectedItemBlast(result.data);
+        } else {
+          setSelectedItemBlast(null);
+          setBlastError(result.error || '影响范围查询失败');
+        }
+      } catch (err) {
+        if (!disposed) {
+          setSelectedItemBlast(null);
+          setBlastError(err instanceof Error ? err.message : '影响范围查询失败');
+        }
+      } finally {
+        if (!disposed) {
+          setIsLoadingBlast(false);
+        }
+      }
+    }
+
+    void loadBlast();
+    return () => {
+      disposed = true;
+    };
+  }, [currentProject, selectedItem, viewMode]);
+
   // 计算总页数
   const totalPages = useMemo(() => Math.ceil(totalCount / pageSize), [totalCount, pageSize]);
 
@@ -395,6 +444,11 @@ export default function ItemBrowser(): React.ReactElement {
           return (
             <div key={itemKey} className={styles.detailItemWrapper}>
               <ItemDetailCard item={item} />
+              <BlastSummary
+                summaries={selectedItemBlast ? [selectedItemBlast] : []}
+                isLoading={isLoadingBlast}
+                error={blastError}
+              />
             </div>
           );
         }

@@ -427,7 +427,7 @@ export default function ProjectManagerPage(): React.ReactElement {
 
   // 处理导入数据 - 导航到数据导入页面
   const handleImportData = (project: Project) => {
-    navigate('/mods', { state: { projectId: project.id, autoStart: true } });
+    navigate('/data-import', { state: { projectId: project.id, autoStart: true } });
   };
 
   return (

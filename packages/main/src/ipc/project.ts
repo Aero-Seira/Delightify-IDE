@@ -19,6 +19,7 @@ import type {
 } from '@delightify/shared';
 import { appPaths } from '../services/paths';
 import { createProjectDbClient } from '../services/database';
+import { inspectProjectInstance } from '../services/project-inspector';
 import { readFile, writeFile, access, mkdir, rm } from 'fs/promises';
 import * as path from 'path';
 
@@ -100,7 +101,9 @@ async function detectModLoader(projectPath: string): Promise<{ modLoader?: ModLo
 /**
  * 获取项目统计信息
  */
-async function getProjectStats(projectPath: string): Promise<ProjectStats | null> {
+async function getProjectStats(projectPath: string): Promise<ProjectStats> {
+  const instance = await inspectProjectInstance(projectPath);
+
   try {
     const dbPath = appPaths.projectDb(projectPath);
     await access(dbPath);
@@ -135,9 +138,18 @@ async function getProjectStats(projectPath: string): Promise<ProjectStats | null
       recipeTypeCount: Number(typesResult.rows[0]?.count || 0),
       lastImportedAt,
       needsReimport,
+      instance,
     };
   } catch {
-    return null;
+    return {
+      modCount: 0,
+      itemCount: 0,
+      recipeCount: 0,
+      tagCount: 0,
+      recipeTypeCount: 0,
+      needsReimport: true,
+      instance,
+    };
   }
 }
 
@@ -156,11 +168,11 @@ export function registerProjectHandlers(): void {
           const stats = await getProjectStats(project.path);
           return {
             ...project,
-            totalMods: stats?.modCount || 0,
-            totalItems: stats?.itemCount || 0,
-            totalRecipes: stats?.recipeCount || 0,
-            lastImportedAt: stats?.lastImportedAt,
-            status: (stats?.needsReimport ? 'needs_import' : stats ? 'ready' : 'needs_import') as Project['status'],
+            totalMods: stats.modCount,
+            totalItems: stats.itemCount,
+            totalRecipes: stats.recipeCount,
+            lastImportedAt: stats.lastImportedAt,
+            status: (stats.needsReimport ? 'needs_import' : 'ready') as Project['status'],
           };
         })
       );
@@ -193,11 +205,11 @@ export function registerProjectHandlers(): void {
         
         currentProject = {
           ...project,
-          totalMods: stats?.modCount || 0,
-          totalItems: stats?.itemCount || 0,
-          totalRecipes: stats?.recipeCount || 0,
-          lastImportedAt: stats?.lastImportedAt,
-          status: stats?.needsReimport ? 'needs_import' : stats ? 'ready' : 'needs_import',
+          totalMods: stats.modCount,
+          totalItems: stats.itemCount,
+          totalRecipes: stats.recipeCount,
+          lastImportedAt: stats.lastImportedAt,
+          status: stats.needsReimport ? 'needs_import' : 'ready',
         };
         
         return { success: true, data: currentProject };
@@ -225,11 +237,11 @@ export function registerProjectHandlers(): void {
         const stats = await getProjectStats(existingProject.path);
         currentProject = {
           ...existingProject,
-          totalMods: stats?.modCount || 0,
-          totalItems: stats?.itemCount || 0,
-          totalRecipes: stats?.recipeCount || 0,
-          lastImportedAt: stats?.lastImportedAt,
-          status: stats?.needsReimport ? 'needs_import' : stats ? 'ready' : 'needs_import',
+          totalMods: stats.modCount,
+          totalItems: stats.itemCount,
+          totalRecipes: stats.recipeCount,
+          lastImportedAt: stats.lastImportedAt,
+          status: stats.needsReimport ? 'needs_import' : 'ready',
         };
         
         return { success: true, data: currentProject };
@@ -436,9 +448,6 @@ export function registerProjectHandlers(): void {
   ipcMain.handle(IPC_CHANNELS.PROJECT_GET_STATS, async (_event, projectPath: string): Promise<ProjectStatsResult> => {
     try {
       const stats = await getProjectStats(projectPath);
-      if (!stats) {
-        return { success: true, data: { modCount: 0, itemCount: 0, recipeCount: 0, tagCount: 0, recipeTypeCount: 0, needsReimport: true } };
-      }
       return { success: true, data: stats };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '获取项目统计失败';
