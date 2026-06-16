@@ -72,6 +72,7 @@ const IPC_CHANNELS = {
   SCRIPT_WORKSPACE_LIST: 'script-workspace:list',
   SCRIPT_WORKSPACE_READ: 'script-workspace:read',
   SCRIPT_WORKSPACE_SAVE: 'script-workspace:save',
+  SCRIPT_WORKSPACE_CREATE_MANAGED: 'script-workspace:create-managed',
 
   // Shell
   SHELL_OPEN_EXTERNAL: 'shell:open-external',
@@ -163,6 +164,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke(IPC_CHANNELS.SCRIPT_WORKSPACE_READ, projectPath, relativePath),
   scriptWorkspaceSave: (projectPath: string, relativePath: string, content: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.SCRIPT_WORKSPACE_SAVE, projectPath, relativePath, content),
+  scriptWorkspaceCreateManaged: (projectPath: string, relativePath?: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.SCRIPT_WORKSPACE_CREATE_MANAGED, projectPath, relativePath),
 
   // ========== 通用工具 ==========
   openExternal: (url: string) => ipcRenderer.invoke(IPC_CHANNELS.SHELL_OPEN_EXTERNAL, url),

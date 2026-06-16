@@ -28,3 +28,9 @@ export interface ScriptWorkspaceSaveResult {
   file: ScriptWorkspaceFile;
   savedAt: string;
 }
+
+export interface ScriptWorkspaceCreateManagedResult {
+  file: ScriptWorkspaceFile;
+  content: string;
+  created: boolean;
+}

@@ -2,11 +2,13 @@ import { ipcMain } from 'electron';
 import { IPC_CHANNELS } from '@delightify/shared';
 import type {
   IpcResponse,
+  ScriptWorkspaceCreateManagedResult,
   ScriptWorkspaceListResult,
   ScriptWorkspaceReadResult,
   ScriptWorkspaceSaveResult,
 } from '@delightify/shared';
 import {
+  createManagedScriptWorkspaceFile,
   listScriptWorkspaceFiles,
   readScriptWorkspaceFile,
   saveScriptWorkspaceFile,
@@ -51,6 +53,20 @@ export function registerScriptWorkspaceHandlers(): void {
       return { success: true, data: result };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '脚本文件保存失败';
+      return { success: false, error: errorMessage };
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.SCRIPT_WORKSPACE_CREATE_MANAGED, async (
+    _event,
+    projectPath: string,
+    relativePath?: string
+  ): Promise<IpcResponse<ScriptWorkspaceCreateManagedResult>> => {
+    try {
+      const result = await createManagedScriptWorkspaceFile(projectPath, relativePath);
+      return { success: true, data: result };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '受管脚本创建失败';
       return { success: false, error: errorMessage };
     }
   });

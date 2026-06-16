@@ -38,6 +38,7 @@ import type {
   ScriptWorkspaceListResult,
   ScriptWorkspaceReadResult,
   ScriptWorkspaceSaveResult,
+  ScriptWorkspaceCreateManagedResult,
 } from '@delightify/shared';
 import { mockElectronAPI } from './mock';
 
@@ -99,6 +100,10 @@ export interface ElectronAPI {
     relativePath: string,
     content: string
   ) => Promise<IpcResponse<ScriptWorkspaceSaveResult>>;
+  scriptWorkspaceCreateManaged: (
+    projectPath: string,
+    relativePath?: string
+  ) => Promise<IpcResponse<ScriptWorkspaceCreateManagedResult>>;
 
   // ========== 通用工具 ==========
   openExternal: (url: string) => Promise<void>;

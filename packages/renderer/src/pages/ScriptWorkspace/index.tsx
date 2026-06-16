@@ -54,6 +54,7 @@ export default function ScriptWorkspacePage(): React.ReactElement {
   const [isLoadingFiles, setIsLoadingFiles] = useState(false);
   const [isLoadingFile, setIsLoadingFile] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isCreatingManaged, setIsCreatingManaged] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
@@ -172,6 +173,40 @@ export default function ScriptWorkspacePage(): React.ReactElement {
     }
   };
 
+  const createManagedScript = async (): Promise<void> => {
+    if (!currentProject) {
+      return;
+    }
+
+    if (isDirty && !window.confirm('当前文件有未保存修改，创建并切换文件会丢弃这些修改。继续？')) {
+      return;
+    }
+
+    setIsCreatingManaged(true);
+    setError(null);
+    setSaveMessage(null);
+
+    try {
+      const response = await electronAPI().scriptWorkspaceCreateManaged(currentProject.path);
+      if (!response.success || !response.data) {
+        throw new Error(response.error || '受管脚本创建失败');
+      }
+      setSelectedPath(response.data.file.relativePath);
+      setReadResult({
+        file: response.data.file,
+        content: response.data.content,
+      });
+      setContent(response.data.content);
+      setOriginalContent(response.data.content);
+      setSaveMessage(response.data.created ? '已创建受管手动脚本。' : '受管手动脚本已存在，已打开。');
+      await loadFiles();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : '受管脚本创建失败');
+    } finally {
+      setIsCreatingManaged(false);
+    }
+  };
+
   const renderFileGroup = (
     title: string,
     groupFiles: ScriptWorkspaceFile[]
@@ -213,6 +248,14 @@ export default function ScriptWorkspacePage(): React.ReactElement {
           </p>
         </div>
         <div className={styles.headerActions}>
+          <button
+            type="button"
+            className={styles.secondaryButton}
+            onClick={createManagedScript}
+            disabled={!currentProject || isCreatingManaged}
+          >
+            {isCreatingManaged ? '创建中...' : '新建受管脚本'}
+          </button>
           <button
             type="button"
             className={styles.secondaryButton}
