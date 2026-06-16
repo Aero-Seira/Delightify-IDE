@@ -38,6 +38,15 @@ const RecipeEditorIcon: React.FC = () => (
   </svg>
 );
 
+const ActionWorkbenchIcon: React.FC = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 7h16" />
+    <path d="M4 17h16" />
+    <circle cx="9" cy="7" r="2" />
+    <circle cx="15" cy="17" r="2" />
+  </svg>
+);
+
 const ConversionToolIcon: React.FC = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
     <path d="M12 2v4" />
@@ -104,6 +113,7 @@ export default function Sidebar({ collapsed, onToggleCollapse }: SidebarProps): 
     { to: '/data-import', icon: DataImportIcon, label: t('nav.dataImport'), exact: false },
     { to: '/items', icon: ItemBrowserIcon, label: t('nav.itemBrowser'), exact: false },
     { to: '/recipes', icon: RecipeBrowserIcon, label: t('nav.recipeBrowser'), exact: false },
+    { to: '/actions', icon: ActionWorkbenchIcon, label: t('nav.actionWorkbench'), exact: false },
     { to: '/editor', icon: RecipeEditorIcon, label: t('nav.recipeEditor'), exact: false },
     { to: '/convert', icon: ConversionToolIcon, label: t('nav.conversionTool'), exact: false },
     { to: '/debug', icon: DebugIcon, label: t('nav.debug'), exact: false },

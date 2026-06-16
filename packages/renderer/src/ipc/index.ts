@@ -33,6 +33,7 @@ import type {
   EngineDryRunResult,
   KubeJsExportParams,
   KubeJsExportResult,
+  KubeJsPreviewResult,
   KubeJsRevertResult,
 } from '@delightify/shared';
 import { mockElectronAPI } from './mock';
@@ -83,6 +84,7 @@ export interface ElectronAPI {
   ) => Promise<IpcResponse<EngineBlastSummary>>;
 
   // ========== 导出 ==========
+  previewKubeJs: (params: KubeJsExportParams) => Promise<{ success: boolean; data?: KubeJsPreviewResult; error?: string }>;
   exportKubeJs: (projectPath: string, params: KubeJsExportParams) => Promise<{ success: boolean; data?: KubeJsExportResult; error?: string }>;
   revertKubeJs: (projectPath: string) => Promise<{ success: boolean; data?: KubeJsRevertResult; error?: string }>;
 

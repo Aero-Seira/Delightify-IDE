@@ -4,12 +4,14 @@ import type {
   ChangeOperation,
   KubeJsExportParams,
   KubeJsExportResult,
+  KubeJsPreviewResult,
   KubeJsRevertResult,
 } from '@delightify/shared';
 
 export type {
   KubeJsExportParams,
   KubeJsExportResult,
+  KubeJsPreviewResult,
   KubeJsRevertResult,
 };
 
@@ -369,6 +371,23 @@ export function generateKubeJs(changeSet: ChangeOperation[], generatedAt = new D
     throw new Error('change set 没有可导出的 KubeJS server script 操作');
   }
   return recipesFile.content;
+}
+
+export function previewKubeJs(
+  params: KubeJsExportParams,
+  generatedAt = new Date().toISOString()
+): KubeJsPreviewResult {
+  const files = emitChangeSet(params.changeSet, generatedAt);
+
+  return {
+    operationCount: params.changeSet.length,
+    generatedAt,
+    files: files.map(file => ({
+      relativePath: file.relativePath,
+      operationCount: fileOperationCount(file.relativePath, params.changeSet),
+      content: file.content,
+    })),
+  };
 }
 
 async function readExistingFile(filePath: string): Promise<string | null> {

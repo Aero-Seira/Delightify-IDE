@@ -10,6 +10,7 @@ import ProjectManagerPage from './pages/ProjectManager';
 import DataImportPage from './pages/ModManager';
 import ItemBrowserPage from './pages/ItemBrowser';
 import RecipeBrowserPage from './pages/RecipeBrowser';
+import ActionWorkbenchPage from './pages/ActionWorkbench';
 import RecipeEditorPage from './pages/RecipeEditor';
 import ConversionToolPage from './pages/ConversionTool';
 import DebugToolsPage from './pages/DebugTools';
@@ -34,6 +35,8 @@ function AppContent(): React.ReactElement {
         return t('nav.itemBrowser');
       case '/recipes':
         return t('nav.recipeBrowser');
+      case '/actions':
+        return t('nav.actionWorkbench');
       case '/editor':
         return t('nav.recipeEditor');
       case '/convert':
@@ -65,6 +68,7 @@ function AppContent(): React.ReactElement {
             <Route path="/data-import" element={<DataImportPage />} />
             <Route path="/items" element={<ItemBrowserPage />} />
             <Route path="/recipes" element={<RecipeBrowserPage />} />
+            <Route path="/actions" element={<ActionWorkbenchPage />} />
             <Route path="/editor" element={<RecipeEditorPage />} />
             <Route path="/convert" element={<ConversionToolPage />} />
             <Route path="/debug" element={<DebugToolsPage />} />

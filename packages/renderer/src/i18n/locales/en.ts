@@ -21,6 +21,7 @@ const en: TranslationData = {
     dataImport: 'Data Import',
     itemBrowser: 'Item Browser',
     recipeBrowser: 'Recipe Browser',
+    actionWorkbench: 'Action Workbench',
     recipeEditor: 'Recipe Editor',
     conversionTool: 'Conversion Tool',
     debug: 'Database',

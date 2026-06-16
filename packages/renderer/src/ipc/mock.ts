@@ -21,6 +21,7 @@ import type {
   EngineDryRunResult,
   KubeJsExportParams,
   KubeJsExportResult,
+  KubeJsPreviewResult,
   KubeJsRevertResult,
 } from '@delightify/shared';
 import type { ElectronAPI } from './index';
@@ -675,6 +676,38 @@ export const mockElectronAPI = {
   }),
 
   // ========== 导出 ==========
+  previewKubeJs: async (
+    params: KubeJsExportParams
+  ): Promise<{ success: boolean; data: KubeJsPreviewResult }> => {
+    const generatedAt = new Date().toISOString();
+    const content = params.changeSet.length === 0
+      ? ''
+      : [
+        '// @delightify-generated',
+        '// Do not edit by hand. Regenerate from Delightify.',
+        `// Generated at: ${generatedAt}`,
+        '',
+        'ServerEvents.recipes(event => {',
+        '}',
+        '',
+      ].join('\n');
+
+    return {
+      success: true,
+      data: {
+        operationCount: params.changeSet.length,
+        generatedAt,
+        files: params.changeSet.length === 0 ? [] : [
+          {
+            relativePath: 'kubejs/server_scripts/zzz_delightify_generated.js',
+            operationCount: params.changeSet.length,
+            content,
+          },
+        ],
+      },
+    };
+  },
+
   exportKubeJs: async (
     projectPath: string,
     params: KubeJsExportParams

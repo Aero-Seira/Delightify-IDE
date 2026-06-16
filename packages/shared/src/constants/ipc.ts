@@ -54,6 +54,7 @@ export const IPC_CHANNELS = {
   RECIPE_EDIT_LIST: 'recipe-edit:list',
 
   // Export
+  EXPORT_KUBEJS_PREVIEW: 'export:kubejs:preview',
   EXPORT_KUBEJS: 'export:kubejs',
   EXPORT_KUBEJS_REVERT: 'export:kubejs:revert',
   // reserved：输出层
