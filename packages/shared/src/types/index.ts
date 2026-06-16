@@ -14,3 +14,4 @@ export * from './theme';
 export * from './unify';
 export * from './export';
 export * from './engine';
+export * from './script-workspace';

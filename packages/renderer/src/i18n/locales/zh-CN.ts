@@ -22,6 +22,7 @@ const zhCN: TranslationData = {
     itemBrowser: '物品浏览器',
     recipeBrowser: '配方浏览器',
     actionWorkbench: '动作工作台',
+    scriptWorkspace: '脚本工作区',
     recipeEditor: '配方编辑器',
     conversionTool: '转换工具',
     debug: '数据库管理',

@@ -68,6 +68,11 @@ const IPC_CHANNELS = {
   // reserved：输出层
   EXPORT_DATAPACK: 'export:datapack',
 
+  // Script workspace
+  SCRIPT_WORKSPACE_LIST: 'script-workspace:list',
+  SCRIPT_WORKSPACE_READ: 'script-workspace:read',
+  SCRIPT_WORKSPACE_SAVE: 'script-workspace:save',
+
   // Shell
   SHELL_OPEN_EXTERNAL: 'shell:open-external',
 
@@ -150,6 +155,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke(IPC_CHANNELS.EXPORT_KUBEJS, projectPath, params),
   revertKubeJs: (projectPath: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.EXPORT_KUBEJS_REVERT, projectPath),
+
+  // ========== 脚本工作区 ==========
+  scriptWorkspaceList: (projectPath: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.SCRIPT_WORKSPACE_LIST, projectPath),
+  scriptWorkspaceRead: (projectPath: string, relativePath: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.SCRIPT_WORKSPACE_READ, projectPath, relativePath),
+  scriptWorkspaceSave: (projectPath: string, relativePath: string, content: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.SCRIPT_WORKSPACE_SAVE, projectPath, relativePath, content),
 
   // ========== 通用工具 ==========
   openExternal: (url: string) => ipcRenderer.invoke(IPC_CHANNELS.SHELL_OPEN_EXTERNAL, url),

@@ -60,6 +60,11 @@ export const IPC_CHANNELS = {
   // reserved：输出层
   EXPORT_DATAPACK: 'export:datapack',
 
+  // Script workspace
+  SCRIPT_WORKSPACE_LIST: 'script-workspace:list',
+  SCRIPT_WORKSPACE_READ: 'script-workspace:read',
+  SCRIPT_WORKSPACE_SAVE: 'script-workspace:save',
+
   // Shell
   SHELL_OPEN_EXTERNAL: 'shell:open-external',
 

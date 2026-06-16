@@ -23,6 +23,9 @@ import type {
   KubeJsExportResult,
   KubeJsPreviewResult,
   KubeJsRevertResult,
+  ScriptWorkspaceListResult,
+  ScriptWorkspaceReadResult,
+  ScriptWorkspaceSaveResult,
 } from '@delightify/shared';
 import type { ElectronAPI } from './index';
 
@@ -750,6 +753,86 @@ export const mockElectronAPI = {
     data: {
       filePath: `${projectPath}/kubejs/server_scripts/zzz_delightify_generated.js`,
       deleted: true,
+    },
+  }),
+
+  // ========== 脚本工作区 ==========
+  scriptWorkspaceList: async (
+    projectPath: string
+  ): Promise<IpcResponse<ScriptWorkspaceListResult>> => ({
+    success: true,
+    data: {
+      files: [
+        {
+          relativePath: 'kubejs/server_scripts/zzz_delightify_generated.js',
+          filePath: `${projectPath}/kubejs/server_scripts/zzz_delightify_generated.js`,
+          kind: 'managed',
+          language: 'javascript',
+          editable: true,
+          exists: true,
+          size: 132,
+          modifiedAt: new Date().toISOString(),
+        },
+        {
+          relativePath: 'kubejs/.delightify-generated.json',
+          filePath: `${projectPath}/kubejs/.delightify-generated.json`,
+          kind: 'manifest',
+          language: 'json',
+          editable: false,
+          exists: true,
+          size: 118,
+          modifiedAt: new Date().toISOString(),
+        },
+        {
+          relativePath: 'kubejs/server_scripts/user_example.js',
+          filePath: `${projectPath}/kubejs/server_scripts/user_example.js`,
+          kind: 'user',
+          language: 'javascript',
+          editable: false,
+          exists: true,
+          size: 64,
+          modifiedAt: new Date().toISOString(),
+        },
+      ],
+    },
+  }),
+
+  scriptWorkspaceRead: async (
+    projectPath: string,
+    relativePath: string
+  ): Promise<IpcResponse<ScriptWorkspaceReadResult>> => ({
+    success: true,
+    data: {
+      file: {
+        relativePath,
+        filePath: `${projectPath}/${relativePath}`,
+        kind: relativePath.includes('user_') ? 'user' : relativePath.endsWith('.json') ? 'manifest' : 'managed',
+        language: relativePath.endsWith('.json') ? 'json' : 'javascript',
+        editable: !relativePath.includes('user_') && !relativePath.endsWith('.json'),
+        exists: true,
+      },
+      content: relativePath.endsWith('.json')
+        ? '{\n  "marker": "@delightify-generated",\n  "files": []\n}\n'
+        : '// @delightify-generated\nServerEvents.recipes(event => {\n})\n',
+    },
+  }),
+
+  scriptWorkspaceSave: async (
+    projectPath: string,
+    relativePath: string
+  ): Promise<IpcResponse<ScriptWorkspaceSaveResult>> => ({
+    success: true,
+    data: {
+      file: {
+        relativePath,
+        filePath: `${projectPath}/${relativePath}`,
+        kind: 'managed',
+        language: relativePath.endsWith('.json') ? 'json' : 'javascript',
+        editable: true,
+        exists: true,
+        modifiedAt: new Date().toISOString(),
+      },
+      savedAt: new Date().toISOString(),
     },
   }),
 

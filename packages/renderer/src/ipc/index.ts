@@ -35,6 +35,9 @@ import type {
   KubeJsExportResult,
   KubeJsPreviewResult,
   KubeJsRevertResult,
+  ScriptWorkspaceListResult,
+  ScriptWorkspaceReadResult,
+  ScriptWorkspaceSaveResult,
 } from '@delightify/shared';
 import { mockElectronAPI } from './mock';
 
@@ -87,6 +90,15 @@ export interface ElectronAPI {
   previewKubeJs: (params: KubeJsExportParams) => Promise<{ success: boolean; data?: KubeJsPreviewResult; error?: string }>;
   exportKubeJs: (projectPath: string, params: KubeJsExportParams) => Promise<{ success: boolean; data?: KubeJsExportResult; error?: string }>;
   revertKubeJs: (projectPath: string) => Promise<{ success: boolean; data?: KubeJsRevertResult; error?: string }>;
+
+  // ========== 脚本工作区 ==========
+  scriptWorkspaceList: (projectPath: string) => Promise<IpcResponse<ScriptWorkspaceListResult>>;
+  scriptWorkspaceRead: (projectPath: string, relativePath: string) => Promise<IpcResponse<ScriptWorkspaceReadResult>>;
+  scriptWorkspaceSave: (
+    projectPath: string,
+    relativePath: string,
+    content: string
+  ) => Promise<IpcResponse<ScriptWorkspaceSaveResult>>;
 
   // ========== 通用工具 ==========
   openExternal: (url: string) => Promise<void>;

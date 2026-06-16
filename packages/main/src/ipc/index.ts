@@ -15,6 +15,7 @@ import { registerUnifyHandlers } from './unify';
 import { registerExportHandlers } from './export';
 import { registerDebugHandlers } from './debug';
 import { registerEngineHandlers } from './engine';
+import { registerScriptWorkspaceHandlers } from './script-workspace';
 
 export function registerAllHandlers(): void {
   registerProjectHandlers();
@@ -25,6 +26,7 @@ export function registerAllHandlers(): void {
   registerUnifyHandlers();
   registerEngineHandlers();
   registerExportHandlers();
+  registerScriptWorkspaceHandlers();
   registerDebugHandlers();
   
   // 通用工具处理器

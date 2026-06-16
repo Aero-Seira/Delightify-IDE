@@ -22,6 +22,7 @@ const en: TranslationData = {
     itemBrowser: 'Item Browser',
     recipeBrowser: 'Recipe Browser',
     actionWorkbench: 'Action Workbench',
+    scriptWorkspace: 'Script Workspace',
     recipeEditor: 'Recipe Editor',
     conversionTool: 'Conversion Tool',
     debug: 'Database',
