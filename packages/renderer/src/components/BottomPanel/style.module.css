@@ -1,0 +1,91 @@
+.panel {
+  min-height: var(--panel-tabs-height);
+  background: var(--bg-primary);
+  border-top: 1px solid var(--border);
+}
+
+.panelExpanded {
+  height: 180px;
+  display: flex;
+  flex-direction: column;
+}
+
+.tabBar {
+  height: var(--panel-tabs-height);
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+}
+
+.tab,
+.toggleButton {
+  height: 100%;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--space-3);
+  color: var(--text-secondary);
+  background: transparent;
+  border: 0;
+  border-right: 1px solid var(--border);
+  cursor: pointer;
+  font-size: var(--font-size-xs);
+}
+
+.tab:hover,
+.toggleButton:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+.tabActive {
+  color: var(--text-primary);
+  box-shadow: inset 0 2px 0 var(--primary);
+}
+
+.toggleButton {
+  margin-left: auto;
+  border-left: 1px solid var(--border);
+  border-right: 0;
+}
+
+.content {
+  flex: 1;
+  min-height: 0;
+  padding: var(--space-3);
+  overflow: auto;
+}
+
+.empty,
+.problem,
+.output {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  line-height: 1.5;
+}
+
+.empty {
+  color: var(--text-tertiary);
+}
+
+.problemList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.problem {
+  color: var(--warning);
+}
+
+.output {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  color: var(--text-secondary);
+}
+
+@media (max-width: 720px) {
+  .panelExpanded {
+    height: 140px;
+  }
+}

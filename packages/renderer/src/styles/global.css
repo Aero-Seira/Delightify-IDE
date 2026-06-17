@@ -124,7 +124,10 @@
   --sidebar-width: 320px;
   --sidebar-collapsed: 56px;
   --header-height: 48px;
+  --tabs-height: 34px;
+  --panel-tabs-height: 30px;
   --statusbar-height: 24px;
+  --inspector-width: 280px;
 }
 
 /* ============================================

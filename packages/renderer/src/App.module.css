@@ -19,6 +19,13 @@
   margin-left: var(--sidebar-collapsed);
 }
 
+.workbenchBody {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+}
+
 .mainContent {
   flex: 1;
   min-height: 0;

@@ -6,6 +6,9 @@ import ErrorBoundary from './components/ErrorBoundary';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import StatusBar from './components/StatusBar';
+import WorkbenchTabs from './components/WorkbenchTabs';
+import InspectorPanel from './components/InspectorPanel';
+import BottomPanel from './components/BottomPanel';
 import Dashboard from './pages/Dashboard';
 import ProjectManagerPage from './pages/ProjectManager';
 import DataImportPage from './pages/ModManager';
@@ -65,28 +68,33 @@ function AppContent(): React.ReactElement {
           pageTitle={pageTitle}
           onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)} 
         />
-        
-        <main className={styles.mainContent}>
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/projects" element={<ProjectManagerPage />} />
-            <Route path="/data-import" element={<DataImportPage />} />
-            <Route path="/items" element={<ItemBrowserPage />} />
-            <Route path="/recipes" element={<RecipeBrowserPage />} />
-            <Route path="/actions" element={<ActionWorkbenchPage />} />
-            <Route
-              path="/scripts"
-              element={(
-                <Suspense fallback={<div className={styles.routeLoading}>{t('common.loading')}</div>}>
-                  <ScriptWorkspacePage />
-                </Suspense>
-              )}
-            />
-            <Route path="/editor" element={<RecipeEditorPage />} />
-            <Route path="/convert" element={<ConversionToolPage />} />
-            <Route path="/debug" element={<DebugToolsPage />} />
-          </Routes>
-        </main>
+        <WorkbenchTabs pageTitle={pageTitle} />
+
+        <div className={styles.workbenchBody}>
+          <main className={styles.mainContent}>
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/projects" element={<ProjectManagerPage />} />
+              <Route path="/data-import" element={<DataImportPage />} />
+              <Route path="/items" element={<ItemBrowserPage />} />
+              <Route path="/recipes" element={<RecipeBrowserPage />} />
+              <Route path="/actions" element={<ActionWorkbenchPage />} />
+              <Route
+                path="/scripts"
+                element={(
+                  <Suspense fallback={<div className={styles.routeLoading}>{t('common.loading')}</div>}>
+                    <ScriptWorkspacePage />
+                  </Suspense>
+                )}
+              />
+              <Route path="/editor" element={<RecipeEditorPage />} />
+              <Route path="/convert" element={<ConversionToolPage />} />
+              <Route path="/debug" element={<DebugToolsPage />} />
+            </Routes>
+          </main>
+          <InspectorPanel />
+        </div>
+        <BottomPanel />
         <StatusBar />
       </div>
     </div>
