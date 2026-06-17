@@ -35,10 +35,13 @@ import type {
   KubeJsExportResult,
   KubeJsPreviewResult,
   KubeJsRevertResult,
+  ScriptWorkspaceCopyAsManagedResult,
   ScriptWorkspaceListResult,
   ScriptWorkspaceReadResult,
   ScriptWorkspaceSaveResult,
+  ScriptWorkspaceSaveOptions,
   ScriptWorkspaceCreateManagedResult,
+  ScriptWorkspaceCreateUserResult,
 } from '@delightify/shared';
 import { mockElectronAPI } from './mock';
 
@@ -98,12 +101,22 @@ export interface ElectronAPI {
   scriptWorkspaceSave: (
     projectPath: string,
     relativePath: string,
-    content: string
+    content: string,
+    options?: ScriptWorkspaceSaveOptions
   ) => Promise<IpcResponse<ScriptWorkspaceSaveResult>>;
   scriptWorkspaceCreateManaged: (
     projectPath: string,
     relativePath?: string
   ) => Promise<IpcResponse<ScriptWorkspaceCreateManagedResult>>;
+  scriptWorkspaceCreateUser: (
+    projectPath: string,
+    relativePath?: string
+  ) => Promise<IpcResponse<ScriptWorkspaceCreateUserResult>>;
+  scriptWorkspaceCopyAsManaged: (
+    projectPath: string,
+    sourceRelativePath: string,
+    targetRelativePath?: string
+  ) => Promise<IpcResponse<ScriptWorkspaceCopyAsManagedResult>>;
 
   // ========== 通用工具 ==========
   openExternal: (url: string) => Promise<void>;

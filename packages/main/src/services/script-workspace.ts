@@ -2,9 +2,12 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import type {
   ScriptWorkspaceFile,
+  ScriptWorkspaceCopyAsManagedResult,
   ScriptWorkspaceCreateManagedResult,
+  ScriptWorkspaceCreateUserResult,
   ScriptWorkspaceListResult,
   ScriptWorkspaceReadResult,
+  ScriptWorkspaceSaveOptions,
   ScriptWorkspaceSaveResult,
 } from '@delightify/shared';
 
@@ -23,17 +26,54 @@ const GENERATED_MARKER = '@delightify-generated';
 const GENERATED_MANIFEST_RELATIVE_PATH = 'kubejs/.delightify-generated.json';
 const LEGACY_SERVER_SCRIPT_RELATIVE_PATH = 'kubejs/server_scripts/zzz_delightify_generated.js';
 const DEFAULT_MANUAL_SCRIPT_RELATIVE_PATH = 'kubejs/server_scripts/zzz_delightify_manual.js';
-const SCRIPT_ROOTS = [
-  'kubejs/server_scripts',
-  'kubejs/client_scripts',
-  'kubejs/startup_scripts',
-  'kubejs/assets',
-];
-const FILE_EXTENSIONS = new Set(['.js', '.json']);
+const DEFAULT_USER_SCRIPT_RELATIVE_PATH = 'kubejs/server_scripts/user_script.js';
+const MAX_EDITABLE_TEXT_FILE_BYTES = 1024 * 1024;
 const SCRIPT_FILE_ROOTS = [
   'kubejs/server_scripts',
   'kubejs/client_scripts',
   'kubejs/startup_scripts',
+];
+const SAFE_TEXT_ROOTS = [
+  {
+    root: 'kubejs/server_scripts',
+    extensions: new Set(['.js']),
+  },
+  {
+    root: 'kubejs/client_scripts',
+    extensions: new Set(['.js']),
+  },
+  {
+    root: 'kubejs/startup_scripts',
+    extensions: new Set(['.js']),
+  },
+  {
+    root: 'kubejs/assets',
+    extensions: new Set(['.json', '.json5', '.mcmeta']),
+  },
+  {
+    root: 'kubejs/data',
+    extensions: new Set(['.json', '.json5', '.mcfunction', '.mcmeta']),
+  },
+  {
+    root: 'config',
+    extensions: new Set(['.cfg', '.conf', '.json', '.json5', '.properties', '.toml', '.txt', '.yaml', '.yml']),
+  },
+  {
+    root: 'datapacks',
+    extensions: new Set(['.json', '.json5', '.mcfunction', '.mcmeta']),
+  },
+  {
+    root: 'resourcepacks',
+    extensions: new Set(['.json', '.json5', '.lang', '.mcmeta', '.properties', '.txt']),
+  },
+];
+const SAFE_TEXT_EXTENSIONS = new Set(SAFE_TEXT_ROOTS.flatMap(root => [...root.extensions]));
+const DENIED_PATH_PREFIXES = [
+  '.git',
+  '.delightify',
+  'mods',
+  'libraries',
+  'versions',
 ];
 
 function toPosixPath(value: string): string {
@@ -57,15 +97,27 @@ function absolutePath(projectPath: string, relativePath: string): string {
   return path.join(projectPath, normalizeRelativePath(relativePath));
 }
 
-function isAllowedScriptPath(relativePath: string): boolean {
+function isPathUnderRoot(relativePath: string, root: string): boolean {
+  return relativePath === root || relativePath.startsWith(`${root}/`);
+}
+
+function isDeniedWorkspacePath(relativePath: string): boolean {
+  const normalized = normalizeRelativePath(relativePath);
+  return DENIED_PATH_PREFIXES.some(prefix => isPathUnderRoot(normalized, prefix));
+}
+
+function isSafeTextWorkspacePath(relativePath: string): boolean {
   const normalized = normalizeRelativePath(relativePath);
   if (normalized === GENERATED_MANIFEST_RELATIVE_PATH) {
     return true;
   }
+  if (isDeniedWorkspacePath(normalized)) {
+    return false;
+  }
 
   const extension = path.posix.extname(normalized);
-  return FILE_EXTENSIONS.has(extension) && SCRIPT_ROOTS.some(root => (
-    normalized === root || normalized.startsWith(`${root}/`)
+  return SAFE_TEXT_ROOTS.some(root => (
+    root.extensions.has(extension) && isPathUnderRoot(normalized, root.root)
   ));
 }
 
@@ -76,6 +128,12 @@ function languageFor(relativePath: string): ScriptWorkspaceFile['language'] {
   }
   if (extension === '.json') {
     return 'json';
+  }
+  if (extension === '.json5' || extension === '.mcmeta') {
+    return 'json';
+  }
+  if (extension === '.yaml' || extension === '.yml') {
+    return 'yaml';
   }
   return 'plaintext';
 }
@@ -160,26 +218,40 @@ async function classifyFile(
   manifestPaths: Set<string>
 ): Promise<ScriptWorkspaceFile> {
   const normalized = normalizeRelativePath(relativePath);
-  if (!isAllowedScriptPath(normalized)) {
-    throw new Error(`脚本路径不在允许范围内: ${relativePath}`);
+  if (!isSafeTextWorkspacePath(normalized)) {
+    throw new Error(`文件路径不在脚本工作区允许范围内: ${relativePath}`);
   }
 
   const filePath = absolutePath(projectPath, normalized);
   const stat = await statIfExists(filePath);
   const isManifest = normalized === GENERATED_MANIFEST_RELATIVE_PATH;
-  const markerOwned = isJavaScriptWorkspaceScript(normalized) && await isMarkerOwned(projectPath, normalized);
+  const isTooLarge = stat !== null && stat.size > MAX_EDITABLE_TEXT_FILE_BYTES;
+  const markerOwned = !isTooLarge && isJavaScriptWorkspaceScript(normalized) && await isMarkerOwned(projectPath, normalized);
   const isManaged = !isManifest && (
     manifestPaths.has(normalized) ||
     markerOwned ||
     normalized === LEGACY_SERVER_SCRIPT_RELATIVE_PATH && markerOwned
   );
+  const kind: ScriptWorkspaceFile['kind'] = isManifest
+    ? 'manifest'
+    : isTooLarge
+      ? 'readonly'
+      : isManaged
+        ? 'managed'
+        : 'user';
 
   return {
     relativePath: normalized,
     filePath,
-    kind: isManifest ? 'manifest' : isManaged ? 'managed' : 'user',
+    kind,
     language: languageFor(normalized),
-    editable: isManaged,
+    editable: kind === 'managed' || kind === 'user',
+    requiresSaveConfirmation: kind === 'user',
+    readOnlyReason: isManifest
+      ? '生成清单只读，用于判断 Delightify managed 文件归属。'
+      : isTooLarge
+        ? `文件超过 ${(MAX_EDITABLE_TEXT_FILE_BYTES / 1024 / 1024).toFixed(0)} MB，暂不允许在工作区直接编辑。`
+        : undefined,
     exists: stat !== null,
     size: stat?.size,
     modifiedAt: stat?.modifiedAt,
@@ -196,7 +268,11 @@ async function walkFiles(rootPath: string, rootRelativePath: string): Promise<st
       const childRelativePath = path.posix.join(rootRelativePath, entry.name);
       if (entry.isDirectory()) {
         files.push(...await walkFiles(childPath, childRelativePath));
-      } else if (entry.isFile() && FILE_EXTENSIONS.has(path.posix.extname(childRelativePath))) {
+      } else if (
+        entry.isFile() &&
+        SAFE_TEXT_EXTENSIONS.has(path.posix.extname(childRelativePath)) &&
+        isSafeTextWorkspacePath(childRelativePath)
+      ) {
         files.push(childRelativePath);
       }
     }
@@ -213,8 +289,9 @@ async function walkFiles(rootPath: string, rootRelativePath: string): Promise<st
 function sortFiles(left: ScriptWorkspaceFile, right: ScriptWorkspaceFile): number {
   const rank: Record<ScriptWorkspaceFile['kind'], number> = {
     managed: 1,
-    manifest: 2,
-    user: 3,
+    user: 2,
+    readonly: 3,
+    manifest: 4,
   };
   const rankDiff = rank[left.kind] - rank[right.kind];
   if (rankDiff !== 0) {
@@ -238,7 +315,7 @@ export async function listScriptWorkspaceFiles(projectPath: string): Promise<Scr
     relativePaths.add(LEGACY_SERVER_SCRIPT_RELATIVE_PATH);
   }
 
-  for (const root of SCRIPT_ROOTS) {
+  for (const { root } of SAFE_TEXT_ROOTS) {
     const rootPath = path.join(projectPath, root);
     for (const relativePath of await walkFiles(rootPath, root)) {
       relativePaths.add(toPosixPath(relativePath));
@@ -260,6 +337,9 @@ export async function readScriptWorkspaceFile(
 ): Promise<ScriptWorkspaceReadResult> {
   const manifest = await readGeneratedManifest(projectPath);
   const file = await classifyFile(projectPath, relativePath, manifestRelativePaths(manifest));
+  if (file.kind === 'readonly' && file.size !== undefined && file.size > MAX_EDITABLE_TEXT_FILE_BYTES) {
+    throw new Error(file.readOnlyReason ?? `文件过大，暂不允许在工作区打开: ${file.relativePath}`);
+  }
   const content = await readTextIfExists(file.filePath);
   if (content === null) {
     throw new Error(`文件不存在: ${file.relativePath}`);
@@ -271,13 +351,29 @@ export async function readScriptWorkspaceFile(
 export async function saveScriptWorkspaceFile(
   projectPath: string,
   relativePath: string,
-  content: string
+  content: string,
+  options: ScriptWorkspaceSaveOptions = {}
 ): Promise<ScriptWorkspaceSaveResult> {
   const manifest = await readGeneratedManifest(projectPath);
   const manifestPaths = manifestRelativePaths(manifest);
   const file = await classifyFile(projectPath, relativePath, manifestPaths);
   if (!file.editable) {
-    throw new Error(`拒绝保存非 Delightify managed 文件: ${file.relativePath}`);
+    throw new Error(`拒绝保存只读文件: ${file.relativePath}`);
+  }
+  if (!file.exists) {
+    throw new Error(`拒绝通过保存创建文件，请先使用新建文件入口: ${file.relativePath}`);
+  }
+
+  if (file.kind === 'user') {
+    if (!options.confirmUserFileWrite) {
+      throw new Error(`保存用户文件需要显式确认: ${file.relativePath}`);
+    }
+
+    await fs.writeFile(file.filePath, content, 'utf8');
+    return {
+      file: await classifyFile(projectPath, relativePath, manifestPaths),
+      savedAt: new Date().toISOString(),
+    };
   }
 
   const isJsFile = path.posix.extname(file.relativePath) === '.js';
@@ -315,6 +411,55 @@ function managedManualScriptTemplate(): string {
   ].join('\n');
 }
 
+function userFileTemplate(relativePath: string): string {
+  const extension = path.posix.extname(relativePath);
+  if (extension === '.js') {
+    return [
+      'ServerEvents.recipes(event => {',
+      '  // Add manual KubeJS changes here.',
+      '})',
+      '',
+    ].join('\n');
+  }
+  if (extension === '.json' || extension === '.json5' || extension === '.mcmeta') {
+    return '{\n  \n}\n';
+  }
+  return '';
+}
+
+async function nextAvailableRelativePath(projectPath: string, relativePath: string): Promise<string> {
+  const normalized = normalizeRelativePath(relativePath);
+  const extension = path.posix.extname(normalized);
+  const directory = path.posix.dirname(normalized);
+  const baseName = path.posix.basename(normalized, extension);
+
+  for (let index = 1; index < 1000; index += 1) {
+    const candidate = index === 1
+      ? normalized
+      : path.posix.join(directory, `${baseName}_${index}${extension}`);
+    if (await readTextIfExists(absolutePath(projectPath, candidate)) === null) {
+      return candidate;
+    }
+  }
+
+  throw new Error(`无法找到可用文件名: ${relativePath}`);
+}
+
+function assertCreatableUserWorkspacePath(relativePath: string): string {
+  const normalized = normalizeRelativePath(relativePath);
+  if (normalized === GENERATED_MANIFEST_RELATIVE_PATH || !isSafeTextWorkspacePath(normalized)) {
+    throw new Error(`用户文件必须位于安全文本工作区内: ${relativePath}`);
+  }
+  return normalized;
+}
+
+function defaultManagedCopyPath(sourceRelativePath: string): string {
+  const normalized = normalizeRelativePath(sourceRelativePath);
+  const directory = path.posix.dirname(normalized);
+  const sourceBaseName = path.posix.basename(normalized, '.js').replaceAll(/[^a-zA-Z0-9_-]/g, '_');
+  return path.posix.join(directory, `zzz_delightify_${sourceBaseName}.js`);
+}
+
 export async function createManagedScriptWorkspaceFile(
   projectPath: string,
   relativePath = DEFAULT_MANUAL_SCRIPT_RELATIVE_PATH
@@ -349,5 +494,87 @@ export async function createManagedScriptWorkspaceFile(
     file: await classifyFile(projectPath, normalized, manifestPaths),
     content,
     created: true,
+  };
+}
+
+export async function createUserScriptWorkspaceFile(
+  projectPath: string,
+  relativePath = DEFAULT_USER_SCRIPT_RELATIVE_PATH
+): Promise<ScriptWorkspaceCreateUserResult> {
+  const requestedPath = assertCreatableUserWorkspacePath(relativePath);
+  const normalized = relativePath === DEFAULT_USER_SCRIPT_RELATIVE_PATH
+    ? await nextAvailableRelativePath(projectPath, requestedPath)
+    : requestedPath;
+  const filePath = absolutePath(projectPath, normalized);
+  const existingContent = await readTextIfExists(filePath);
+
+  if (existingContent !== null) {
+    throw new Error(`拒绝覆盖已有用户文件: ${normalized}`);
+  }
+
+  const manifest = await readGeneratedManifest(projectPath);
+  const manifestPaths = manifestRelativePaths(manifest);
+  const content = userFileTemplate(normalized);
+  await fs.mkdir(path.dirname(filePath), { recursive: true });
+  await fs.writeFile(filePath, content, 'utf8');
+
+  return {
+    file: await classifyFile(projectPath, normalized, manifestPaths),
+    content,
+    created: true,
+  };
+}
+
+export async function copyScriptWorkspaceFileAsManaged(
+  projectPath: string,
+  sourceRelativePath: string,
+  targetRelativePath?: string
+): Promise<ScriptWorkspaceCopyAsManagedResult> {
+  const manifest = await readGeneratedManifest(projectPath);
+  const manifestPaths = manifestRelativePaths(manifest);
+  const sourceFile = await classifyFile(projectPath, sourceRelativePath, manifestPaths);
+  if (sourceFile.kind !== 'user' || !sourceFile.exists) {
+    throw new Error(`只能将已存在的用户 KubeJS 脚本复制为 managed: ${sourceFile.relativePath}`);
+  }
+  if (!isJavaScriptWorkspaceScript(sourceFile.relativePath)) {
+    throw new Error(`复制为 managed 当前仅支持 KubeJS .js 脚本: ${sourceFile.relativePath}`);
+  }
+
+  const requestedTarget = targetRelativePath
+    ? normalizeRelativePath(targetRelativePath)
+    : defaultManagedCopyPath(sourceFile.relativePath);
+  if (!isJavaScriptWorkspaceScript(requestedTarget)) {
+    throw new Error(`managed 副本必须位于 KubeJS script 目录并使用 .js 后缀: ${requestedTarget}`);
+  }
+  const target = targetRelativePath
+    ? requestedTarget
+    : await nextAvailableRelativePath(projectPath, requestedTarget);
+  const targetPath = absolutePath(projectPath, target);
+  const existingTargetContent = await readTextIfExists(targetPath);
+  if (existingTargetContent !== null) {
+    throw new Error(`拒绝覆盖已有文件: ${target}`);
+  }
+
+  const sourceContent = await readTextIfExists(sourceFile.filePath);
+  if (sourceContent === null) {
+    throw new Error(`源文件不存在: ${sourceFile.relativePath}`);
+  }
+  const content = sourceContent.includes(GENERATED_MARKER)
+    ? sourceContent
+    : [
+      `// ${GENERATED_MARKER}`,
+      `// Copied from ${sourceFile.relativePath}.`,
+      '',
+      sourceContent,
+    ].join('\n');
+
+  await fs.mkdir(path.dirname(targetPath), { recursive: true });
+  await fs.writeFile(targetPath, content, 'utf8');
+
+  return {
+    file: await classifyFile(projectPath, target, manifestPaths),
+    content,
+    created: true,
+    sourceRelativePath: sourceFile.relativePath,
   };
 }

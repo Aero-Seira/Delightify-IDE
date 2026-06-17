@@ -23,10 +23,12 @@ import type {
   KubeJsExportResult,
   KubeJsPreviewResult,
   KubeJsRevertResult,
+  ScriptWorkspaceCopyAsManagedResult,
   ScriptWorkspaceListResult,
   ScriptWorkspaceReadResult,
   ScriptWorkspaceSaveResult,
   ScriptWorkspaceCreateManagedResult,
+  ScriptWorkspaceCreateUserResult,
 } from '@delightify/shared';
 import type { ElectronAPI } from './index';
 
@@ -789,9 +791,32 @@ export const mockElectronAPI = {
           filePath: `${projectPath}/kubejs/server_scripts/user_example.js`,
           kind: 'user',
           language: 'javascript',
-          editable: false,
+          editable: true,
+          requiresSaveConfirmation: true,
           exists: true,
           size: 64,
+          modifiedAt: new Date().toISOString(),
+        },
+        {
+          relativePath: 'config/example.toml',
+          filePath: `${projectPath}/config/example.toml`,
+          kind: 'user',
+          language: 'plaintext',
+          editable: true,
+          requiresSaveConfirmation: true,
+          exists: true,
+          size: 42,
+          modifiedAt: new Date().toISOString(),
+        },
+        {
+          relativePath: 'config/large-generated.json',
+          filePath: `${projectPath}/config/large-generated.json`,
+          kind: 'readonly',
+          language: 'json',
+          editable: false,
+          readOnlyReason: '文件超过 1 MB，暂不允许在工作区直接编辑。',
+          exists: true,
+          size: 1_250_000,
           modifiedAt: new Date().toISOString(),
         },
       ],
@@ -807,13 +832,25 @@ export const mockElectronAPI = {
       file: {
         relativePath,
         filePath: `${projectPath}/${relativePath}`,
-        kind: relativePath.includes('user_') ? 'user' : relativePath.endsWith('.json') ? 'manifest' : 'managed',
-        language: relativePath.endsWith('.json') ? 'json' : 'javascript',
-        editable: !relativePath.includes('user_') && !relativePath.endsWith('.json'),
+        kind: relativePath.includes('large')
+          ? 'readonly'
+          : relativePath.includes('user_') || relativePath.startsWith('config/')
+            ? 'user'
+            : relativePath.endsWith('.json')
+              ? 'manifest'
+              : 'managed',
+        language: relativePath.endsWith('.json') ? 'json' : relativePath.endsWith('.yml') ? 'yaml' : 'javascript',
+        editable: relativePath.includes('large')
+          ? false
+          : relativePath.includes('user_') || relativePath.startsWith('config/') || !relativePath.endsWith('.json'),
+        requiresSaveConfirmation: relativePath.includes('user_') || relativePath.startsWith('config/'),
+        readOnlyReason: relativePath.includes('large') ? '文件超过 1 MB，暂不允许在工作区直接编辑。' : undefined,
         exists: true,
       },
       content: relativePath.endsWith('.json')
         ? '{\n  "marker": "@delightify-generated",\n  "files": []\n}\n'
+        : relativePath.endsWith('.toml')
+          ? 'enableFeature = true\n'
         : '// @delightify-generated\nServerEvents.recipes(event => {\n})\n',
     },
   }),
@@ -827,9 +864,10 @@ export const mockElectronAPI = {
       file: {
         relativePath,
         filePath: `${projectPath}/${relativePath}`,
-        kind: 'managed',
-        language: relativePath.endsWith('.json') ? 'json' : 'javascript',
+        kind: relativePath.includes('user_') || relativePath.startsWith('config/') ? 'user' : 'managed',
+        language: relativePath.endsWith('.json') ? 'json' : relativePath.endsWith('.yml') ? 'yaml' : 'javascript',
         editable: true,
+        requiresSaveConfirmation: relativePath.includes('user_') || relativePath.startsWith('config/'),
         exists: true,
         modifiedAt: new Date().toISOString(),
       },
@@ -867,6 +905,72 @@ export const mockElectronAPI = {
         },
         content,
         created: true,
+      },
+    };
+  },
+
+  scriptWorkspaceCreateUser: async (
+    projectPath: string
+  ): Promise<IpcResponse<ScriptWorkspaceCreateUserResult>> => {
+    const relativePath = 'kubejs/server_scripts/user_script.js';
+    const content = [
+      'ServerEvents.recipes(event => {',
+      '  // Add manual KubeJS changes here.',
+      '})',
+      '',
+    ].join('\n');
+
+    return {
+      success: true,
+      data: {
+        file: {
+          relativePath,
+          filePath: `${projectPath}/${relativePath}`,
+          kind: 'user',
+          language: 'javascript',
+          editable: true,
+          requiresSaveConfirmation: true,
+          exists: true,
+          size: content.length,
+          modifiedAt: new Date().toISOString(),
+        },
+        content,
+        created: true,
+      },
+    };
+  },
+
+  scriptWorkspaceCopyAsManaged: async (
+    projectPath: string,
+    sourceRelativePath: string
+  ): Promise<IpcResponse<ScriptWorkspaceCopyAsManagedResult>> => {
+    const relativePath = sourceRelativePath.replace(/\/([^/]+)\.js$/, '/zzz_delightify_$1.js');
+    const content = [
+      '// @delightify-generated',
+      `// Copied from ${sourceRelativePath}.`,
+      '',
+      'ServerEvents.recipes(event => {',
+      '  // Copied user script content.',
+      '})',
+      '',
+    ].join('\n');
+
+    return {
+      success: true,
+      data: {
+        file: {
+          relativePath,
+          filePath: `${projectPath}/${relativePath}`,
+          kind: 'managed',
+          language: 'javascript',
+          editable: true,
+          exists: true,
+          size: content.length,
+          modifiedAt: new Date().toISOString(),
+        },
+        content,
+        created: true,
+        sourceRelativePath,
       },
     };
   },

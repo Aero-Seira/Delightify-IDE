@@ -2,13 +2,18 @@ import { ipcMain } from 'electron';
 import { IPC_CHANNELS } from '@delightify/shared';
 import type {
   IpcResponse,
+  ScriptWorkspaceCopyAsManagedResult,
   ScriptWorkspaceCreateManagedResult,
+  ScriptWorkspaceCreateUserResult,
   ScriptWorkspaceListResult,
   ScriptWorkspaceReadResult,
+  ScriptWorkspaceSaveOptions,
   ScriptWorkspaceSaveResult,
 } from '@delightify/shared';
 import {
+  copyScriptWorkspaceFileAsManaged,
   createManagedScriptWorkspaceFile,
+  createUserScriptWorkspaceFile,
   listScriptWorkspaceFiles,
   readScriptWorkspaceFile,
   saveScriptWorkspaceFile,
@@ -46,10 +51,11 @@ export function registerScriptWorkspaceHandlers(): void {
     _event,
     projectPath: string,
     relativePath: string,
-    content: string
+    content: string,
+    options?: ScriptWorkspaceSaveOptions
   ): Promise<IpcResponse<ScriptWorkspaceSaveResult>> => {
     try {
-      const result = await saveScriptWorkspaceFile(projectPath, relativePath, content);
+      const result = await saveScriptWorkspaceFile(projectPath, relativePath, content, options);
       return { success: true, data: result };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '脚本文件保存失败';
@@ -67,6 +73,35 @@ export function registerScriptWorkspaceHandlers(): void {
       return { success: true, data: result };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '受管脚本创建失败';
+      return { success: false, error: errorMessage };
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.SCRIPT_WORKSPACE_CREATE_USER, async (
+    _event,
+    projectPath: string,
+    relativePath?: string
+  ): Promise<IpcResponse<ScriptWorkspaceCreateUserResult>> => {
+    try {
+      const result = await createUserScriptWorkspaceFile(projectPath, relativePath);
+      return { success: true, data: result };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '用户文件创建失败';
+      return { success: false, error: errorMessage };
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.SCRIPT_WORKSPACE_COPY_AS_MANAGED, async (
+    _event,
+    projectPath: string,
+    sourceRelativePath: string,
+    targetRelativePath?: string
+  ): Promise<IpcResponse<ScriptWorkspaceCopyAsManagedResult>> => {
+    try {
+      const result = await copyScriptWorkspaceFileAsManaged(projectPath, sourceRelativePath, targetRelativePath);
+      return { success: true, data: result };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '复制为 managed 失败';
       return { success: false, error: errorMessage };
     }
   });

@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Editor, { loader } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor/esm/vs/editor/editor.api.js';
 import 'monaco-editor/esm/vs/basic-languages/javascript/javascript.contribution';
+import 'monaco-editor/esm/vs/basic-languages/yaml/yaml.contribution';
 import 'monaco-editor/esm/vs/language/json/monaco.contribution';
 import type { ScriptWorkspaceFile, ScriptWorkspaceReadResult } from '@delightify/shared';
 import { electronAPI } from '../../ipc';
@@ -18,6 +19,8 @@ function kindLabel(kind: ScriptWorkspaceFile['kind']): string {
       return 'Manifest';
     case 'user':
       return 'User';
+    case 'readonly':
+      return 'Read-only';
   }
 }
 
@@ -36,12 +39,29 @@ function fileReadOnlyReason(file: ScriptWorkspaceFile | null): string {
     return '选择一个文件查看内容。';
   }
   if (file.editable) {
+    if (file.kind === 'user') {
+      return '用户文件可手动编辑，保存前需要确认本次写入。';
+    }
     return 'Delightify managed 文件，可在保存前审阅内容。';
   }
   if (file.kind === 'manifest') {
     return '生成清单只读，用于判断 Delightify managed 文件归属。';
   }
-  return '用户脚本默认只读，当前阶段不会覆盖手写脚本。';
+  return file.readOnlyReason ?? '当前文件只读，工作区不会直接覆盖。';
+}
+
+function canCopyAsManaged(file: ScriptWorkspaceFile | null): boolean {
+  if (!file || file.kind !== 'user') {
+    return false;
+  }
+  return (
+    file.relativePath.endsWith('.js') &&
+    (
+      file.relativePath.startsWith('kubejs/server_scripts/') ||
+      file.relativePath.startsWith('kubejs/client_scripts/') ||
+      file.relativePath.startsWith('kubejs/startup_scripts/')
+    )
+  );
 }
 
 export default function ScriptWorkspacePage(): React.ReactElement {
@@ -55,6 +75,8 @@ export default function ScriptWorkspacePage(): React.ReactElement {
   const [isLoadingFile, setIsLoadingFile] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isCreatingManaged, setIsCreatingManaged] = useState(false);
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
+  const [isCopyingManaged, setIsCopyingManaged] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
@@ -63,8 +85,9 @@ export default function ScriptWorkspacePage(): React.ReactElement {
 
   const groupedFiles = useMemo(() => ({
     managed: files.filter(file => file.kind === 'managed'),
-    manifest: files.filter(file => file.kind === 'manifest'),
     user: files.filter(file => file.kind === 'user'),
+    readonly: files.filter(file => file.kind === 'readonly'),
+    manifest: files.filter(file => file.kind === 'manifest'),
   }), [files]);
 
   const loadFiles = useCallback(async (): Promise<void> => {
@@ -154,10 +177,18 @@ export default function ScriptWorkspacePage(): React.ReactElement {
     setSaveMessage(null);
 
     try {
+      const confirmedUserFileWrite = selectedFile.kind === 'user'
+        ? window.confirm('这是用户手写文件。保存会直接覆盖磁盘上的当前文件，且不会纳入 Delightify 自动回滚。确认保存？')
+        : true;
+      if (!confirmedUserFileWrite) {
+        return;
+      }
+
       const response = await electronAPI().scriptWorkspaceSave(
         currentProject.path,
         selectedFile.relativePath,
-        content
+        content,
+        { confirmUserFileWrite: selectedFile.kind === 'user' }
       );
       if (!response.success || !response.data) {
         throw new Error(response.error || '脚本文件保存失败');
@@ -207,6 +238,90 @@ export default function ScriptWorkspacePage(): React.ReactElement {
     }
   };
 
+  const createUserFile = async (): Promise<void> => {
+    if (!currentProject) {
+      return;
+    }
+
+    if (isDirty && !window.confirm('当前文件有未保存修改，创建并切换文件会丢弃这些修改。继续？')) {
+      return;
+    }
+
+    const relativePath = window.prompt(
+      '输入要创建的用户文件路径。可用范围包括 kubejs 脚本、kubejs assets/data、config、datapacks、resourcepacks 的安全文本文件。',
+      'kubejs/server_scripts/user_script.js'
+    );
+    if (relativePath === null) {
+      return;
+    }
+    const trimmedPath = relativePath.trim();
+    if (trimmedPath.length === 0) {
+      setError('用户文件路径不能为空。');
+      return;
+    }
+
+    setIsCreatingUser(true);
+    setError(null);
+    setSaveMessage(null);
+
+    try {
+      const response = await electronAPI().scriptWorkspaceCreateUser(currentProject.path, trimmedPath);
+      if (!response.success || !response.data) {
+        throw new Error(response.error || '用户文件创建失败');
+      }
+      setSelectedPath(response.data.file.relativePath);
+      setReadResult({
+        file: response.data.file,
+        content: response.data.content,
+      });
+      setContent(response.data.content);
+      setOriginalContent(response.data.content);
+      setSaveMessage('已创建用户文件。');
+      await loadFiles();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : '用户文件创建失败');
+    } finally {
+      setIsCreatingUser(false);
+    }
+  };
+
+  const copyAsManaged = async (): Promise<void> => {
+    if (!currentProject || !selectedFile || !canCopyAsManaged(selectedFile)) {
+      return;
+    }
+
+    if (isDirty && !window.confirm('当前文件有未保存修改，复制为 managed 会使用磁盘上的已保存版本。继续？')) {
+      return;
+    }
+
+    setIsCopyingManaged(true);
+    setError(null);
+    setSaveMessage(null);
+
+    try {
+      const response = await electronAPI().scriptWorkspaceCopyAsManaged(
+        currentProject.path,
+        selectedFile.relativePath
+      );
+      if (!response.success || !response.data) {
+        throw new Error(response.error || '复制为 managed 失败');
+      }
+      setSelectedPath(response.data.file.relativePath);
+      setReadResult({
+        file: response.data.file,
+        content: response.data.content,
+      });
+      setContent(response.data.content);
+      setOriginalContent(response.data.content);
+      setSaveMessage(`已从 ${response.data.sourceRelativePath} 创建 managed 副本。`);
+      await loadFiles();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : '复制为 managed 失败');
+    } finally {
+      setIsCopyingManaged(false);
+    }
+  };
+
   const renderFileGroup = (
     title: string,
     groupFiles: ScriptWorkspaceFile[]
@@ -244,7 +359,7 @@ export default function ScriptWorkspacePage(): React.ReactElement {
         <div>
           <h1 className={styles.title}>Script Workspace</h1>
           <p className={styles.description}>
-            查看 KubeJS 受管产物和用户脚本；当前只允许保存 Delightify managed 文件。
+            查看和编辑 Minecraft 实例中的安全文本文件；managed 文件保持标记保护，用户文件保存前需要确认。
           </p>
         </div>
         <div className={styles.headerActions}>
@@ -255,6 +370,22 @@ export default function ScriptWorkspacePage(): React.ReactElement {
             disabled={!currentProject || isCreatingManaged}
           >
             {isCreatingManaged ? '创建中...' : '新建受管脚本'}
+          </button>
+          <button
+            type="button"
+            className={styles.secondaryButton}
+            onClick={createUserFile}
+            disabled={!currentProject || isCreatingUser}
+          >
+            {isCreatingUser ? '创建中...' : '新建用户文件'}
+          </button>
+          <button
+            type="button"
+            className={styles.secondaryButton}
+            onClick={copyAsManaged}
+            disabled={!currentProject || !canCopyAsManaged(selectedFile) || isCopyingManaged}
+          >
+            {isCopyingManaged ? '复制中...' : '复制为 managed'}
           </button>
           <button
             type="button"
@@ -287,12 +418,13 @@ export default function ScriptWorkspacePage(): React.ReactElement {
           </div>
           {files.length === 0 && (
             <div className={styles.emptyState}>
-              {isLoadingFiles ? '正在读取文件...' : '未发现 KubeJS 脚本或 Delightify 生成文件。'}
+              {isLoadingFiles ? '正在读取文件...' : '未发现可编辑的 Minecraft 文本文件或 Delightify 生成文件。'}
             </div>
           )}
           {renderFileGroup('Delightify managed', groupedFiles.managed)}
+          {renderFileGroup('User files', groupedFiles.user)}
+          {renderFileGroup('Read-only', groupedFiles.readonly)}
           {renderFileGroup('Manifest', groupedFiles.manifest)}
-          {renderFileGroup('User scripts', groupedFiles.user)}
         </aside>
 
         <section className={styles.editorPanel}>

@@ -65,6 +65,8 @@ export const IPC_CHANNELS = {
   SCRIPT_WORKSPACE_READ: 'script-workspace:read',
   SCRIPT_WORKSPACE_SAVE: 'script-workspace:save',
   SCRIPT_WORKSPACE_CREATE_MANAGED: 'script-workspace:create-managed',
+  SCRIPT_WORKSPACE_CREATE_USER: 'script-workspace:create-user',
+  SCRIPT_WORKSPACE_COPY_AS_MANAGED: 'script-workspace:copy-as-managed',
 
   // Shell
   SHELL_OPEN_EXTERNAL: 'shell:open-external',

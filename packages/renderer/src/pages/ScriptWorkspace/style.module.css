@@ -201,6 +201,12 @@
   border: 1px solid var(--border);
 }
 
+.kind-readonly {
+  color: var(--warning);
+  background: var(--warning-light);
+  border: 1px solid var(--warning);
+}
+
 .dirtyBadge {
   color: var(--warning);
   background: var(--warning-light);

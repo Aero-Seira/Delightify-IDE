@@ -73,6 +73,8 @@ const IPC_CHANNELS = {
   SCRIPT_WORKSPACE_READ: 'script-workspace:read',
   SCRIPT_WORKSPACE_SAVE: 'script-workspace:save',
   SCRIPT_WORKSPACE_CREATE_MANAGED: 'script-workspace:create-managed',
+  SCRIPT_WORKSPACE_CREATE_USER: 'script-workspace:create-user',
+  SCRIPT_WORKSPACE_COPY_AS_MANAGED: 'script-workspace:copy-as-managed',
 
   // Shell
   SHELL_OPEN_EXTERNAL: 'shell:open-external',
@@ -162,10 +164,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke(IPC_CHANNELS.SCRIPT_WORKSPACE_LIST, projectPath),
   scriptWorkspaceRead: (projectPath: string, relativePath: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.SCRIPT_WORKSPACE_READ, projectPath, relativePath),
-  scriptWorkspaceSave: (projectPath: string, relativePath: string, content: string) =>
-    ipcRenderer.invoke(IPC_CHANNELS.SCRIPT_WORKSPACE_SAVE, projectPath, relativePath, content),
+  scriptWorkspaceSave: (projectPath: string, relativePath: string, content: string, options?: unknown) =>
+    ipcRenderer.invoke(IPC_CHANNELS.SCRIPT_WORKSPACE_SAVE, projectPath, relativePath, content, options),
   scriptWorkspaceCreateManaged: (projectPath: string, relativePath?: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.SCRIPT_WORKSPACE_CREATE_MANAGED, projectPath, relativePath),
+  scriptWorkspaceCreateUser: (projectPath: string, relativePath?: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.SCRIPT_WORKSPACE_CREATE_USER, projectPath, relativePath),
+  scriptWorkspaceCopyAsManaged: (projectPath: string, sourceRelativePath: string, targetRelativePath?: string) =>
+    ipcRenderer.invoke(
+      IPC_CHANNELS.SCRIPT_WORKSPACE_COPY_AS_MANAGED,
+      projectPath,
+      sourceRelativePath,
+      targetRelativePath
+    ),
 
   // ========== 通用工具 ==========
   openExternal: (url: string) => ipcRenderer.invoke(IPC_CHANNELS.SHELL_OPEN_EXTERNAL, url),
