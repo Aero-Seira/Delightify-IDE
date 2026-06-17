@@ -29,7 +29,11 @@ const zhCN: TranslationData = {
   },
   sidebar: {
     main: '主菜单',
+    workspace: '工作区',
+    data: '数据',
     tools: '工具',
+    currentProject: '当前项目',
+    noProject: '未打开项目',
     collapse: '收起侧边栏',
     toggle: '切换侧边栏',
   },

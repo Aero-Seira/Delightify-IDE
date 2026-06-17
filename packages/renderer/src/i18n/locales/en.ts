@@ -29,7 +29,11 @@ const en: TranslationData = {
   },
   sidebar: {
     main: 'Main Menu',
+    workspace: 'Workspace',
+    data: 'Data',
     tools: 'Tools',
+    currentProject: 'Current Project',
+    noProject: 'No Project',
     collapse: 'Collapse Sidebar',
     toggle: 'Toggle Sidebar',
   },

@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useI18n } from '../../i18n';
+import { useProjectStore } from '../../store/projectStore';
 import styles from './style.module.css';
 
 // Icons
@@ -111,22 +112,41 @@ interface SidebarProps {
 export default function Sidebar({ collapsed, onToggleCollapse }: SidebarProps): React.ReactElement {
   const { t } = useI18n();
   const location = useLocation();
+  const { currentProject, projectStatus } = useProjectStore();
 
-  const mainNavItems = [
-    { to: '/', icon: HomeIcon, label: t('nav.dashboard'), exact: true },
-    { to: '/projects', icon: ProjectIcon, label: t('nav.projectManager'), exact: false },
+  const navGroups = [
+    {
+      title: t('sidebar.main'),
+      items: [
+        { to: '/', icon: HomeIcon, label: t('nav.dashboard'), exact: true },
+        { to: '/projects', icon: ProjectIcon, label: t('nav.projectManager'), exact: false },
+      ],
+    },
+    {
+      title: t('sidebar.workspace'),
+      items: [
+        { to: '/actions', icon: ActionWorkbenchIcon, label: t('nav.actionWorkbench'), exact: false },
+        { to: '/scripts', icon: ScriptWorkspaceIcon, label: t('nav.scriptWorkspace'), exact: false },
+      ],
+    },
+    {
+      title: t('sidebar.data'),
+      items: [
+        { to: '/data-import', icon: DataImportIcon, label: t('nav.dataImport'), exact: false },
+        { to: '/items', icon: ItemBrowserIcon, label: t('nav.itemBrowser'), exact: false },
+        { to: '/recipes', icon: RecipeBrowserIcon, label: t('nav.recipeBrowser'), exact: false },
+      ],
+    },
+    {
+      title: t('sidebar.tools'),
+      items: [
+        { to: '/editor', icon: RecipeEditorIcon, label: t('nav.recipeEditor'), exact: false },
+        { to: '/convert', icon: ConversionToolIcon, label: t('nav.conversionTool'), exact: false },
+        { to: '/debug', icon: DebugIcon, label: t('nav.debug'), exact: false },
+      ],
+    },
   ];
-
-  const toolNavItems = [
-    { to: '/data-import', icon: DataImportIcon, label: t('nav.dataImport'), exact: false },
-    { to: '/items', icon: ItemBrowserIcon, label: t('nav.itemBrowser'), exact: false },
-    { to: '/recipes', icon: RecipeBrowserIcon, label: t('nav.recipeBrowser'), exact: false },
-    { to: '/actions', icon: ActionWorkbenchIcon, label: t('nav.actionWorkbench'), exact: false },
-    { to: '/scripts', icon: ScriptWorkspaceIcon, label: t('nav.scriptWorkspace'), exact: false },
-    { to: '/editor', icon: RecipeEditorIcon, label: t('nav.recipeEditor'), exact: false },
-    { to: '/convert', icon: ConversionToolIcon, label: t('nav.conversionTool'), exact: false },
-    { to: '/debug', icon: DebugIcon, label: t('nav.debug'), exact: false },
-  ];
+  const allNavItems = navGroups.flatMap(group => group.items);
 
   const isActive = (to: string, exact: boolean): boolean => {
     if (exact) {
@@ -135,7 +155,7 @@ export default function Sidebar({ collapsed, onToggleCollapse }: SidebarProps): 
     return location.pathname.startsWith(to);
   };
 
-  const renderNavItem = (item: { to: string; icon: React.FC; label: string; exact: boolean }) => {
+  const renderPanelNavItem = (item: { to: string; icon: React.FC; label: string; exact: boolean }) => {
     const Icon = item.icon;
     const active = isActive(item.to, item.exact);
     
@@ -155,37 +175,69 @@ export default function Sidebar({ collapsed, onToggleCollapse }: SidebarProps): 
     );
   };
 
+  const renderRailNavItem = (item: { to: string; icon: React.FC; label: string; exact: boolean }) => {
+    const Icon = item.icon;
+    const active = isActive(item.to, item.exact);
+
+    return (
+      <NavLink
+        key={item.to}
+        to={item.to}
+        end={item.exact}
+        className={`${styles.railItem} ${active ? styles.railItemActive : ''}`}
+        title={item.label}
+        aria-label={item.label}
+      >
+        <Icon />
+      </NavLink>
+    );
+  };
+
   return (
     <aside className={`${styles.sidebar} ${collapsed ? styles.sidebarCollapsed : ''}`}>
-      {/* Logo Section */}
-        <div className={styles.logoSection}>
-        <img 
-          src="./assets/delightify_icon.png" 
-          alt="Delightify" 
-          className={styles.logoIcon}
-        />
-        <span className={styles.logoText}>Delightify</span>
+      <div className={styles.activityRail}>
+        <div className={styles.railLogo}>
+          <img
+            src="./assets/delightify_icon.png"
+            alt="Delightify"
+            className={styles.logoIcon}
+          />
+        </div>
+
+        <nav className={styles.railNavigation}>
+          {allNavItems.map(renderRailNavItem)}
+        </nav>
+
+        <button className={styles.collapseBtn} onClick={onToggleCollapse} title={t('sidebar.collapse')}>
+          <CollapseIcon collapsed={collapsed} />
+        </button>
       </div>
 
-      {/* Navigation */}
-      <nav className={styles.navigation}>
-        <div className={styles.navSection}>
-          {!collapsed && <div className={styles.sectionTitle}>{t('sidebar.main')}</div>}
-          {mainNavItems.map(renderNavItem)}
+      <div className={styles.workspacePanel}>
+        <div className={styles.panelHeader}>
+          <div>
+            <div className={styles.productName}>Delightify</div>
+            <div className={styles.panelSubtitle}>Modpack IDE</div>
+          </div>
         </div>
 
-        <div className={styles.navSection}>
-          {!collapsed && <div className={styles.sectionTitle}>{t('sidebar.tools')}</div>}
-          {toolNavItems.map(renderNavItem)}
+        <div className={styles.projectCard}>
+          <div className={styles.projectLabel}>{t('sidebar.currentProject')}</div>
+          <div className={styles.projectName}>{currentProject?.name ?? t('sidebar.noProject')}</div>
+          <div className={styles.projectMeta}>
+            <span className={`${styles.statusDot} ${projectStatus === 'ready' ? styles.statusReady : ''}`} />
+            <span>{currentProject ? `${currentProject.mcVersion} / ${currentProject.modLoader}` : t('projectManager.open')}</span>
+          </div>
         </div>
-      </nav>
 
-      {/* Collapse Button */}
-      <div className={styles.collapseButton}>
-        <button className={styles.collapseBtn} onClick={onToggleCollapse}>
-          <CollapseIcon collapsed={collapsed} />
-          <span className={styles.collapseText}>{t('sidebar.collapse')}</span>
-        </button>
+        <nav className={styles.navigation}>
+          {navGroups.map(group => (
+            <div key={group.title} className={styles.navSection}>
+              <div className={styles.sectionTitle}>{group.title}</div>
+              {group.items.map(renderPanelNavItem)}
+            </div>
+          ))}
+        </nav>
       </div>
     </aside>
   );

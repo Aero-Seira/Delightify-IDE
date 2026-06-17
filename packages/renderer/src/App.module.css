@@ -1,12 +1,9 @@
-/* App Layout - AstrBot Style */
-
 .appContainer {
   display: flex;
   min-height: 100vh;
   background-color: var(--bg-secondary);
 }
 
-/* Main Wrapper - adjusts margin based on sidebar state */
 .mainWrapper {
   flex: 1;
   margin-left: var(--sidebar-width);
@@ -22,7 +19,6 @@
   margin-left: var(--sidebar-collapsed);
 }
 
-/* Main Content Area */
 .mainContent {
   flex: 1;
   overflow-y: auto;
@@ -66,4 +62,10 @@
   padding: var(--space-6);
   color: var(--text-secondary);
   font-size: var(--font-size-sm);
+}
+
+@media (max-width: 840px) {
+  .mainWrapper {
+    margin-left: var(--sidebar-collapsed);
+  }
 }

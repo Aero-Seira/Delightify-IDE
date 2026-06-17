@@ -1,5 +1,3 @@
-/* Header - AstrBot Style */
-
 .header {
   height: var(--header-height);
   background-color: var(--bg-primary);
@@ -7,7 +5,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 var(--space-6);
+  padding: 0 var(--space-3);
   position: sticky;
   top: 0;
   z-index: 50;
@@ -17,16 +15,17 @@
 .leftSection {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
+  gap: var(--space-2);
+  min-width: 0;
 }
 
 .menuButton {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius);
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
   background-color: transparent;
   color: var(--text-secondary);
   cursor: pointer;
@@ -41,18 +40,27 @@
 }
 
 .menuButton svg {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
 }
 
 .pageTitle {
-  font-size: var(--font-size-lg);
+  min-width: 0;
+  max-width: 520px;
+  padding: 6px 10px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   color: var(--text-primary);
-  line-height: 1;
+  line-height: 1.2;
   margin: 0;
   display: flex;
   align-items: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .breadcrumb {
@@ -76,7 +84,7 @@
 .rightSection {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-1);
 }
 
 /* Icon Button */
@@ -84,9 +92,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius);
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
   background-color: transparent;
   color: var(--text-secondary);
   cursor: pointer;
@@ -102,8 +110,8 @@
 }
 
 .iconButton svg {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
 }
 
 /* Active state for icon buttons */
@@ -121,8 +129,9 @@
   display: flex;
   align-items: center;
   gap: var(--space-1);
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius);
+  height: 32px;
+  padding: 0 var(--space-2);
+  border-radius: 7px;
   background-color: transparent;
   color: var(--text-secondary);
   font-size: var(--font-size-sm);
@@ -202,7 +211,14 @@
 /* Divider */
 .divider {
   width: 1px;
-  height: 24px;
+  height: 20px;
   background-color: var(--border);
   margin: 0 var(--space-1);
+}
+
+@media (max-width: 720px) {
+  .languageButton span:nth-child(2),
+  .pageTitle {
+    max-width: 180px;
+  }
 }
