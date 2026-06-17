@@ -6,6 +6,8 @@ import type {
   ScriptWorkspaceCreateDirectoryResult,
   ScriptWorkspaceCreateManagedResult,
   ScriptWorkspaceCreateUserResult,
+  ScriptWorkspaceDeleteOptions,
+  ScriptWorkspaceDeleteResult,
   ScriptWorkspaceListResult,
   ScriptWorkspaceReadResult,
   ScriptWorkspaceRenameOptions,
@@ -18,6 +20,7 @@ import {
   createScriptWorkspaceDirectory,
   createManagedScriptWorkspaceFile,
   createUserScriptWorkspaceFile,
+  deleteScriptWorkspaceFile,
   listScriptWorkspaceFiles,
   readScriptWorkspaceFile,
   renameScriptWorkspaceFile,
@@ -122,6 +125,21 @@ export function registerScriptWorkspaceHandlers(): void {
       return { success: true, data: result };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '文件重命名失败';
+      return { success: false, error: errorMessage };
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.SCRIPT_WORKSPACE_DELETE, async (
+    _event,
+    projectPath: string,
+    relativePath: string,
+    options?: ScriptWorkspaceDeleteOptions
+  ): Promise<IpcResponse<ScriptWorkspaceDeleteResult>> => {
+    try {
+      const result = await deleteScriptWorkspaceFile(projectPath, relativePath, options);
+      return { success: true, data: result };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '文件删除失败';
       return { success: false, error: errorMessage };
     }
   });

@@ -43,12 +43,12 @@ Explicitly denied areas:
 
 | Kind | Meaning | Edit | Create | Rename | Delete |
 | --- | --- | --- | --- | --- | --- |
-| `managed` | Delightify-owned JS, via marker or manifest | Yes, marker-protected | Yes, script-only | Only manual marker-owned files, later | Later |
-| `user` | Safe user-authored text files | Yes, confirmed save | Yes | Yes, confirmed | Later |
+| `managed` | Delightify-owned JS, via marker or manifest | Yes, marker-protected | Yes, script-only | Only manual marker-owned files, later | No |
+| `user` | Safe user-authored text files | Yes, confirmed save | Yes | Yes, confirmed | Soft delete, confirmed |
 | `manifest` | Delightify ownership manifest | No | No | No | No |
 | `readonly` | Unsafe, large, generated, or non-editable files | No | No | No | No |
 
-M2 only adds create directory and rename for user-safe workspace paths. Delete remains deferred until recovery semantics are defined.
+M2 file deletion is intentionally narrow: only `user` files can be deleted, and deletion is implemented as a move into an internal trash directory under `.delightify/script-workspace-trash/`. This makes the user-facing operation reversible by manual recovery while still keeping `.delightify/**` outside the editable workspace.
 
 ## IPC/API Plan
 
@@ -72,6 +72,11 @@ New:
   - Target must be a safe text workspace path.
   - Rejects overwrite.
   - Requires `confirmUserFileWrite` for user file mutation.
+- `scriptWorkspaceDelete(projectPath, relativePath, options)`
+  - Source must classify as `user`.
+  - Moves the file to `.delightify/script-workspace-trash/<timestamp>/<relativePath>`.
+  - Rejects managed, manifest, readonly, unsafe, and missing files.
+  - Requires `confirmUserFileWrite`.
 
 ## UI Plan
 
@@ -81,6 +86,7 @@ Script Workspace UI should remain IDE-like:
 - Editor tabs are edit sessions.
 - File operations live near the file tree header first; context menus can come later.
 - New file, new folder, and rename use an in-workbench form, not `window.prompt`.
+- Delete uses explicit confirmation and reports the internal backup path.
 - Dirty tabs are preserved while navigating.
 - All visible text must be in i18n.
 

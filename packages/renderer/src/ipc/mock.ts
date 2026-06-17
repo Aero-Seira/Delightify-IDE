@@ -25,6 +25,7 @@ import type {
   KubeJsRevertResult,
   ScriptWorkspaceCopyAsManagedResult,
   ScriptWorkspaceCreateDirectoryResult,
+  ScriptWorkspaceDeleteResult,
   ScriptWorkspaceListResult,
   ScriptWorkspaceReadResult,
   ScriptWorkspaceRenameResult,
@@ -996,6 +997,18 @@ export const mockElectronAPI = {
         modifiedAt: new Date().toISOString(),
       },
       previousRelativePath: sourceRelativePath,
+    },
+  }),
+
+  scriptWorkspaceDelete: async (
+    _projectPath: string,
+    relativePath: string
+  ): Promise<IpcResponse<ScriptWorkspaceDeleteResult>> => ({
+    success: true,
+    data: {
+      previousRelativePath: relativePath,
+      backupRelativePath: `.delightify/script-workspace-trash/mock/${relativePath}`,
+      deletedAt: new Date().toISOString(),
     },
   }),
 

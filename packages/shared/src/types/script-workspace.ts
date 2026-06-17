@@ -69,6 +69,16 @@ export interface ScriptWorkspaceRenameResult {
   previousRelativePath: string;
 }
 
+export interface ScriptWorkspaceDeleteOptions {
+  confirmUserFileWrite?: boolean;
+}
+
+export interface ScriptWorkspaceDeleteResult {
+  previousRelativePath: string;
+  backupRelativePath: string;
+  deletedAt: string;
+}
+
 export interface ScriptWorkspaceCopyAsManagedResult {
   file: ScriptWorkspaceFile;
   content: string;

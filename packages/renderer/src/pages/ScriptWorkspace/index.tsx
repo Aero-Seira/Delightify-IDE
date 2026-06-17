@@ -184,6 +184,7 @@ export default function ScriptWorkspacePage(): React.ReactElement {
   const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [isCreatingDirectory, setIsCreatingDirectory] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isCopyingManaged, setIsCopyingManaged] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
@@ -573,6 +574,57 @@ export default function ScriptWorkspacePage(): React.ReactElement {
     }
   };
 
+  const deleteSelectedFile = async (): Promise<void> => {
+    if (!currentProject || !selectedFile || selectedFile.kind !== 'user') {
+      return;
+    }
+
+    if (isDirty && !window.confirm(t('scriptWorkspace.deleteDirtyConfirm'))) {
+      return;
+    }
+    if (!window.confirm(t('scriptWorkspace.deleteUserConfirm'))) {
+      return;
+    }
+
+    setIsDeleting(true);
+    setError(null);
+    setSaveMessage(null);
+
+    try {
+      const response = await electronAPI().scriptWorkspaceDelete(
+        currentProject.path,
+        selectedFile.relativePath,
+        { confirmUserFileWrite: true }
+      );
+      if (!response.success || !response.data) {
+        throw new Error(response.error || t('scriptWorkspace.deleteFailed'));
+      }
+
+      const deletedPath = response.data.previousRelativePath;
+      const remainingTabs = openTabs.filter(tab => tab.file.relativePath !== deletedPath);
+      const nextTab = remainingTabs[0] ?? null;
+      const nextFile = files.find(file => file.relativePath !== deletedPath) ?? null;
+      setOpenTabs(remainingTabs);
+      setSelectedPath(nextTab?.file.relativePath ?? nextFile?.relativePath ?? null);
+      setSelectedDirectoryPath(
+        nextTab
+          ? parentDirectory(nextTab.file.relativePath)
+          : nextFile
+            ? parentDirectory(nextFile.relativePath)
+            : null
+      );
+      setSaveMessage(t('scriptWorkspace.deletedFile', {
+        path: deletedPath,
+        backupPath: response.data.backupRelativePath,
+      }));
+      await loadFiles();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : t('scriptWorkspace.deleteFailed'));
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const submitOperation = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
     setOperationError(null);
@@ -751,6 +803,14 @@ export default function ScriptWorkspacePage(): React.ReactElement {
             disabled={!currentProject || selectedFile?.kind !== 'user' || isRenaming}
           >
             {isRenaming ? t('scriptWorkspace.saving') : t('scriptWorkspace.rename')}
+          </button>
+          <button
+            type="button"
+            className={styles.secondaryButton}
+            onClick={deleteSelectedFile}
+            disabled={!currentProject || selectedFile?.kind !== 'user' || isDeleting}
+          >
+            {isDeleting ? t('scriptWorkspace.deleting') : t('scriptWorkspace.deleteFile')}
           </button>
           <button
             type="button"

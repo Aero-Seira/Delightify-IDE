@@ -37,6 +37,8 @@ import type {
   KubeJsRevertResult,
   ScriptWorkspaceCopyAsManagedResult,
   ScriptWorkspaceCreateDirectoryResult,
+  ScriptWorkspaceDeleteOptions,
+  ScriptWorkspaceDeleteResult,
   ScriptWorkspaceListResult,
   ScriptWorkspaceReadResult,
   ScriptWorkspaceRenameOptions,
@@ -125,6 +127,11 @@ export interface ElectronAPI {
     targetRelativePath: string,
     options?: ScriptWorkspaceRenameOptions
   ) => Promise<IpcResponse<ScriptWorkspaceRenameResult>>;
+  scriptWorkspaceDelete: (
+    projectPath: string,
+    relativePath: string,
+    options?: ScriptWorkspaceDeleteOptions
+  ) => Promise<IpcResponse<ScriptWorkspaceDeleteResult>>;
   scriptWorkspaceCopyAsManaged: (
     projectPath: string,
     sourceRelativePath: string,

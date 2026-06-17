@@ -7,6 +7,8 @@ import type {
   ScriptWorkspaceCreateDirectoryResult,
   ScriptWorkspaceCreateManagedResult,
   ScriptWorkspaceCreateUserResult,
+  ScriptWorkspaceDeleteOptions,
+  ScriptWorkspaceDeleteResult,
   ScriptWorkspaceListResult,
   ScriptWorkspaceReadResult,
   ScriptWorkspaceRenameOptions,
@@ -31,6 +33,7 @@ const GENERATED_MANIFEST_RELATIVE_PATH = 'kubejs/.delightify-generated.json';
 const LEGACY_SERVER_SCRIPT_RELATIVE_PATH = 'kubejs/server_scripts/zzz_delightify_generated.js';
 const DEFAULT_MANUAL_SCRIPT_RELATIVE_PATH = 'kubejs/server_scripts/zzz_delightify_manual.js';
 const DEFAULT_USER_SCRIPT_RELATIVE_PATH = 'kubejs/server_scripts/user_script.js';
+const TRASH_ROOT_RELATIVE_PATH = '.delightify/script-workspace-trash';
 const MAX_EDITABLE_TEXT_FILE_BYTES = 1024 * 1024;
 const SCRIPT_FILE_ROOTS = [
   'kubejs/server_scripts',
@@ -526,6 +529,11 @@ function defaultManagedCopyPath(sourceRelativePath: string): string {
   return path.posix.join(directory, `zzz_delightify_${sourceBaseName}.js`);
 }
 
+function trashRelativePathFor(relativePath: string): string {
+  const timestamp = new Date().toISOString().replaceAll(/[:.]/g, '-');
+  return path.posix.join(TRASH_ROOT_RELATIVE_PATH, timestamp, normalizeRelativePath(relativePath));
+}
+
 export async function createManagedScriptWorkspaceFile(
   projectPath: string,
   relativePath = DEFAULT_MANUAL_SCRIPT_RELATIVE_PATH
@@ -663,6 +671,36 @@ export async function renameScriptWorkspaceFile(
   return {
     file: await classifyFile(projectPath, normalizedTarget, manifestPaths),
     previousRelativePath: sourceFile.relativePath,
+  };
+}
+
+export async function deleteScriptWorkspaceFile(
+  projectPath: string,
+  relativePath: string,
+  options: ScriptWorkspaceDeleteOptions = {}
+): Promise<ScriptWorkspaceDeleteResult> {
+  const manifest = await readGeneratedManifest(projectPath);
+  const sourceFile = await classifyFile(projectPath, relativePath, manifestRelativePaths(manifest));
+  if (sourceFile.kind !== 'user' || !sourceFile.exists) {
+    throw new Error(`当前阶段仅允许删除已存在的用户文件: ${sourceFile.relativePath}`);
+  }
+  if (!options.confirmUserFileWrite) {
+    throw new Error(`删除用户文件需要显式确认: ${sourceFile.relativePath}`);
+  }
+
+  const backupRelativePath = trashRelativePathFor(sourceFile.relativePath);
+  const backupPath = path.join(projectPath, backupRelativePath);
+  if (await statIfExists(backupPath) || await statDirectoryIfExists(backupPath)) {
+    throw new Error(`内部回收路径已存在: ${backupRelativePath}`);
+  }
+
+  await fs.mkdir(path.dirname(backupPath), { recursive: true });
+  await fs.rename(sourceFile.filePath, backupPath);
+
+  return {
+    previousRelativePath: sourceFile.relativePath,
+    backupRelativePath,
+    deletedAt: new Date().toISOString(),
   };
 }
 
