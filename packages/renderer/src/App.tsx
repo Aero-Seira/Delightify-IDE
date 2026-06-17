@@ -5,6 +5,7 @@ import { initializeTheme } from './theme';
 import ErrorBoundary from './components/ErrorBoundary';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
+import StatusBar from './components/StatusBar';
 import Dashboard from './pages/Dashboard';
 import ProjectManagerPage from './pages/ProjectManager';
 import DataImportPage from './pages/ModManager';
@@ -86,6 +87,7 @@ function AppContent(): React.ReactElement {
             <Route path="/debug" element={<DebugToolsPage />} />
           </Routes>
         </main>
+        <StatusBar />
       </div>
     </div>
   );
