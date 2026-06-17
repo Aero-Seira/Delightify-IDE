@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import type { ProjectStats } from '@delightify/shared';
+import { useI18n } from '../../i18n';
 import { electronAPI } from '../../ipc';
 import { useProjectStore } from '../../store/projectStore';
 import styles from './style.module.css';
@@ -7,6 +8,7 @@ import styles from './style.module.css';
 type PanelTab = 'problems' | 'output';
 
 export default function BottomPanel(): React.ReactElement {
+  const { t } = useI18n();
   const { currentProject } = useProjectStore();
   const [activeTab, setActiveTab] = useState<PanelTab>('problems');
   const [expanded, setExpanded] = useState(false);
@@ -45,7 +47,7 @@ export default function BottomPanel(): React.ReactElement {
             setExpanded(true);
           }}
         >
-          Problems {warnings.length > 0 ? warnings.length : ''}
+          {t('bottomPanel.problems')} {warnings.length > 0 ? warnings.length : ''}
         </button>
         <button
           type="button"
@@ -55,14 +57,14 @@ export default function BottomPanel(): React.ReactElement {
             setExpanded(true);
           }}
         >
-          Output
+          {t('bottomPanel.output')}
         </button>
         <button
           type="button"
           className={styles.toggleButton}
           onClick={() => setExpanded(previous => !previous)}
         >
-          {expanded ? 'Collapse' : 'Panel'}
+          {expanded ? t('bottomPanel.collapse') : t('bottomPanel.panel')}
         </button>
       </div>
 
@@ -70,7 +72,7 @@ export default function BottomPanel(): React.ReactElement {
         <div className={styles.content}>
           {activeTab === 'problems' ? (
             warnings.length === 0 ? (
-              <div className={styles.empty}>No workspace problems detected.</div>
+              <div className={styles.empty}>{t('bottomPanel.noProblems')}</div>
             ) : (
               <div className={styles.problemList}>
                 {warnings.map(warning => (
@@ -80,9 +82,9 @@ export default function BottomPanel(): React.ReactElement {
             )
           ) : (
             <div className={styles.output}>
-              <div>Delightify workbench ready.</div>
-              <div>Open Action Workbench to dry-run changes, or Script Workspace to inspect managed files.</div>
-              {currentProject && <div>Project: {currentProject.name}</div>}
+              <div>{t('bottomPanel.ready')}</div>
+              <div>{t('bottomPanel.hint')}</div>
+              {currentProject && <div>{t('bottomPanel.project', { name: currentProject.name })}</div>}
             </div>
           )}
         </div>

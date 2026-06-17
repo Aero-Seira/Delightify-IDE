@@ -79,7 +79,7 @@
 }
 
 .filePanel {
-  padding: var(--space-4);
+  padding: var(--space-3);
   overflow: auto;
 }
 
@@ -113,59 +113,81 @@
   font-size: var(--font-size-sm);
 }
 
-.fileGroup {
+.fileTree {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  margin-bottom: var(--space-5);
+  gap: 1px;
 }
 
-.groupTitle {
-  color: var(--text-secondary);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  text-transform: uppercase;
+.treeNode {
+  min-width: 0;
 }
 
-.fileItem {
+.directoryItem,
+.treeFileItem {
   width: 100%;
   display: flex;
-  flex-direction: column;
-  align-items: stretch;
+  align-items: center;
+  min-height: 28px;
   gap: var(--space-2);
-  min-height: 72px;
-  padding: var(--space-3);
+  padding-top: 0;
+  padding-right: var(--space-2);
+  padding-bottom: 0;
   color: var(--text-secondary);
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
   cursor: pointer;
   text-align: left;
 }
 
-.fileItem:hover {
+.directoryItem:hover,
+.treeFileItem:hover {
   color: var(--text-primary);
-  border-color: var(--border-dark);
+  background: var(--bg-hover);
 }
 
-.fileItemActive {
-  border-color: var(--primary);
+.treeFileItemActive {
+  color: var(--text-primary);
+  border-color: var(--primary-light);
   background: var(--primary-light);
 }
 
-.filePath {
+.treeCaret {
+  width: 12px;
+  flex: 0 0 12px;
+  color: var(--text-tertiary);
+  font-family: 'SF Mono', Monaco, monospace;
+  font-size: 10px;
+  text-align: center;
+}
+
+.directoryName,
+.fileLeafName {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.directoryName {
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.fileLeafName {
   color: var(--text-primary);
   font-family: 'SF Mono', Monaco, monospace;
   font-size: var(--font-size-xs);
-  line-height: 1.45;
-  overflow-wrap: anywhere;
 }
 
-.fileMeta {
+.fileLeafMeta {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--space-2);
+  flex: 0 0 auto;
   color: var(--text-tertiary);
   font-size: var(--font-size-xs);
 }
@@ -222,6 +244,95 @@
 .editorHeader {
   padding: var(--space-4);
   border-bottom: 1px solid var(--border);
+}
+
+.tabStrip {
+  display: flex;
+  align-items: stretch;
+  min-height: 36px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+}
+
+.editorTab {
+  min-width: 136px;
+  max-width: 220px;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-2) 0 var(--space-3);
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border);
+  cursor: pointer;
+  font-family: 'SF Mono', Monaco, monospace;
+  font-size: var(--font-size-xs);
+}
+
+.editorTab span:first-child {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.editorTab:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+.editorTabActive {
+  color: var(--text-primary);
+  background: var(--bg-primary);
+}
+
+.kindDot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 999px;
+  background: var(--border-dark);
+}
+
+.kindDot-managed {
+  background: var(--success);
+}
+
+.kindDot-user {
+  background: var(--primary);
+}
+
+.kindDot-manifest {
+  background: var(--info);
+}
+
+.kindDot-readonly {
+  background: var(--warning);
+}
+
+.closeTabButton {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: var(--font-size-xs);
+  line-height: 1;
+}
+
+.closeTabButton:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+  border-color: var(--border);
 }
 
 .fileTitle {
