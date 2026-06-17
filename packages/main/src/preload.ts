@@ -74,6 +74,8 @@ const IPC_CHANNELS = {
   SCRIPT_WORKSPACE_SAVE: 'script-workspace:save',
   SCRIPT_WORKSPACE_CREATE_MANAGED: 'script-workspace:create-managed',
   SCRIPT_WORKSPACE_CREATE_USER: 'script-workspace:create-user',
+  SCRIPT_WORKSPACE_CREATE_DIRECTORY: 'script-workspace:create-directory',
+  SCRIPT_WORKSPACE_RENAME: 'script-workspace:rename',
   SCRIPT_WORKSPACE_COPY_AS_MANAGED: 'script-workspace:copy-as-managed',
 
   // Shell
@@ -170,6 +172,20 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke(IPC_CHANNELS.SCRIPT_WORKSPACE_CREATE_MANAGED, projectPath, relativePath),
   scriptWorkspaceCreateUser: (projectPath: string, relativePath?: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.SCRIPT_WORKSPACE_CREATE_USER, projectPath, relativePath),
+  scriptWorkspaceCreateDirectory: (projectPath: string, relativePath: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.SCRIPT_WORKSPACE_CREATE_DIRECTORY, projectPath, relativePath),
+  scriptWorkspaceRename: (
+    projectPath: string,
+    sourceRelativePath: string,
+    targetRelativePath: string,
+    options?: unknown
+  ) => ipcRenderer.invoke(
+    IPC_CHANNELS.SCRIPT_WORKSPACE_RENAME,
+    projectPath,
+    sourceRelativePath,
+    targetRelativePath,
+    options
+  ),
   scriptWorkspaceCopyAsManaged: (projectPath: string, sourceRelativePath: string, targetRelativePath?: string) =>
     ipcRenderer.invoke(
       IPC_CHANNELS.SCRIPT_WORKSPACE_COPY_AS_MANAGED,

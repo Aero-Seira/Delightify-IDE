@@ -119,6 +119,60 @@
   gap: 1px;
 }
 
+.operationForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+  padding: var(--space-3);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.operationTitle {
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.operationLabel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.operationLabel input {
+  width: 100%;
+  min-height: 34px;
+  padding: var(--space-2);
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: 'SF Mono', Monaco, monospace;
+  font-size: var(--font-size-xs);
+}
+
+.operationLabel input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.operationError {
+  color: var(--error);
+  font-size: var(--font-size-xs);
+  overflow-wrap: anywhere;
+}
+
+.operationActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
 .treeNode {
   min-width: 0;
 }
@@ -151,6 +205,11 @@
   color: var(--text-primary);
   border-color: var(--primary-light);
   background: var(--primary-light);
+}
+
+.directoryItemActive {
+  color: var(--text-primary);
+  background: var(--bg-hover);
 }
 
 .treeCaret {

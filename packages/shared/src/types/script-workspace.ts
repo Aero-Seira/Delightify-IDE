@@ -17,8 +17,16 @@ export interface ScriptWorkspaceFile {
   modifiedAt?: string;
 }
 
+export interface ScriptWorkspaceDirectory {
+  relativePath: string;
+  filePath: string;
+  exists: boolean;
+  modifiedAt?: string;
+}
+
 export interface ScriptWorkspaceListResult {
   files: ScriptWorkspaceFile[];
+  directories?: ScriptWorkspaceDirectory[];
 }
 
 export interface ScriptWorkspaceReadResult {
@@ -45,6 +53,20 @@ export interface ScriptWorkspaceCreateUserResult {
   file: ScriptWorkspaceFile;
   content: string;
   created: boolean;
+}
+
+export interface ScriptWorkspaceCreateDirectoryResult {
+  directory: ScriptWorkspaceDirectory;
+  created: boolean;
+}
+
+export interface ScriptWorkspaceRenameOptions {
+  confirmUserFileWrite?: boolean;
+}
+
+export interface ScriptWorkspaceRenameResult {
+  file: ScriptWorkspaceFile;
+  previousRelativePath: string;
 }
 
 export interface ScriptWorkspaceCopyAsManagedResult {

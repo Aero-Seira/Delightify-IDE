@@ -24,8 +24,10 @@ import type {
   KubeJsPreviewResult,
   KubeJsRevertResult,
   ScriptWorkspaceCopyAsManagedResult,
+  ScriptWorkspaceCreateDirectoryResult,
   ScriptWorkspaceListResult,
   ScriptWorkspaceReadResult,
+  ScriptWorkspaceRenameResult,
   ScriptWorkspaceSaveResult,
   ScriptWorkspaceCreateManagedResult,
   ScriptWorkspaceCreateUserResult,
@@ -820,6 +822,26 @@ export const mockElectronAPI = {
           modifiedAt: new Date().toISOString(),
         },
       ],
+      directories: [
+        {
+          relativePath: 'kubejs',
+          filePath: `${projectPath}/kubejs`,
+          exists: true,
+          modifiedAt: new Date().toISOString(),
+        },
+        {
+          relativePath: 'kubejs/server_scripts',
+          filePath: `${projectPath}/kubejs/server_scripts`,
+          exists: true,
+          modifiedAt: new Date().toISOString(),
+        },
+        {
+          relativePath: 'config',
+          filePath: `${projectPath}/config`,
+          exists: true,
+          modifiedAt: new Date().toISOString(),
+        },
+      ],
     },
   }),
 
@@ -939,6 +961,43 @@ export const mockElectronAPI = {
       },
     };
   },
+
+  scriptWorkspaceCreateDirectory: async (
+    projectPath: string,
+    relativePath: string
+  ): Promise<IpcResponse<ScriptWorkspaceCreateDirectoryResult>> => ({
+    success: true,
+    data: {
+      directory: {
+        relativePath,
+        filePath: `${projectPath}/${relativePath}`,
+        exists: true,
+        modifiedAt: new Date().toISOString(),
+      },
+      created: true,
+    },
+  }),
+
+  scriptWorkspaceRename: async (
+    projectPath: string,
+    sourceRelativePath: string,
+    targetRelativePath: string
+  ): Promise<IpcResponse<ScriptWorkspaceRenameResult>> => ({
+    success: true,
+    data: {
+      file: {
+        relativePath: targetRelativePath,
+        filePath: `${projectPath}/${targetRelativePath}`,
+        kind: 'user',
+        language: targetRelativePath.endsWith('.json') ? 'json' : targetRelativePath.endsWith('.yml') ? 'yaml' : 'javascript',
+        editable: true,
+        requiresSaveConfirmation: true,
+        exists: true,
+        modifiedAt: new Date().toISOString(),
+      },
+      previousRelativePath: sourceRelativePath,
+    },
+  }),
 
   scriptWorkspaceCopyAsManaged: async (
     projectPath: string,

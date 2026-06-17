@@ -1,12 +1,16 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import type {
+  ScriptWorkspaceDirectory,
   ScriptWorkspaceFile,
   ScriptWorkspaceCopyAsManagedResult,
+  ScriptWorkspaceCreateDirectoryResult,
   ScriptWorkspaceCreateManagedResult,
   ScriptWorkspaceCreateUserResult,
   ScriptWorkspaceListResult,
   ScriptWorkspaceReadResult,
+  ScriptWorkspaceRenameOptions,
+  ScriptWorkspaceRenameResult,
   ScriptWorkspaceSaveOptions,
   ScriptWorkspaceSaveResult,
 } from '@delightify/shared';
@@ -121,6 +125,14 @@ function isSafeTextWorkspacePath(relativePath: string): boolean {
   ));
 }
 
+function isSafeWorkspaceDirectoryPath(relativePath: string): boolean {
+  const normalized = normalizeRelativePath(relativePath);
+  if (normalized === GENERATED_MANIFEST_RELATIVE_PATH || isDeniedWorkspacePath(normalized)) {
+    return false;
+  }
+  return SAFE_TEXT_ROOTS.some(root => isPathUnderRoot(normalized, root.root));
+}
+
 function languageFor(relativePath: string): ScriptWorkspaceFile['language'] {
   const extension = path.posix.extname(relativePath);
   if (extension === '.js') {
@@ -165,6 +177,23 @@ async function statIfExists(filePath: string): Promise<{ size: number; modifiedA
     }
     return {
       size: stat.size,
+      modifiedAt: stat.mtime.toISOString(),
+    };
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return null;
+    }
+    throw error;
+  }
+}
+
+async function statDirectoryIfExists(filePath: string): Promise<{ modifiedAt: string } | null> {
+  try {
+    const stat = await fs.stat(filePath);
+    if (!stat.isDirectory()) {
+      return null;
+    }
+    return {
       modifiedAt: stat.mtime.toISOString(),
     };
   } catch (error) {
@@ -258,16 +287,41 @@ async function classifyFile(
   };
 }
 
-async function walkFiles(rootPath: string, rootRelativePath: string): Promise<string[]> {
+async function classifyDirectory(projectPath: string, relativePath: string): Promise<ScriptWorkspaceDirectory> {
+  const normalized = normalizeRelativePath(relativePath);
+  if (!isSafeWorkspaceDirectoryPath(normalized)) {
+    throw new Error(`目录路径不在脚本工作区允许范围内: ${relativePath}`);
+  }
+
+  const filePath = absolutePath(projectPath, normalized);
+  const stat = await statDirectoryIfExists(filePath);
+  return {
+    relativePath: normalized,
+    filePath,
+    exists: stat !== null,
+    modifiedAt: stat?.modifiedAt,
+  };
+}
+
+async function walkWorkspace(rootPath: string, rootRelativePath: string): Promise<{
+  files: string[];
+  directories: string[];
+}> {
   try {
     const entries = await fs.readdir(rootPath, { withFileTypes: true });
     const files: string[] = [];
+    const directories: string[] = [];
 
     for (const entry of entries) {
       const childPath = path.join(rootPath, entry.name);
       const childRelativePath = path.posix.join(rootRelativePath, entry.name);
       if (entry.isDirectory()) {
-        files.push(...await walkFiles(childPath, childRelativePath));
+        if (isSafeWorkspaceDirectoryPath(childRelativePath)) {
+          directories.push(childRelativePath);
+          const child = await walkWorkspace(childPath, childRelativePath);
+          files.push(...child.files);
+          directories.push(...child.directories);
+        }
       } else if (
         entry.isFile() &&
         SAFE_TEXT_EXTENSIONS.has(path.posix.extname(childRelativePath)) &&
@@ -277,10 +331,10 @@ async function walkFiles(rootPath: string, rootRelativePath: string): Promise<st
       }
     }
 
-    return files;
+    return { files, directories };
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-      return [];
+      return { files: [], directories: [] };
     }
     throw error;
   }
@@ -304,6 +358,7 @@ export async function listScriptWorkspaceFiles(projectPath: string): Promise<Scr
   const manifest = await readGeneratedManifest(projectPath);
   const manifestPaths = manifestRelativePaths(manifest);
   const relativePaths = new Set<string>();
+  const directoryPaths = new Set<string>();
 
   if (manifest) {
     relativePaths.add(GENERATED_MANIFEST_RELATIVE_PATH);
@@ -317,17 +372,28 @@ export async function listScriptWorkspaceFiles(projectPath: string): Promise<Scr
 
   for (const { root } of SAFE_TEXT_ROOTS) {
     const rootPath = path.join(projectPath, root);
-    for (const relativePath of await walkFiles(rootPath, root)) {
+    if (await statDirectoryIfExists(rootPath)) {
+      directoryPaths.add(root);
+    }
+    const walked = await walkWorkspace(rootPath, root);
+    for (const relativePath of walked.files) {
       relativePaths.add(toPosixPath(relativePath));
+    }
+    for (const relativePath of walked.directories) {
+      directoryPaths.add(toPosixPath(relativePath));
     }
   }
 
   const files = await Promise.all([...relativePaths].map(relativePath => (
     classifyFile(projectPath, relativePath, manifestPaths)
   )));
+  const directories = await Promise.all([...directoryPaths].map(relativePath => (
+    classifyDirectory(projectPath, relativePath)
+  )));
 
   return {
     files: files.sort(sortFiles),
+    directories: directories.sort((left, right) => left.relativePath.localeCompare(right.relativePath)),
   };
 }
 
@@ -522,6 +588,81 @@ export async function createUserScriptWorkspaceFile(
     file: await classifyFile(projectPath, normalized, manifestPaths),
     content,
     created: true,
+  };
+}
+
+export async function createScriptWorkspaceDirectory(
+  projectPath: string,
+  relativePath: string
+): Promise<ScriptWorkspaceCreateDirectoryResult> {
+  const normalized = normalizeRelativePath(relativePath);
+  if (!isSafeWorkspaceDirectoryPath(normalized)) {
+    throw new Error(`目录必须位于安全文本工作区内: ${relativePath}`);
+  }
+
+  const directoryPath = absolutePath(projectPath, normalized);
+  const existingDirectory = await statDirectoryIfExists(directoryPath);
+  if (existingDirectory) {
+    return {
+      directory: await classifyDirectory(projectPath, normalized),
+      created: false,
+    };
+  }
+
+  const existingFile = await statIfExists(directoryPath);
+  if (existingFile) {
+    throw new Error(`拒绝用目录覆盖已有文件: ${normalized}`);
+  }
+
+  await fs.mkdir(directoryPath, { recursive: true });
+  return {
+    directory: await classifyDirectory(projectPath, normalized),
+    created: true,
+  };
+}
+
+export async function renameScriptWorkspaceFile(
+  projectPath: string,
+  sourceRelativePath: string,
+  targetRelativePath: string,
+  options: ScriptWorkspaceRenameOptions = {}
+): Promise<ScriptWorkspaceRenameResult> {
+  const manifest = await readGeneratedManifest(projectPath);
+  const manifestPaths = manifestRelativePaths(manifest);
+  const sourceFile = await classifyFile(projectPath, sourceRelativePath, manifestPaths);
+  if (sourceFile.kind !== 'user' || !sourceFile.exists) {
+    throw new Error(`当前阶段仅允许重命名已存在的用户文件: ${sourceFile.relativePath}`);
+  }
+  if (!options.confirmUserFileWrite) {
+    throw new Error(`重命名用户文件需要显式确认: ${sourceFile.relativePath}`);
+  }
+
+  const normalizedTarget = assertCreatableUserWorkspacePath(targetRelativePath);
+  if (normalizedTarget === sourceFile.relativePath) {
+    return {
+      file: sourceFile,
+      previousRelativePath: sourceFile.relativePath,
+    };
+  }
+
+  const targetPath = absolutePath(projectPath, normalizedTarget);
+  if (await statIfExists(targetPath) || await statDirectoryIfExists(targetPath)) {
+    throw new Error(`拒绝覆盖已有路径: ${normalizedTarget}`);
+  }
+
+  const targetDirectory = path.posix.dirname(normalizedTarget);
+  if (!isSafeWorkspaceDirectoryPath(targetDirectory)) {
+    throw new Error(`目标目录不在安全文本工作区内: ${targetDirectory}`);
+  }
+  if (!await statDirectoryIfExists(absolutePath(projectPath, targetDirectory))) {
+    throw new Error(`目标目录不存在: ${targetDirectory}`);
+  }
+
+  await fs.rename(sourceFile.filePath, targetPath);
+
+  return {
+    file: await classifyFile(projectPath, normalizedTarget, manifestPaths),
+    previousRelativePath: sourceFile.relativePath,
   };
 }
 

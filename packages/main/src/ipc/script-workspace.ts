@@ -3,19 +3,24 @@ import { IPC_CHANNELS } from '@delightify/shared';
 import type {
   IpcResponse,
   ScriptWorkspaceCopyAsManagedResult,
+  ScriptWorkspaceCreateDirectoryResult,
   ScriptWorkspaceCreateManagedResult,
   ScriptWorkspaceCreateUserResult,
   ScriptWorkspaceListResult,
   ScriptWorkspaceReadResult,
+  ScriptWorkspaceRenameOptions,
+  ScriptWorkspaceRenameResult,
   ScriptWorkspaceSaveOptions,
   ScriptWorkspaceSaveResult,
 } from '@delightify/shared';
 import {
   copyScriptWorkspaceFileAsManaged,
+  createScriptWorkspaceDirectory,
   createManagedScriptWorkspaceFile,
   createUserScriptWorkspaceFile,
   listScriptWorkspaceFiles,
   readScriptWorkspaceFile,
+  renameScriptWorkspaceFile,
   saveScriptWorkspaceFile,
 } from '../services/script-workspace';
 
@@ -87,6 +92,36 @@ export function registerScriptWorkspaceHandlers(): void {
       return { success: true, data: result };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '用户文件创建失败';
+      return { success: false, error: errorMessage };
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.SCRIPT_WORKSPACE_CREATE_DIRECTORY, async (
+    _event,
+    projectPath: string,
+    relativePath: string
+  ): Promise<IpcResponse<ScriptWorkspaceCreateDirectoryResult>> => {
+    try {
+      const result = await createScriptWorkspaceDirectory(projectPath, relativePath);
+      return { success: true, data: result };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '目录创建失败';
+      return { success: false, error: errorMessage };
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.SCRIPT_WORKSPACE_RENAME, async (
+    _event,
+    projectPath: string,
+    sourceRelativePath: string,
+    targetRelativePath: string,
+    options?: ScriptWorkspaceRenameOptions
+  ): Promise<IpcResponse<ScriptWorkspaceRenameResult>> => {
+    try {
+      const result = await renameScriptWorkspaceFile(projectPath, sourceRelativePath, targetRelativePath, options);
+      return { success: true, data: result };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '文件重命名失败';
       return { success: false, error: errorMessage };
     }
   });

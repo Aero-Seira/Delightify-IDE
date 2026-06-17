@@ -4,7 +4,7 @@ import * as monaco from 'monaco-editor/esm/vs/editor/editor.api.js';
 import 'monaco-editor/esm/vs/basic-languages/javascript/javascript.contribution';
 import 'monaco-editor/esm/vs/basic-languages/yaml/yaml.contribution';
 import 'monaco-editor/esm/vs/language/json/monaco.contribution';
-import type { ScriptWorkspaceFile } from '@delightify/shared';
+import type { ScriptWorkspaceDirectory, ScriptWorkspaceFile } from '@delightify/shared';
 import { useI18n } from '../../i18n';
 import { electronAPI } from '../../ipc';
 import { useProjectStore } from '../../store/projectStore';
@@ -24,7 +24,10 @@ interface FileTreeNode {
   type: 'directory' | 'file';
   children: FileTreeNode[];
   file?: ScriptWorkspaceFile;
+  directory?: ScriptWorkspaceDirectory;
 }
+
+type OperationMode = 'create-file' | 'create-directory' | 'rename';
 
 function kindLabel(kind: ScriptWorkspaceFile['kind'], t: (key: string) => string): string {
   switch (kind) {
@@ -83,7 +86,32 @@ function canCopyAsManaged(file: ScriptWorkspaceFile | null): boolean {
   );
 }
 
-function insertTreeNode(root: FileTreeNode, file: ScriptWorkspaceFile): void {
+function insertDirectoryNode(root: FileTreeNode, directory: ScriptWorkspaceDirectory): void {
+  const parts = directory.relativePath.split('/');
+  let current = root;
+
+  parts.forEach((part, index) => {
+    const childPath = parts.slice(0, index + 1).join('/');
+    let child = current.children.find(node => node.name === part && node.type === 'directory');
+
+    if (!child) {
+      child = {
+        name: part,
+        relativePath: childPath,
+        type: 'directory',
+        children: [],
+      };
+      current.children.push(child);
+    }
+
+    if (index === parts.length - 1) {
+      child.directory = directory;
+    }
+    current = child;
+  });
+}
+
+function insertFileNode(root: FileTreeNode, file: ScriptWorkspaceFile): void {
   const parts = file.relativePath.split('/');
   let current = root;
 
@@ -102,7 +130,6 @@ function insertTreeNode(root: FileTreeNode, file: ScriptWorkspaceFile): void {
       };
       current.children.push(child);
     }
-
     if (isFile) {
       child.file = file;
     }
@@ -124,7 +151,7 @@ function sortTree(node: FileTreeNode): FileTreeNode {
   };
 }
 
-function buildFileTree(files: ScriptWorkspaceFile[]): FileTreeNode {
+function buildFileTree(files: ScriptWorkspaceFile[], directories: ScriptWorkspaceDirectory[]): FileTreeNode {
   const root: FileTreeNode = {
     name: '',
     relativePath: '',
@@ -132,7 +159,8 @@ function buildFileTree(files: ScriptWorkspaceFile[]): FileTreeNode {
     children: [],
   };
 
-  files.forEach(file => insertTreeNode(root, file));
+  directories.forEach(directory => insertDirectoryNode(root, directory));
+  files.forEach(file => insertFileNode(root, file));
   return sortTree(root);
 }
 
@@ -140,15 +168,22 @@ export default function ScriptWorkspacePage(): React.ReactElement {
   const { t } = useI18n();
   const { currentProject } = useProjectStore();
   const [files, setFiles] = useState<ScriptWorkspaceFile[]>([]);
+  const [directories, setDirectories] = useState<ScriptWorkspaceDirectory[]>([]);
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
+  const [selectedDirectoryPath, setSelectedDirectoryPath] = useState<string | null>(null);
   const [openTabs, setOpenTabs] = useState<OpenFileTab[]>([]);
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(() => new Set(['kubejs', 'config']));
   const [failedOpenPath, setFailedOpenPath] = useState<string | null>(null);
+  const [operationMode, setOperationMode] = useState<OperationMode | null>(null);
+  const [operationPath, setOperationPath] = useState('');
+  const [operationError, setOperationError] = useState<string | null>(null);
   const [isLoadingFiles, setIsLoadingFiles] = useState(false);
   const [isLoadingFile, setIsLoadingFile] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isCreatingManaged, setIsCreatingManaged] = useState(false);
   const [isCreatingUser, setIsCreatingUser] = useState(false);
+  const [isCreatingDirectory, setIsCreatingDirectory] = useState(false);
+  const [isRenaming, setIsRenaming] = useState(false);
   const [isCopyingManaged, setIsCopyingManaged] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
@@ -156,12 +191,14 @@ export default function ScriptWorkspacePage(): React.ReactElement {
   const selectedTab = openTabs.find(tab => tab.file.relativePath === selectedPath) ?? null;
   const selectedFile = selectedTab?.file ?? files.find(file => file.relativePath === selectedPath) ?? null;
   const isDirty = Boolean(selectedTab && selectedTab.content !== selectedTab.originalContent);
-  const fileTree = useMemo(() => buildFileTree(files), [files]);
+  const fileTree = useMemo(() => buildFileTree(files, directories), [directories, files]);
 
   const loadFiles = useCallback(async (): Promise<void> => {
     if (!currentProject) {
       setFiles([]);
+      setDirectories([]);
       setSelectedPath(null);
+      setSelectedDirectoryPath(null);
       setOpenTabs([]);
       return;
     }
@@ -176,6 +213,7 @@ export default function ScriptWorkspacePage(): React.ReactElement {
         throw new Error(response.error || t('scriptWorkspace.listFailed'));
       }
       setFiles(response.data.files);
+      setDirectories(response.data.directories ?? []);
       setOpenTabs(previous => previous.map(tab => {
         const updatedFile = response.data?.files.find(file => file.relativePath === tab.file.relativePath);
         return updatedFile ? { ...tab, file: updatedFile } : tab;
@@ -248,8 +286,73 @@ export default function ScriptWorkspacePage(): React.ReactElement {
     }
   }, [failedOpenPath, openFile, openTabs, selectedPath]);
 
+  function parentDirectory(relativePath: string): string {
+    const parts = relativePath.split('/');
+    parts.pop();
+    return parts.join('/');
+  }
+
   const selectFile = (file: ScriptWorkspaceFile): void => {
+    setSelectedDirectoryPath(parentDirectory(file.relativePath));
     void openFile(file.relativePath);
+  };
+
+  const operationBaseDirectory = (): string => {
+    if (selectedDirectoryPath) {
+      return selectedDirectoryPath;
+    }
+    if (selectedFile) {
+      return parentDirectory(selectedFile.relativePath);
+    }
+    return directories.find(directory => directory.relativePath === 'kubejs/server_scripts')?.relativePath
+      ?? directories[0]?.relativePath
+      ?? 'kubejs/server_scripts';
+  };
+
+  const defaultFilePathForBase = (baseDirectory: string): string => {
+    if (
+      baseDirectory.startsWith('kubejs/server_scripts') ||
+      baseDirectory.startsWith('kubejs/client_scripts') ||
+      baseDirectory.startsWith('kubejs/startup_scripts')
+    ) {
+      return `${baseDirectory}/user_script.js`;
+    }
+    if (baseDirectory.startsWith('config')) {
+      return `${baseDirectory}/new_config.toml`;
+    }
+    return `${baseDirectory}/new_file.json`;
+  };
+
+  const openOperation = (mode: OperationMode): void => {
+    setOperationMode(mode);
+    setOperationError(null);
+    if (mode === 'create-file') {
+      setOperationPath(defaultFilePathForBase(operationBaseDirectory()));
+    } else if (mode === 'create-directory') {
+      setOperationPath(`${operationBaseDirectory()}/new_folder`);
+    } else {
+      setOperationPath(selectedFile?.relativePath ?? '');
+    }
+  };
+
+  const operationTitle = (): string => {
+    if (operationMode === 'create-file') {
+      return t('scriptWorkspace.createFileTitle');
+    }
+    if (operationMode === 'create-directory') {
+      return t('scriptWorkspace.createDirectoryTitle');
+    }
+    return t('scriptWorkspace.renameTitle');
+  };
+
+  const operationPlaceholder = (): string => {
+    if (operationMode === 'create-file') {
+      return t('scriptWorkspace.createFilePlaceholder');
+    }
+    if (operationMode === 'create-directory') {
+      return t('scriptWorkspace.createDirectoryPlaceholder');
+    }
+    return t('scriptWorkspace.renamePlaceholder');
   };
 
   const saveFile = async (): Promise<void> => {
@@ -343,16 +446,9 @@ export default function ScriptWorkspacePage(): React.ReactElement {
       return;
     }
 
-    const relativePath = window.prompt(
-      t('scriptWorkspace.createUserPrompt'),
-      'kubejs/server_scripts/user_script.js'
-    );
-    if (relativePath === null) {
-      return;
-    }
-    const trimmedPath = relativePath.trim();
+    const trimmedPath = operationPath.trim();
     if (trimmedPath.length === 0) {
-      setError(t('scriptWorkspace.userPathRequired'));
+      setOperationError(t('scriptWorkspace.operationPathRequired'));
       return;
     }
 
@@ -366,6 +462,8 @@ export default function ScriptWorkspacePage(): React.ReactElement {
         throw new Error(response.error || t('scriptWorkspace.createUserFailed'));
       }
       setSelectedPath(response.data.file.relativePath);
+      setSelectedDirectoryPath(parentDirectory(response.data.file.relativePath));
+      setExpandedPaths(previous => new Set([...previous, parentDirectory(response.data!.file.relativePath)]));
       setOpenTabs(previous => [
         ...previous.filter(tab => tab.file.relativePath !== response.data!.file.relativePath),
         {
@@ -375,11 +473,115 @@ export default function ScriptWorkspacePage(): React.ReactElement {
         },
       ]);
       setSaveMessage(t('scriptWorkspace.userCreated'));
+      setOperationMode(null);
       await loadFiles();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t('scriptWorkspace.createUserFailed'));
     } finally {
       setIsCreatingUser(false);
+    }
+  };
+
+  const createDirectory = async (): Promise<void> => {
+    if (!currentProject) {
+      return;
+    }
+
+    const trimmedPath = operationPath.trim();
+    if (trimmedPath.length === 0) {
+      setOperationError(t('scriptWorkspace.operationPathRequired'));
+      return;
+    }
+
+    setIsCreatingDirectory(true);
+    setError(null);
+    setSaveMessage(null);
+
+    try {
+      const response = await electronAPI().scriptWorkspaceCreateDirectory(currentProject.path, trimmedPath);
+      if (!response.success || !response.data) {
+        throw new Error(response.error || t('scriptWorkspace.createDirectoryFailed'));
+      }
+      setSelectedDirectoryPath(response.data.directory.relativePath);
+      setExpandedPaths(previous => {
+        const next = new Set(previous);
+        next.add(response.data!.directory.relativePath);
+        const parent = parentDirectory(response.data!.directory.relativePath);
+        if (parent) {
+          next.add(parent);
+        }
+        return next;
+      });
+      setSaveMessage(response.data.created ? t('scriptWorkspace.directoryCreated') : t('scriptWorkspace.directoryOpened'));
+      setOperationMode(null);
+      await loadFiles();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : t('scriptWorkspace.createDirectoryFailed'));
+    } finally {
+      setIsCreatingDirectory(false);
+    }
+  };
+
+  const renameSelectedFile = async (): Promise<void> => {
+    if (!currentProject || !selectedFile) {
+      setOperationError(t('scriptWorkspace.renameRequiresFile'));
+      return;
+    }
+    if (selectedFile.kind !== 'user') {
+      setOperationError(t('scriptWorkspace.renameRequiresFile'));
+      return;
+    }
+
+    const trimmedPath = operationPath.trim();
+    if (trimmedPath.length === 0) {
+      setOperationError(t('scriptWorkspace.operationPathRequired'));
+      return;
+    }
+    if (!window.confirm(t('scriptWorkspace.renameUserConfirm'))) {
+      return;
+    }
+
+    setIsRenaming(true);
+    setError(null);
+    setSaveMessage(null);
+
+    try {
+      const response = await electronAPI().scriptWorkspaceRename(
+        currentProject.path,
+        selectedFile.relativePath,
+        trimmedPath,
+        { confirmUserFileWrite: true }
+      );
+      if (!response.success || !response.data) {
+        throw new Error(response.error || t('scriptWorkspace.renameFailed'));
+      }
+      setSelectedPath(response.data.file.relativePath);
+      setSelectedDirectoryPath(parentDirectory(response.data.file.relativePath));
+      setOpenTabs(previous => previous.map(tab => (
+        tab.file.relativePath === response.data!.previousRelativePath
+          ? { ...tab, file: response.data!.file }
+          : tab
+      )));
+      setExpandedPaths(previous => new Set([...previous, parentDirectory(response.data!.file.relativePath)]));
+      setSaveMessage(t('scriptWorkspace.renamedFile', { path: response.data.file.relativePath }));
+      setOperationMode(null);
+      await loadFiles();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : t('scriptWorkspace.renameFailed'));
+    } finally {
+      setIsRenaming(false);
+    }
+  };
+
+  const submitOperation = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
+    event.preventDefault();
+    setOperationError(null);
+    if (operationMode === 'create-file') {
+      await createUserFile();
+    } else if (operationMode === 'create-directory') {
+      await createDirectory();
+    } else if (operationMode === 'rename') {
+      await renameSelectedFile();
     }
   };
 
@@ -466,9 +668,12 @@ export default function ScriptWorkspacePage(): React.ReactElement {
           {node.relativePath && (
             <button
               type="button"
-              className={styles.directoryItem}
+              className={`${styles.directoryItem} ${selectedDirectoryPath === node.relativePath ? styles.directoryItemActive : ''}`}
               style={{ paddingLeft: 8 + depth * 14 }}
-              onClick={() => toggleDirectory(node.relativePath)}
+              onClick={() => {
+                setSelectedDirectoryPath(node.relativePath);
+                toggleDirectory(node.relativePath);
+              }}
             >
               <span className={styles.treeCaret}>{expanded ? 'v' : '>'}</span>
               <span className={styles.directoryName}>{node.name}</span>
@@ -526,10 +731,26 @@ export default function ScriptWorkspacePage(): React.ReactElement {
           <button
             type="button"
             className={styles.secondaryButton}
-            onClick={createUserFile}
+            onClick={() => openOperation('create-file')}
             disabled={!currentProject || isCreatingUser}
           >
             {isCreatingUser ? t('scriptWorkspace.creating') : t('scriptWorkspace.createUser')}
+          </button>
+          <button
+            type="button"
+            className={styles.secondaryButton}
+            onClick={() => openOperation('create-directory')}
+            disabled={!currentProject || isCreatingDirectory}
+          >
+            {isCreatingDirectory ? t('scriptWorkspace.creating') : t('scriptWorkspace.createDirectory')}
+          </button>
+          <button
+            type="button"
+            className={styles.secondaryButton}
+            onClick={() => openOperation('rename')}
+            disabled={!currentProject || selectedFile?.kind !== 'user' || isRenaming}
+          >
+            {isRenaming ? t('scriptWorkspace.saving') : t('scriptWorkspace.rename')}
           </button>
           <button
             type="button"
@@ -568,12 +789,46 @@ export default function ScriptWorkspacePage(): React.ReactElement {
             <h2>{t('scriptWorkspace.files')}</h2>
             <span>{files.length}</span>
           </div>
-          {files.length === 0 && (
+          {operationMode && (
+            <form className={styles.operationForm} onSubmit={(event) => void submitOperation(event)}>
+              <div className={styles.operationTitle}>{operationTitle()}</div>
+              <label className={styles.operationLabel}>
+                <span>{t('scriptWorkspace.operationPath')}</span>
+                <input
+                  value={operationPath}
+                  onChange={(event) => setOperationPath(event.target.value)}
+                  placeholder={operationPlaceholder()}
+                  disabled={isCreatingUser || isCreatingDirectory || isRenaming}
+                />
+              </label>
+              {operationError && <div className={styles.operationError}>{operationError}</div>}
+              <div className={styles.operationActions}>
+                <button
+                  type="button"
+                  className={styles.secondaryButton}
+                  onClick={() => {
+                    setOperationMode(null);
+                    setOperationError(null);
+                  }}
+                >
+                  {t('common.cancel')}
+                </button>
+                <button
+                  type="submit"
+                  className={styles.primaryButton}
+                  disabled={isCreatingUser || isCreatingDirectory || isRenaming}
+                >
+                  {t('common.confirm')}
+                </button>
+              </div>
+            </form>
+          )}
+          {files.length === 0 && directories.length === 0 && (
             <div className={styles.emptyState}>
               {isLoadingFiles ? t('scriptWorkspace.loadingFiles') : t('scriptWorkspace.emptyFiles')}
             </div>
           )}
-          {files.length > 0 && (
+          {(files.length > 0 || directories.length > 0) && (
             <div className={styles.fileTree}>
               {fileTree.children.map(node => renderFileTreeNode(node))}
             </div>
