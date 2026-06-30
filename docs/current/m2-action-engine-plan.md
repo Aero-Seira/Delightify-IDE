@@ -3,6 +3,10 @@
 > 状态：规划（2026-06-15）。基线：MVP-0（= 规格 M1）已落地并验证（exporter v1 导入 / schema / importer / validator / 浏览层 v1 对齐 / unify query+dry-run / KubeJS emitter / 全部 IPC·preload·renderer / smoke）。本文不重列已完成项，只规划下一阶段。
 > 依据：规格 `docs/spec-snapshot/设计/{02,04,07,10}` 与例子 `01/02/05`。代码事实优先于历史文档。
 > 不要求重写 schema / importer / validator / unify / emitter / ConversionTool —— 下述全部为**增量扩展**。
+>
+> ## ⚠️ AGENT 全部搁置（2026-06-30）
+>
+> **本文中 M3/M4/M5 里程碑及所有 Agent/LLM 相关内容已统一搁置。** 当前工作范围仅限 M2 确定性动作引擎。Agent 部分需要更详细的专项规划（模型选型、prompt 工程、置信度校准、人机交互流程等），待 M2 完成后再重新评估启动条件。
 
 ---
 

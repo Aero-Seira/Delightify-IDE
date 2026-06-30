@@ -1,9 +1,10 @@
 # Delightify MVP-0 可落地实现方案
 
 > 状态：实现设计（以 2026-06-14 仓库真实代码为准）。本文用于直接交给 Codex 执行。
-> 更新：2026-06-16 exporter 已实现真实贴图导出，本文中“exporter v1 不写 item_resources / 贴图为空”的描述仅代表 2026-06-14 基线事实；当前贴图状态以 `docs/current/visualization-texture-plan.md` 与代码为准。
+> 更新：2026-06-16 exporter 已实现真实贴图导出，本文中”exporter v1 不写 item_resources / 贴图为空”的描述仅代表 2026-06-14 基线事实；当前贴图状态以 `docs/current/visualization-texture-plan.md` 与代码为准。
 > 审计基线：`packages/main/src/{services,ipc,preload.ts}`、`packages/renderer/src/{ipc,pages}`、`packages/shared/src/{types,constants}`、`packages/exporter/`、`scripts/smoke-mvp0-unify.mjs`。
-> 关键结论（颠覆 `进度.md` 的"待办"描述，以代码为准）：**MVP-0 后端主链路已基本实现并有可跑通的 smoke 断言**。schema、importer（全 v1 表）、validator（分流 + capabilities）、unify query/dry-run、KubeJS emitter、全部 IPC、preload、renderer 接线、`pnpm smoke:mvp0` 均已存在。真正剩余的工程缺口集中在**浏览层显示名（v1 应走 `translations`，但 `items.ts` 仍查 `item_resources.lang_name`）**与几处打磨项。本方案优先修这些缺口，不做重写。
+> 关键结论（颠覆 `进度.md` 的”待办”描述，以代码为准）：**MVP-0 后端主链路已基本实现并有可跑通的 smoke 断言**。schema、importer（全 v1 表）、validator（分流 + capabilities）、unify query/dry-run、KubeJS emitter、全部 IPC、preload、renderer 接线、`pnpm smoke:mvp0` 均已存在。真正剩余的工程缺口集中在**浏览层显示名（v1 应走 `translations`，但 `items.ts` 仍查 `item_resources.lang_name`）**与几处打磨项。本方案优先修这些缺口，不做重写。
+> ⚠️ **AGENT 搁置（2026-06-30）**：本文中任何 LLM/Agent 相关排除项仍然有效；所有 Agent 内容已统一搁置，待更详细专项规划。
 
 ---
 
